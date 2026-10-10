@@ -1,33 +1,37 @@
 
 import type { dataTableFeatures } from "@/components/data-table/table-features";
 import DropdownActions from "@/components/dropdown-action";
-import type { DataTableRecord } from "./types/datatable";
+import type { Agent } from "./types/master-agen";
 import type { ColumnDef } from "@tanstack/react-table";
 
 export function getMasterAgentColumns(
-  onDetail: (record: DataTableRecord) => void,
-): ColumnDef<typeof dataTableFeatures, DataTableRecord, unknown>[] {
+  onDetail: (record: Agent) => void,
+): ColumnDef<typeof dataTableFeatures, Agent, unknown>[] {
   return [
     {
-      id: "rowNumber",
+      id: "number",
       header: "#",
       cell: ({ row }) => row.index + 1,
       enableHiding: false,
     },
     {
-      accessorKey: "nama_travel",
+      accessorKey: "name",
       header: "Nama Travel",
     },
     {
-      accessorKey: "name_customer",
-      header: "Nama Pelanggan",
+      accessorKey: "contact_person",
+      header: "Nama PIC",
     },
     {
-      accessorKey: "city",
+      accessorKey: "city.name",
       header: "Kota",
     },
+     {
+      accessorKey: "phone",
+      header: "whatsApp",
+    },
     {
-      accessorKey: "asosiasi",
+      accessorKey: "association_name",
       header: "Asosiasi",
     },
     {
