@@ -14,7 +14,7 @@ const isStaging =
 
 const API_URLS = isLocal
   ? {
-      sro: "http://10.10.100.69:8710/api/",
+      sro: "http://192.168.0.140:8000/api/",
       partner: "http://10.10.100.69:8710/api/partners",
       provinces: "http://10.10.100.69:8710/api/provinces",
       cities: "http://10.10.100.69:8710/api/cities",

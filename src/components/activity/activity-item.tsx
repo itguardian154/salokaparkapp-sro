@@ -23,7 +23,7 @@ export default function ActivityItem({ item }: ActivityItemProps) {
         <CalendarDays className="w-3 h-3 text-fg-brand-strong" />
       </span>
 
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-col lg:flex-row gap-0 lg:gap-2">
         <div className="min-w-0">
           <p
             className="truncate text-sm font-semibold text-heading"
@@ -41,7 +41,7 @@ export default function ActivityItem({ item }: ActivityItemProps) {
           </p>
         </div>
       </div>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-col lg:flex-row gap-0 lg:gap-2">
         <div className="min-w-0">
           <time
             dateTime={String(item.occurredAt)}

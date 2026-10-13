@@ -30,29 +30,6 @@ const DetailMasterProduk = ({
 
   if (!open) return null;
 
-  const logs = [
-    {
-      id: 1,
-      created_at: "2025-03-13",
-      activity: "Antika Lorien",
-      detail_activity: "Produk Master Produk berhasil ditambahkan ke sistem.",
-      pic: "Antika",
-    },
-    {
-      id: 2,
-      created_at: "2025-03-15",
-      activity: "Antika Lorien",
-      detail_activity: "Harga produk diubah dari Rp250.000 menjadi Rp300.000.",
-      pic: "Admin",
-    },
-    {
-      id: 3,
-      created_at: "2025-03-18",
-      activity: "John Doe",
-      detail_activity: "Status produk berubah menjadi Active.",
-      pic: "Supervisor",
-    },
-  ];
 
   const InfoItem = ({ label, value }: InfoItemProps) => {
     return (
@@ -177,7 +154,6 @@ const DetailMasterProduk = ({
       <ActivitySheet
         open={openActivity}
         onOpenChange={setOpenActivity}
-        data={logs}
       />
     </DetailPageLayout>
   );

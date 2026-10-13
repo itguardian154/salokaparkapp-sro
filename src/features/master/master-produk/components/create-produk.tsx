@@ -186,7 +186,7 @@ const CreateMasterProduk = ({
       day_type: validation.data.typeDay,
       min_qty: 1,
       is_ticket: validation.data.is_ticket,
-      is_active: true,
+      is_active: false,
     };
 
     try {

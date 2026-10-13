@@ -73,9 +73,22 @@ export type ProdukActivity = {
   created_at_human: string;
 };
 
+export type ProdukApprovalRecord = {
+  id: number;
+  action: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  employee_name: string;
+  department?: string | null;
+  sub_department?: string | null;
+  grade?: string | null;
+  position?: string | null;
+  created_at: string;
+};
+
 export type ProdukDetail = ProdukRecord & {
   activities: ProdukActivity[];
-  approvals: unknown[];
+  approvals: ProdukApprovalRecord[];
 };
 
 export type ProdukDetailResponse = {
@@ -110,7 +123,7 @@ export type ProdukListResponse = {
 };
 
 export type ProdukFilter = {
-  departemen: string;
+  department_id: string;
   status: string;
   is_active: string;
 };
@@ -121,9 +134,9 @@ export type ProdukFilters = {
 
 export type ProdukQueryParams = {
   page: number;
-  search: string;
   per_page: number;
-  "filter[departemen]"?: string;
+  "filter[search]"?: string;
+  "filter[department_id]"?: string;
   "filter[is_active]"?: string;
   "filter[status]"?: string;
 };

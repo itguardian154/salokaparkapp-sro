@@ -42,7 +42,7 @@ function SelectTrigger({
         "focus:border-green-500 focus:ring-2 focus:ring-green-500/20",
         "disabled:cursor-not-allowed disabled:opacity-90 disabled:bg-slate-100 disabled:dark:bg-slate-700 disableddark:text-slate-500",
         "data-placeholder:text-muted-foreground",
-        "dark:bg-slate-800 dark:hover:bg-input/50",
+        "dark:bg-slate-900 dark:hover:bg-input/50",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
