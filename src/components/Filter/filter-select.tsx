@@ -26,10 +26,13 @@ export default function FilterSelect({
   placeholder = "Pilih",
   options = [],
 }: FilterSelectProps) {
+  const selectedLabel = options.find((option) => option.value === value)?.label;
+
   return (
     <div className="space-y-2">
       <label
         className="
+        z-999999
         mb-2
           text-xs
           font-medium
@@ -39,7 +42,7 @@ export default function FilterSelect({
       >
         {label}
       </label>
-      <div className="mt-1.5">
+      <div className="">
         <Select
           value={value || ""}
           onValueChange={(val) => onChange(!val || val === "all" ? "" : val)}
@@ -49,7 +52,9 @@ export default function FilterSelect({
               !value ? "text-slate-500 " : "text-slate-900 dark:text-slate-200"
             }`}
           >
-            <SelectValue placeholder={placeholder} />
+            <SelectValue placeholder={placeholder}>
+              {selectedLabel ?? placeholder}
+            </SelectValue>
           </SelectTrigger>
 
           <SelectContent

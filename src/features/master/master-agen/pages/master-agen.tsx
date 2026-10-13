@@ -436,7 +436,7 @@ export default function MasterAgentPage() {
       {createError && (
         <div
           role="alert"
-          className="fixed bottom-5 right-5 z-[100] max-w-md rounded-lg border border-red-200 bg-white p-4 text-sm text-red-600 shadow-lg dark:border-red-800 dark:bg-slate-800"
+          className="fixed bottom-5 right-5 z-100 max-w-md rounded-lg border border-red-200 bg-white p-4 text-sm text-red-600 shadow-lg dark:border-red-800 dark:bg-slate-800"
         >
           <div className="flex items-start justify-between gap-4">
             <p>{createError}</p>

@@ -35,14 +35,14 @@ const DropdownActions = ({
 
       <DropdownMenuContent
         align="end"
-        className="z-10000 min-w-[140px] border border-slate-200 bg-white text-slate-700 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+        className="z-10000 min-w-35 border border-slate-200 bg-white text-slate-700 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
       >
         <DropdownMenuItem
           onClick={onDetail}
-          className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:!bg-blue-50 hover:!text-blue-600 focus:!bg-blue-50 focus:!text-blue-600 data-[highlighted]:!bg-blue-50 data-[highlighted]:!text-blue-600 dark:text-slate-200 dark:hover:!bg-blue-500/15 dark:hover:!text-blue-400 dark:focus:!bg-blue-500/15 dark:focus:!text-blue-400 dark:data-[highlighted]:!bg-blue-500/15 dark:data-[highlighted]:!text-blue-400"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-blue-50! hover:text-blue-600! focus:bg-blue-50! focus:text-blue-600! data-highlighted:bg-blue-50! data-highlighted:text-blue-600! dark:text-slate-200 dark:hover:bg-blue-500/15! dark:hover:text-blue-400! dark:focus:bg-blue-500/15! dark:focus:text-blue-400! dark:data-highlighted:bg-blue-500/15! dark:data-highlighted:text-blue-400!"
         >
           <FaEye
-            className="!text-blue-500 dark:!text-blue-400"
+            className="text-blue-500! dark:text-blue-400!"
             size={13}
           />
           <span className="text-inherit">Detail</span>
@@ -50,10 +50,10 @@ const DropdownActions = ({
 
         <DropdownMenuItem
           onClick={onEdit}
-          className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:!bg-amber-50 hover:!text-amber-600 focus:!bg-amber-50 focus:!text-amber-600 data-[highlighted]:!bg-amber-50 data-[highlighted]:!text-amber-600 dark:text-slate-200 dark:hover:!bg-amber-500/15 dark:hover:!text-amber-400 dark:focus:!bg-amber-500/15 dark:focus:!text-amber-400 dark:data-[highlighted]:!bg-amber-500/15 dark:data-[highlighted]:!text-amber-400"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-amber-50! hover:text-amber-600! focus:bg-amber-50! focus:text-amber-600! data-highlighted:bg-amber-50! data-highlighted:text-amber-600! dark:text-slate-200 dark:hover:bg-amber-500/15! dark:hover:text-amber-400! dark:focus:bg-amber-500/15! dark:focus:text-amber-400! dark:data-highlighted:bg-amber-500/15! dark:data-highlighted:text-amber-400!"
         >
           <FaUserEdit
-            className="!text-amber-500 dark:!text-amber-400"
+            className="text-amber-500! dark:text-amber-400!"
             size={13}
           />
           <span className="text-inherit">Edit Data</span>

@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/popover";
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -81,7 +80,8 @@ export default function FilterSearchable<T>({
         </PopoverTrigger>
 
         <PopoverContent
-          className="z-999999 w-[--radix-popover-trigger-width] border border-slate-200 bg-white p-0 shadow-xl dark:border-slate-800 dark:bg-slate-900"
+          style={{ width: "var(--anchor-width)", maxWidth: "calc(100vw - 1rem)" }}
+          className="z-999999 border border-slate-200 bg-white p-0 shadow-xl dark:border-slate-800 dark:bg-slate-900"
           align="start"
         >
           <Command shouldFilter={false}>
@@ -93,13 +93,11 @@ export default function FilterSearchable<T>({
             />
 
             <CommandList className="max-h-62.5 overflow-y-auto">
-              {items.length > 0 ? (
-                <CommandGroup>
-                  {/* Semua */}
-                  <CommandItem
-                    value="all"
-                    onSelect={() => onSelect(null)}
-                    className="
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => onSelect(null)}
+                  className="
                       cursor-pointer
                       rounded-md
                       mx-1
@@ -117,26 +115,26 @@ export default function FilterSearchable<T>({
                       dark:hover:bg-slate-700
                       dark:aria-selected:bg-slate-700
                     "
-                  >
-                    <div className="flex w-full items-center justify-between">
-                      <span>{placeholder}</span>
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span>{placeholder}</span>
 
-                      {!selectedKey && (
-                        <FaCheck className="h-3 w-3 text-green-600" />
-                      )}
-                    </div>
-                  </CommandItem>
+                    {!selectedKey && (
+                      <FaCheck className="h-3 w-3 text-green-600" />
+                    )}
+                  </div>
+                </CommandItem>
 
-                  {items.map((item) => {
-                    const key = getKey(item);
-                    const isSelected = selectedKey === key;
+                {items.map((item) => {
+                  const key = getKey(item);
+                  const isSelected = selectedKey === key;
 
-                    return (
-                      <CommandItem
-                        key={key}
-                        value={key}
-                        onSelect={() => onSelect(item)}
-                        className={`
+                  return (
+                    <CommandItem
+                      key={key}
+                      value={key}
+                      onSelect={() => onSelect(item)}
+                      className={`
                           cursor-pointer rounded-md px-3 py-2 text-sm
                           aria-selected:bg-blue-50
                           aria-selected:text-blue-600
@@ -148,20 +146,22 @@ export default function FilterSearchable<T>({
                               : ""
                           }
                         `}
-                      >
-                        <div className="flex w-full items-center justify-between">
-                          <div className="truncate">{renderItem(item)}</div>
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <div className="truncate">{renderItem(item)}</div>
 
-                          {isSelected && (
-                            <FaCheck className="ml-2 h-3 w-3 shrink-0 text-green-600" />
-                          )}
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              ) : (
-                <CommandEmpty>{emptyText}</CommandEmpty>
+                        {isSelected && (
+                          <FaCheck className="ml-2 h-3 w-3 shrink-0 text-green-600" />
+                        )}
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              {items.length === 0 && (
+                <div className="px-3 py-2 text-sm text-slate-500">
+                  {emptyText}
+                </div>
               )}
             </CommandList>
           </Command>

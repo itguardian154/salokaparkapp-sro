@@ -11,37 +11,40 @@ import DatatablePage from "./features/datatable/pages/data-tablelist";
 import MasterProdukPage from "./features/master/master-produk/pages/master-produk";
 import MasterAgentPage from "./features/master/master-agen/pages/master-agen";
 import AuthBootstrap from "./features/auth/components/auth";
+import { Toaster } from "./components/ui/toast";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="light" storageKey="theme">
-      <BrowserRouter>
-        <AuthBootstrap>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+      <Toaster>
+        <BrowserRouter>
+          <AuthBootstrap>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route element={<Layout />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
 
-              <Route path="/master/produk" element={<MasterProdukPage />} />
+                <Route path="/master/produk" element={<MasterProdukPage />} />
 
-              <Route
-                path="/master/produk"
-                element={<MasterProdukPage />}
-              />
+                <Route
+                  path="/master/produk"
+                  element={<MasterProdukPage />}
+                />
 
-              <Route
-                path="/datatable"
-                element={<DatatablePage />}
-              />
+                <Route
+                  path="/datatable"
+                  element={<DatatablePage />}
+                />
 
-              <Route
-                path="/master/agen"
-                element={<MasterAgentPage />}
-              />
-            </Route>
-          </Routes>
-        </AuthBootstrap>
-      </BrowserRouter>
+                <Route
+                  path="/master/agen"
+                  element={<MasterAgentPage />}
+                />
+              </Route>
+            </Routes>
+          </AuthBootstrap>
+        </BrowserRouter>
+      </Toaster>
     </ThemeProvider>
   </StrictMode>,
 );

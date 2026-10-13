@@ -14,23 +14,26 @@ const isStaging =
 
 const API_URLS = isLocal
   ? {
-      login: "http://10.10.100.69:8710/api/",
+      sro: "http://10.10.100.69:8710/api/",
       partner: "http://10.10.100.69:8710/api/partners",
       provinces: "http://10.10.100.69:8710/api/provinces",
       cities: "http://10.10.100.69:8710/api/cities",
+      lokahr: "https://lokahr.salokapark.app/api/",
     }
   : isStaging
     ? {
-        login: "http://10.10.100.69:8710/api/",
+        sro: "http://10.10.100.69:8710/api/",
         partner: "http://10.10.100.69:8710/api/partners",
         provinces: "http://10.10.100.69:8710/api/provinces",
         cities: "http://10.10.100.69:8710/api/cities",
+        lokahr: "https://lokahr.salokapark.app/api/",
       }
     : {
-        login: "http://10.10.100.69:8710/api/",
+        sro: "http://10.10.100.69:8710/api/",
         partner: "http://10.10.100.69:8710/api/partners",
         provinces: "http://10.10.100.69:8710/api/provinces",
         cities: "http://10.10.100.69:8710/api/cities",
+        lokahr: "https://lokahr.salokapark.app/api/",
       };
 
 export default API_URLS;

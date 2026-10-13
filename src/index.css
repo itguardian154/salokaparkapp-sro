@@ -169,6 +169,16 @@ body {
   }
 }
 
+@keyframes toast-progress {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.group\/toast:hover .toast-progress > span {
+  animation-play-state: paused !important;
+}
+
 .menuActive {
   @apply border-l-4 border-sekunder-60 bg-sekunder-20 dark:bg-sekunder-100/30;
 }

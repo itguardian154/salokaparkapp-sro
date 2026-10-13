@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { FaDatabase, FaTimes } from "react-icons/fa";
 import ActivitySheet from "@/components/activity/activity-sheet";
-import { Building2, GitBranch, Globe, MapPin } from "lucide-react";
+import { Building2, GitBranch, MapPin } from "lucide-react";
 import DetailPageLayout from "@/components/detail-page/detail-page-ayout";
 import DetailActionFooter, {
   type DetailAction,
@@ -49,7 +49,7 @@ const DetailMasterAgen = ({
         {label}
       </p>
 
-      <div className="mt-1 break-words text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-200">
+      <div className="mt-1 wrap-break-word text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-200">
         {value || "-"}
       </div>
     </div>

@@ -8,7 +8,7 @@ let pendingLogin: Promise<void> | null = null;
 async function requestLogin(): Promise<void> {
   try {
     const response = await axios.post<LoginResponse>(
-      `${API_URLS.login}auth/login`,
+      `${API_URLS.sro}auth/login`,
       {
         employee_id: "1708",
         password: "17081708",

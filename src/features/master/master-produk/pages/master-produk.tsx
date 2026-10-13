@@ -1,13 +1,395 @@
-export default function MasterProdukPage() {
-  return (
-    <div>
-      <div className="text-2xl font-bold text-red-900">
-        Master Produk
-      </div>
+import { useMemo, useState } from "react";
+import { useTable } from "@tanstack/react-table";
+import type { ColumnVisibilityState } from "@tanstack/react-table";
+import { FaBox, FaFileInvoice, FaPlus } from "react-icons/fa6";
+import FilterBar from "@/components/Filter/filter-bar";
+import ColumnVisibility from "@/components/data-table/column-visibility";
+import DataTable from "@/components/data-table/data-table";
+import TablePagination from "@/components/data-table/table-pagination";
+import { dataTableFeatures } from "@/components/data-table/table-features";
+import { getMasterProdukColumns } from "../columns";
+import useMasterProduk from "../hooks/use-master-produk";
+import useDetailProduk from "../hooks/use-detail-produk";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
+import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
+import type { Departemen } from "@/features/departemen/types/departemen";
+import FilterSearchable from "@/components/Filter/filter-searchable";
+import FilterSelect from "@/components/Filter/filter-select";
+import MobileDataCard from "@/components/data-table/mobile-data-card";
+import DetailMasterProduk from "../components/detail-produk";
+import CreateMasterProduk from "../components/create-produk";
+import EditMasterProduk from "../components/edit-produk";
+import useCreateProduk from "../hooks/use-create-produk";
+import useEditProduk from "../hooks/use-edit-produk";
+import type { CreateProdukPayload, UpdateProdukPayload } from "../types/master-produk";
 
-      <p className="mt-2 text-sky-500">
-        Selamat datang di Master Produk.
-      </p>
-    </div>
+export default function MasterProdukPage() {
+  const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
+  const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
+  const [selectedProdukId, setSelectedProdukId] = useState<number | null>(null);
+  const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
+  const [selectedEditProdukId, setSelectedEditProdukId] = useState<number | null>(null);
+  const {
+    dataMasterProduk,
+    loadingData,
+    error,
+    searchData,
+    setSearchData,
+    filterData,
+    setFilterData,
+    itemPerPage,
+    setItemPerPage,
+    currentPage,
+    lastPage,
+    totalData,
+    fromPage,
+    toPage,
+    handleNextPage,
+    handlePrevPage,
+    refetch,
+  } = useMasterProduk();
+  const {
+    submit: createProduk,
+    loading: submittingProduk,
+    error: createProdukError,
+    clearError: clearCreateProdukError,
+  } = useCreateProduk();
+  const {
+    submit: editProduk,
+    loading: submittingEditProduk,
+    error: editProdukError,
+    clearError: clearEditProdukError,
+  } = useEditProduk();
+  
+  const {
+    departemen,
+    searchDepartemen,
+    setSearchDepartemen,
+    loading: loadingDepartemen,
+    error: departemenError,
+  } = useDepartemen();
+
+  const {
+    produk: detailProduk,
+    loading: loadingDetail,
+    error: detailError,
+  } = useDetailProduk(selectedProdukId, isDetailMasterOpen);
+  const {
+    produk: editProdukDetail,
+    loading: loadingEditProduk,
+    error: loadEditProdukError,
+  } = useDetailProduk(selectedEditProdukId, isEditMasterOpen);
+
+  const [columnVisibility, setColumnVisibility] =
+    useState<ColumnVisibilityState>({});
+  const [departemenPickerOpen, setDepartemenPickerOpen] = useState(false);
+  const [selectedDepartemen, setSelectedDepartemen] =
+    useState<Departemen | null>(null);
+
+  const columns = useMemo(
+    () =>
+      getMasterProdukColumns((produk) => {
+        setSelectedProdukId(produk.id);
+        setIsDetailMasterOpen(true);
+      }, (produk) => {
+        clearEditProdukError();
+        setSelectedEditProdukId(produk.id);
+        setIsEditMasterOpen(true);
+      }),
+    [clearEditProdukError],
+  );
+  const table = useTable({
+    features: dataTableFeatures,
+    data: dataMasterProduk,
+    columns,
+    state: {
+      columnVisibility,
+      pagination: { pageIndex: 0, pageSize: itemPerPage },
+    },
+    onColumnVisibilityChange: setColumnVisibility,
+  });
+
+  const resetFilters = () => {
+    setSearchData("");
+    setFilterData((current) => ({
+      ...current,
+      filter: { ...current.filter, departemen: "", status: "" },
+    }));
+    setSelectedDepartemen(null);
+    setSearchDepartemen("");
+    setDepartemenPickerOpen(false);
+  };
+
+  const handleCreateProduk = async (
+    payload: CreateProdukPayload,
+    attachments: File[],
+  ) => {
+    try {
+      await createProduk(payload, attachments);
+      setIsCreateMasterOpen(false);
+      setSearchData(searchData);
+      refetch();
+      toast.add({
+        title: "Produk berhasil dibuat",
+        description: "Master produk baru sudah ditambahkan ke daftar.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Produk gagal dibuat",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat menyimpan master produk.",
+        type: "error",
+        timeout: 6000,
+      });
+      throw err;
+    }
+  };
+
+  const handleCloseCreateProduk = () => {
+    setIsCreateMasterOpen(false);
+    clearCreateProdukError();
+  };
+
+  const handleUpdateProduk = async (
+    payload: UpdateProdukPayload,
+    referenceFile: File | null,
+  ) => {
+    if (selectedEditProdukId === null) return;
+
+    try {
+      await editProduk(selectedEditProdukId, payload, referenceFile);
+      setIsEditMasterOpen(false);
+      setSelectedEditProdukId(null);
+      setSearchData(searchData);
+      refetch();
+      toast.add({
+        title: "Produk berhasil diperbarui",
+        description: "Perubahan master produk sudah disimpan.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Produk gagal diperbarui",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat memperbarui master produk.",
+        type: "error",
+        timeout: 6000,
+      });
+      throw err;
+    }
+  };
+
+  const handleCloseEditProduk = () => {
+    setIsEditMasterOpen(false);
+    setSelectedEditProdukId(null);
+    clearEditProdukError();
+  };
+
+  return (
+    <>
+      <section className="min-w-0 space-y-5">
+        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <FaFileInvoice
+                  className="text-emerald-500"
+                  aria-hidden="true"
+                />
+                <h1 className="text-lg font-bold text-slate-800 dark:text-white">
+                  Master Produk
+                </h1>
+              </div>
+              <p className="ml-6 text-xs text-slate-500 dark:text-slate-400">
+                Daftar produk
+              </p>
+            </div>
+
+            <div className="flex w-full items-center gap-3 lg:w-auto">
+              <div className="w-full lg:w-96">
+                <FilterBar
+                  search={searchData}
+                  onSearchChange={(event) => setSearchData(event.target.value)}
+                  active={Boolean(
+                    filterData.filter.departemen ||
+                    filterData.filter.status ||
+                    filterData.filter.is_active,
+                  )}
+                  onReset={resetFilters}
+                >
+                  <div className="grid w-full grid-cols-2 gap-4">
+                    <div className="w-full">
+                      <FilterSearchable<Departemen>
+                        label="Departemen"
+                        open={departemenPickerOpen}
+                        onOpenChange={setDepartemenPickerOpen}
+                        search={searchDepartemen}
+                        onSearchChange={setSearchDepartemen}
+                        placeholder="Semua"
+                        selectedLabel={selectedDepartemen?.departemen}
+                        selectedKey={selectedDepartemen?.id_dept}
+                        emptyText={
+                          loadingDepartemen
+                            ? "Memuat departemen..."
+                            : (departemenError ?? "Departemen tidak ditemukan")
+                        }
+                        items={departemen}
+                        getKey={(item) => item.id_dept}
+                        renderItem={(item) => item.departemen}
+                        onSelect={(item) => {
+                          setSelectedDepartemen(item);
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              departemen: item?.id_dept ?? "",
+                            },
+                          }));
+                          setSearchDepartemen("");
+                          setDepartemenPickerOpen(false);
+                        }}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSelect
+                        label="Status Approval"
+                        value={filterData.filter.status}
+                        onChange={(status) =>
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: { ...current.filter, status },
+                          }))
+                        }
+                        placeholder="Semua"
+                        options={[
+                          { value: "Draft", label: "Draft" },
+                          {
+                            value: "waiting_spv/manager",
+                            label: "Waiting SPV/Manager",
+                          },
+                          {
+                            value: "waiting_finance",
+                            label: "Waiting Finance",
+                          },
+                          {
+                            value: "full_approved",
+                            label: "Full Approved",
+                          },
+                        ]}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSelect
+                        label="Status Produk"
+                        value={filterData.filter.is_active}
+                        onChange={(is_active) =>
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: { ...current.filter, is_active },
+                          }))
+                        }
+                        placeholder="Semua"
+                        options={[
+                          { value: "true", label: "Aktif" },
+                          {
+                            value: "false",
+                            label: "Non Aktif",
+                          },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </FilterBar>
+              </div>
+              <div className="hidden gap-2 xl:flex">
+                <Button variant="primer" onClick={() => setIsCreateMasterOpen(true)}>
+                  <FaPlus className="text-[16px]" />
+                  Tambah
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
+            <TablePagination
+              leftSlot={<ColumnVisibility table={table} />}
+              itemPerPage={itemPerPage}
+              setItemPerPage={setItemPerPage}
+              currentPage={currentPage}
+              lastPage={lastPage}
+              fromPage={fromPage ?? 0}
+              toPage={toPage ?? 0}
+              totalData={totalData}
+              onPrev={handlePrevPage}
+              onNext={handleNextPage}
+            />
+          </div>
+
+          {error ? (
+            <p role="alert" className="px-4 py-3 text-sm text-red-600">
+              {error}
+            </p>
+          ) : loadingData ? (
+            <p className="px-4 py-8 text-center text-sm text-slate-500">
+              Memuat data produk...
+            </p>
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} cellClassName="px-3 py-2" />
+              </div>
+              <div className="p-3 md:hidden">
+                <MobileDataCard
+                  table={table}
+                  titleKey="name"
+                  titleLabel="Produk"
+                  icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
+                  emptyTitle="Belum ada data produk"
+                  emptyDescription="Data produk akan ditampilkan di sini."
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <DetailMasterProduk
+        open={isDetailMasterOpen}
+        produk={detailProduk}
+        loading={loadingDetail}
+        error={detailError}
+        onClose={() => {
+          setIsDetailMasterOpen(false);
+          setSelectedProdukId(null);
+        }}
+      />
+      <CreateMasterProduk
+        open={isCreateMasterOpen}
+        onClose={handleCloseCreateProduk}
+        onSubmit={handleCreateProduk}
+        submitting={submittingProduk}
+        submitError={createProdukError}
+      />
+      <EditMasterProduk
+        open={isEditMasterOpen}
+        produk={editProdukDetail}
+        loadingProduk={loadingEditProduk}
+        produkError={loadEditProdukError}
+        submitting={submittingEditProduk}
+        submitError={editProdukError}
+        onClose={handleCloseEditProduk}
+        onSubmit={handleUpdateProduk}
+      />
+    </>
   );
 }
