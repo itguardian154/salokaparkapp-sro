@@ -1,13 +1,14 @@
 import { CalendarDays } from "lucide-react";
-import { formatTanggal, type DateInput } from "@/lib/utils";
+import { formatDateTime, type DateInput } from "@/lib/utils";
 
 export type ActivityItemData = {
   id: string | number;
-  created_at: DateInput;
-  created_at_human?: string;
-  activity: string;
-  detail_activity: string;
-  pic?: string | null;
+  primaryText: string;
+  secondaryText: string;
+  occurredAt: DateInput;
+  occurredAtLabel?: string;
+  changes: unknown;
+  changesTitle?: string;
 };
 
 type ActivityItemProps = {
@@ -22,32 +23,49 @@ export default function ActivityItem({ item }: ActivityItemProps) {
         <CalendarDays className="w-3 h-3 text-fg-brand-strong" />
       </span>
 
-      {/* Tanggal */}
-      <time
-        dateTime={String(item.created_at)}
-        title={formatTanggal(item.created_at)}
-        className="bg-neutral-secondary-medium border border-default-medium text-heading text-xs font-medium px-1.5 py-0.5 rounded"
-      >
-        {item.created_at_human ?? formatTanggal(item.created_at)}
-      </time>
+      <div className="flex flex-row gap-2">
+        <div className="min-w-0">
+          <p
+            className="truncate text-sm font-semibold text-heading"
+            title={item.primaryText}
+          >
+            {item.primaryText}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <p
+            className="truncate capitalize italic text-sm text-slate-600 dark:text-slate-300"
+            title={item.secondaryText}
+          >
+            {item.secondaryText}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-row gap-2">
+        <div className="min-w-0">
+          <time
+            dateTime={String(item.occurredAt)}
+            title={formatDateTime(item.occurredAt)}
+            className="text-xs font-medium text-slate-600 dark:text-slate-300"
+          >
+            {formatDateTime(item.occurredAt)}
+          </time>
+        </div>
+        <div className="min-w-0">
+          <span className="rounded bg-slate-100 w-fit px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            {item.occurredAtLabel}
+          </span>
+        </div>
+      </div>
 
-      {/* Activity */}
-      <h3 className="flex items-center mb-1 text-sm font-semibold text-heading my-2">
-        {item.activity}
-      </h3>
-
-      {/* Detail Activity */}
-      <p className="mb-2 text-xs text-slate-600 dark:text-slate-300">
-        {item.detail_activity}
-      </p>
-
-      {/* PIC */}
-      {item.pic && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          PIC: <span className="font-medium">{item.pic}</span>
+      <div>
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {item.changesTitle ?? "Update"}
         </p>
-      )}
+        <pre className="max-h-64 overflow-auto rounded-md bg-slate-100 p-2 text-[11px] leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {JSON.stringify(item.changes, null, 2)}
+        </pre>
+      </div>
     </li>
   );
 }
-

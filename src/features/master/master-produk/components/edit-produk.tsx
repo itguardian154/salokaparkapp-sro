@@ -53,7 +53,6 @@ const EditMasterProduk = ({
   loadingProduk,
   produkError,
   submitting,
-  submitError,
   onClose,
   onSubmit,
 }: EditMasterProdukProps) => {
@@ -502,12 +501,6 @@ const EditMasterProduk = ({
               </p>
             ) : null}
           </Field>
-
-          {submitError && (
-            <p role="alert" className="mt-3 text-sm text-red-600">
-              {submitError}
-            </p>
-          )}
         </AppModal.Section>
       ) : null}
     </AppModal>

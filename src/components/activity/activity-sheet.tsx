@@ -44,7 +44,7 @@ export default function ActivitySheet({
           </SheetTitle>
         </SheetHeader>
 
-        <div className="mt-5 flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
           <ActivityLog data={data} />
         </div>
       </SheetContent>

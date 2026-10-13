@@ -15,6 +15,8 @@ import { MdWorkHistory } from "react-icons/md";
 import { Package } from "lucide-react";
 import type { ProdukDetail } from "../types/master-produk";
 import { Button } from "@/components/ui/button";
+import ReferenceFilePreview from "./reference-file-preview";
+import DepartmentOwnerList from "./department-owner-list";
 
 type DetailMasterProdukProps = {
   open: boolean;
@@ -51,28 +53,15 @@ const DetailMasterProduk = ({
 
   const activityLogs = useMemo<ActivityItemData[]>(
     () =>
-      (produk?.activities ?? []).map((activity) => {
-        const changedValues = Object.entries(activity.changes.after)
-          .map(([key, value]) => {
-            const formattedValue =
-              value !== null && typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value);
-            return `${key}: ${formattedValue}`;
-          })
-          .join(", ");
-
-        return {
+      (produk?.activities ?? []).map((activity) => ({
           id: activity.id,
-          created_at: activity.created_at,
-          created_at_human: activity.created_at_human,
-          activity: activity.user?.name ?? activity.description,
-          detail_activity: [activity.description, changedValues]
-            .filter(Boolean)
-            .join(" — "),
-          pic: activity.user?.name ?? "-",
-        };
-      }),
+          primaryText: activity.user?.name ?? "System",
+          secondaryText: activity.description,
+          occurredAt: activity.created_at,
+          occurredAtLabel: activity.created_at_human,
+          changes: activity.changes.after,
+          changesTitle: "Update",
+        })),
     [produk?.activities],
   );
 
@@ -163,10 +152,23 @@ const DetailMasterProduk = ({
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 <InfoItem label="Nama Produk" value={produk.name} />
                 <InfoItem label="Harga" value={formatRupiah(produk.price)} />
-                <InfoItem label="Referensi" value={produk.reference || "-"} />
                 <InfoItem
+                  label="Referensi"
+                  value={
+                    <ReferenceFilePreview
+                      referenceFile={produk.reference_file}
+                      size="medium"
+                    />
+                  }
+                />
+                   <InfoItem
                   label="Departemen Terkait"
-                  value={produk.departemen || "-"}
+                  value={
+                    <DepartmentOwnerList
+                      owners={produk.department_owner ?? []}
+                      fallback={produk.departemen}
+                    />
+                  }
                 />
                 <InfoItem label="Tipe Hari" value={produk.day_type} />
                 <InfoItem
