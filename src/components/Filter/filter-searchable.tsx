@@ -59,7 +59,7 @@ export default function FilterSearchable<T>({
       >
         <PopoverTrigger
           disabled={disabled}
-          className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm transition-colors
+          className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm transition-colors dark:bg-slate-900
             ${
               disabled
                 ? "cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-700 dark:text-slate-500 opacity-90"

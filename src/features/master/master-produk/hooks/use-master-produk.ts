@@ -14,7 +14,7 @@ const useMasterProduk = () => {
   const [dataMasterProduk, setDataMasterProduk] = useState<ProdukRecord[]>([]);
   const [searchData, setSearchData] = useState("");
   const [filterData, setFilterData] = useState<ProdukFilters>({
-    filter: { departemen: "", status: "", is_active: "" },
+    filter: { department_id: "", status: "", is_active: "" },
   });
 
   const [itemPerPage, setItemPerPage] = useState(DEFAULT_ITEM_PER_PAGE);
@@ -45,19 +45,23 @@ const useMasterProduk = () => {
       try {
         const params: ProdukQueryParams = {
           page: pageData,
-          search: searchData.trim(),
           per_page: itemPerPage,
-          ...(filterData.filter.departemen && {
-            "filter[departemen]": filterData.filter.departemen,
+          ...(searchData.trim() && {
+            "filter[search]": searchData.trim(),
+          }),
+          ...(filterData.filter.department_id && {
+            "filter[department_id]": filterData.filter.department_id,
           }),
           ...(filterData.filter.is_active && {
-            "filter[is_active]": filterData.filter.is_active,
+            "filter[is_active]":
+              filterData.filter.is_active === "true"
+                ? "1"
+                : filterData.filter.is_active === "false"
+                  ? "0"
+                  : filterData.filter.is_active,
           }),
           ...(filterData.filter.status && {
             "filter[status]": filterData.filter.status,
-          }),
-          ...(searchData && {
-            "search": searchData,
           }),
         };
 

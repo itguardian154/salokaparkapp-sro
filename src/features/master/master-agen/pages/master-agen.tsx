@@ -14,7 +14,11 @@ import TablePagination from "@/components/data-table/table-pagination";
 import { dataTableFeatures } from "@/components/data-table/table-features";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { Button } from "@/components/ui/button";
+<<<<<<< HEAD
 import { toast } from "@/components/ui/toast";
+=======
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
+>>>>>>> bdb5f62d7b7393d7d98b0aa496584b14d6d484fa
 
 import { getMasterAgentColumns } from "../columns";
 import CreateMasterAgent from "../components/create-agen";
@@ -561,6 +565,7 @@ export default function MasterAgentPage() {
       />
 
       {/* FLOATING BUTTON TAMBAH AGEN - MOBILE */}
+<<<<<<< HEAD
       <button
         type="button"
         onClick={handleOpenCreateAgent}
@@ -569,6 +574,15 @@ export default function MasterAgentPage() {
       >
         <FaPlus className="text-xl" />
       </button>
+=======
+      <MobileFloatingActionButton
+        ariaLabel="Tambah Agen"
+        onClick={() => {
+          setCreateError(null);
+          setIsCreateMasterOpen(true);
+        }}
+      />
+>>>>>>> bdb5f62d7b7393d7d98b0aa496584b14d6d484fa
 
       {/* DETAIL AGEN */}
       <DetailMasterAgent

@@ -10,10 +10,11 @@ import DetailActionFooter, {
 } from "@/components/detail-page/detail-action-footer";
 import DetailSection from "@/components/detail-page/detail-section";
 import { formatRupiah } from "@/lib/utils";
-import { FaDatabase, FaTimes } from "react-icons/fa";
+import { FaDatabase, FaSave, FaTimes } from "react-icons/fa";
 import { MdWorkHistory } from "react-icons/md";
-import { Package } from "lucide-react";
+import { Package, Signature } from "lucide-react";
 import type { ProdukDetail } from "../types/master-produk";
+import type { ProdukApprovalAction } from "../hooks/use-produk-approval";
 import { Button } from "@/components/ui/button";
 import ReferenceFilePreview from "./reference-file-preview";
 import DepartmentOwnerList from "./department-owner-list";
@@ -23,6 +24,11 @@ type DetailMasterProdukProps = {
   produk: ProdukDetail | null;
   loading: boolean;
   error: string | null;
+  canApprove: boolean;
+  checkingApprovalPermission: boolean;
+  approvalPermissionError: string | null;
+  loadingApprovalAction: ProdukApprovalAction | null;
+  onApprovalAction: (action: ProdukApprovalAction) => void;
   onClose: () => void;
 };
 
@@ -47,6 +53,11 @@ const DetailMasterProduk = ({
   produk,
   loading,
   error,
+  canApprove,
+  checkingApprovalPermission,
+  approvalPermissionError,
+  loadingApprovalAction,
+  onApprovalAction,
   onClose,
 }: DetailMasterProdukProps) => {
   const [openActivity, setOpenActivity] = useState(false);
@@ -54,33 +65,31 @@ const DetailMasterProduk = ({
   const activityLogs = useMemo<ActivityItemData[]>(
     () =>
       (produk?.activities ?? []).map((activity) => ({
-          id: activity.id,
-          primaryText: activity.user?.name ?? "System",
-          secondaryText: activity.description,
-          occurredAt: activity.created_at,
-          occurredAtLabel: activity.created_at_human,
-          changes: activity.changes.after,
-          changesTitle: "Update",
-        })),
+        id: activity.id,
+        primaryText: activity.user?.name ?? "System",
+        secondaryText: activity.description,
+        occurredAt: activity.created_at,
+        occurredAtLabel: activity.created_at_human,
+        changes: activity.changes.after,
+        changesTitle: "Update",
+      })),
     [produk?.activities],
   );
 
   const approvals = useMemo(
     () =>
-      (produk?.approvals ?? []).flatMap((approval) => {
-        if (typeof approval !== "object" || approval === null) return [];
-
-        const item = approval as Record<string, unknown>;
-        if (
-          typeof item.action !== "string" ||
-          typeof item.grade !== "string" ||
-          typeof item.name !== "string"
-        ) {
-          return [];
-        }
-
-        return [{ action: item.action, grade: item.grade, name: item.name }];
-      }),
+      (produk?.approvals ?? []).map((approval) => ({
+        action:
+          approval.action === "submit"
+            ? "Dibuat oleh,"
+            : approval.action === "approve"
+              ? "Disetujui oleh,"
+              : approval.action === "reject"
+                ? "Ditolak oleh,"
+                : approval.action,
+        name: approval.employee_name,
+        grade: approval.grade ?? approval.position ?? approval.department ?? "-",
+      })),
     [produk?.approvals],
   );
 
@@ -89,30 +98,58 @@ const DetailMasterProduk = ({
   const approvalVariant =
     produk?.status_label === "Full Approved"
       ? "success"
-      : produk?.status_label?.toLocaleLowerCase().includes("waiting")
+      : produk?.status_label === "Menunggu Persetujuan SPV/Manager Sales"
+        ? "blue"
+        : produk?.status_label === "Waiting Finance"
         ? "warning"
+        : produk?.status_label === "Done"
+        ? "success"
         : "muted";
 
-  const actions: DetailAction[] = [
-    {
-      id: "activity",
-      label: "Aktivitas",
-      icon: <MdWorkHistory size={16} />,
-      variant: "primer",
-      mobileColor: "bg-emerald-500",
+  const isDraft =
+    produk?.status?.toLocaleLowerCase() === "draft" ||
+    produk?.status_label?.toLocaleLowerCase() === "Draft";
+  const actionDisabled =
+    loading || checkingApprovalPermission || loadingApprovalAction !== null;
+  const actions: DetailAction[] = [];
+
+  if (isDraft) {
+    actions.push({
+      id: "submit",
+      label: loadingApprovalAction === "submit" ? "Memproses..." : "Submit",
+      icon: <FaSave size={15} />,
+      variant: "blue",
+      mobileColor: "bg-blue-600",
       position: "right",
-      onClick: () => setOpenActivity(true),
-    },
-    {
-      id: "close",
-      label: "Tutup",
+      disabled: actionDisabled,
+      onClick: () => onApprovalAction("submit"),
+    });
+  }
+
+  if (canApprove) {
+    actions.push(
+      {
+      id: "reject",
+      label: loadingApprovalAction === "reject" ? "Memproses..." : "Reject",
       icon: <FaTimes size={15} />,
       variant: "destructive",
       mobileColor: "bg-red-500",
       position: "right",
-      onClick: onClose,
-    },
-  ];
+      disabled: actionDisabled,
+      onClick: () => onApprovalAction("reject"),
+      },
+      {
+      id: "approve",
+      label: loadingApprovalAction === "approve" ? "Memproses..." : "Approve",
+      icon: <Signature size={15} />,
+      variant: "primer",
+      mobileColor: "bg-emerald-500",
+      position: "right",
+      disabled: actionDisabled,
+      onClick: () => onApprovalAction("approve"),
+      },
+    );
+  }
 
   return (
     <>
@@ -121,8 +158,18 @@ const DetailMasterProduk = ({
         title="Detail Master Produk"
         subtitle={produk?.name ?? "Detail data master produk"}
         onClose={onClose}
-        footer={<DetailActionFooter actions={actions} />}
+        footer={
+          actions.length > 0 ? <DetailActionFooter actions={actions} /> : undefined
+        }
       >
+        {approvalPermissionError && (
+          <p
+            role="alert"
+            className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            Gagal memeriksa izin approval: {approvalPermissionError}
+          </p>
+        )}
         <DetailSection
           icon={Package}
           title="Informasi Produk"
@@ -161,7 +208,7 @@ const DetailMasterProduk = ({
                     />
                   }
                 />
-                   <InfoItem
+                <InfoItem
                   label="Departemen Terkait"
                   value={
                     <DepartmentOwnerList
@@ -196,12 +243,10 @@ const DetailMasterProduk = ({
                     label="Deskripsi"
                     value={
                       <div className="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700">
-                              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                                "
-                                {produk.description || "-"}
-                                "
-                              </p>
-                            </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                          "{produk.description || "-"}"
+                        </p>
+                      </div>
                     }
                   />
                 </div>

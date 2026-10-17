@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import Swal from "sweetalert2";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
 import { FaBox, FaFileInvoice, FaPlus } from "react-icons/fa6";
@@ -17,19 +18,27 @@ import type { Departemen } from "@/features/departemen/types/departemen";
 import FilterSearchable from "@/components/Filter/filter-searchable";
 import FilterSelect from "@/components/Filter/filter-select";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
 import DetailMasterProduk from "../components/detail-produk";
 import CreateMasterProduk from "../components/create-produk";
 import EditMasterProduk from "../components/edit-produk";
 import useCreateProduk from "../hooks/use-create-produk";
 import useEditProduk from "../hooks/use-edit-produk";
-import type { CreateProdukPayload, UpdateProdukPayload } from "../types/master-produk";
+import useProdukApproval from "../hooks/use-produk-approval";
+import type { ProdukApprovalAction } from "../hooks/use-produk-approval";
+import type {
+  CreateProdukPayload,
+  UpdateProdukPayload,
+} from "../types/master-produk";
 
 export default function MasterProdukPage() {
   const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [selectedProdukId, setSelectedProdukId] = useState<number | null>(null);
   const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
-  const [selectedEditProdukId, setSelectedEditProdukId] = useState<number | null>(null);
+  const [selectedEditProdukId, setSelectedEditProdukId] = useState<
+    number | null
+  >(null);
   const {
     dataMasterProduk,
     loadingData,
@@ -61,7 +70,7 @@ export default function MasterProdukPage() {
     error: editProdukError,
     clearError: clearEditProdukError,
   } = useEditProduk();
-  
+
   const {
     departemen,
     searchDepartemen,
@@ -74,7 +83,15 @@ export default function MasterProdukPage() {
     produk: detailProduk,
     loading: loadingDetail,
     error: detailError,
+    refetch: refetchDetailProduk,
   } = useDetailProduk(selectedProdukId, isDetailMasterOpen);
+  const {
+    canApprove,
+    checkingPermission: checkingApprovalPermission,
+    permissionError: approvalPermissionError,
+    loadingAction: loadingApprovalAction,
+    runAction: runProdukApprovalAction,
+  } = useProdukApproval(selectedProdukId, isDetailMasterOpen);
   const {
     produk: editProdukDetail,
     loading: loadingEditProduk,
@@ -89,14 +106,17 @@ export default function MasterProdukPage() {
 
   const columns = useMemo(
     () =>
-      getMasterProdukColumns((produk) => {
-        setSelectedProdukId(produk.id);
-        setIsDetailMasterOpen(true);
-      }, (produk) => {
-        clearEditProdukError();
-        setSelectedEditProdukId(produk.id);
-        setIsEditMasterOpen(true);
-      }),
+      getMasterProdukColumns(
+        (produk) => {
+          setSelectedProdukId(produk.id);
+          setIsDetailMasterOpen(true);
+        },
+        (produk) => {
+          clearEditProdukError();
+          setSelectedEditProdukId(produk.id);
+          setIsEditMasterOpen(true);
+        },
+      ),
     [clearEditProdukError],
   );
   const table = useTable({
@@ -114,7 +134,12 @@ export default function MasterProdukPage() {
     setSearchData("");
     setFilterData((current) => ({
       ...current,
-      filter: { ...current.filter, departemen: "", status: "" },
+      filter: {
+        ...current.filter,
+        department_id: "",
+        status: "",
+        is_active: "",
+      },
     }));
     setSelectedDepartemen(null);
     setSearchDepartemen("");
@@ -193,6 +218,80 @@ export default function MasterProdukPage() {
     clearEditProdukError();
   };
 
+  const handleProdukApprovalAction = async (
+    action: ProdukApprovalAction,
+  ) => {
+    const confirmation = {
+      submit: {
+        title: "Konfirmasi Submit",
+        text: `Yakin ingin submit produk ${detailProduk?.name ?? "ini"}?`,
+        confirmButtonText: "Ya, Submit",
+        confirmButtonColor: "#107254",
+      },
+      approve: {
+        title: "Konfirmasi Approval",
+        text: `Yakin ingin menyetujui produk ${detailProduk?.name ?? "ini"}?`,
+        confirmButtonText: "Ya, Approve",
+        confirmButtonColor: "#107254",
+      },
+      reject: {
+        title: "Konfirmasi Reject",
+        text: `Yakin ingin menolak produk ${detailProduk?.name ?? "ini"}?`,
+        confirmButtonText: "Ya, Reject",
+        confirmButtonColor: "#107254",
+      },
+    }[action];
+
+    const result = await Swal.fire({
+      ...confirmation,
+      icon: "question",
+      showCancelButton: true,
+      cancelButtonText: "Batal",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const responseMessage = await runProdukApprovalAction(action);
+      refetchDetailProduk();
+      refetch();
+      toast.add({
+        title:
+          action === "submit"
+            ? "Produk berhasil disubmit"
+            : action === "approve"
+              ? "Produk berhasil disetujui"
+              : "Produk berhasil ditolak",
+        description:
+          responseMessage ??
+          (action === "submit"
+            ? "Produk telah dikirim untuk proses approval."
+            : action === "approve"
+              ? "Produk telah disetujui."
+              : "Produk telah ditolak."),
+        type: "success",
+        timeout: 5000,
+      });
+    } catch (approvalError: unknown) {
+      toast.add({
+        title:
+          action === "submit"
+            ? "Produk gagal disubmit"
+            : action === "approve"
+              ? "Produk gagal disetujui"
+              : "Produk gagal ditolak",
+        description:
+          approvalError instanceof Error
+            ? approvalError.message
+            : "Terjadi kesalahan saat memproses approval produk.",
+        type: "error",
+        timeout: 6000,
+      });
+    }
+  };
+
   return (
     <>
       <section className="min-w-0 space-y-5">
@@ -219,13 +318,13 @@ export default function MasterProdukPage() {
                   search={searchData}
                   onSearchChange={(event) => setSearchData(event.target.value)}
                   active={Boolean(
-                    filterData.filter.departemen ||
+                    filterData.filter.department_id ||
                     filterData.filter.status ||
                     filterData.filter.is_active,
                   )}
                   onReset={resetFilters}
                 >
-                  <div className="grid w-full grid-cols-2 gap-4">
+                  <div className="grid w-full grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="w-full">
                       <FilterSearchable<Departemen>
                         label="Departemen"
@@ -250,7 +349,7 @@ export default function MasterProdukPage() {
                             ...current,
                             filter: {
                               ...current.filter,
-                              departemen: item?.id_dept ?? "",
+                              department_id: item?.id_dept ?? "",
                             },
                           }));
                           setSearchDepartemen("");
@@ -273,16 +372,16 @@ export default function MasterProdukPage() {
                         options={[
                           { value: "Draft", label: "Draft" },
                           {
-                            value: "waiting_spv/manager",
-                            label: "Waiting SPV/Manager",
+                            value: "waiting_sales_spv_or_manager",
+                            label: "Menunggu Persetujuan SPV\/Manager Sales",
                           },
                           {
                             value: "waiting_finance",
                             label: "Waiting Finance",
                           },
                           {
-                            value: "full_approved",
-                            label: "Full Approved",
+                            value: "done",
+                            label: "Done",
                           },
                         ]}
                       />
@@ -312,7 +411,10 @@ export default function MasterProdukPage() {
                 </FilterBar>
               </div>
               <div className="hidden gap-2 xl:flex">
-                <Button variant="primer" onClick={() => setIsCreateMasterOpen(true)}>
+                <Button
+                  variant="primer"
+                  onClick={() => setIsCreateMasterOpen(true)}
+                >
                   <FaPlus className="text-[16px]" />
                   Tambah
                 </Button>
@@ -368,6 +470,11 @@ export default function MasterProdukPage() {
         produk={detailProduk}
         loading={loadingDetail}
         error={detailError}
+        canApprove={canApprove}
+        checkingApprovalPermission={checkingApprovalPermission}
+        approvalPermissionError={approvalPermissionError}
+        loadingApprovalAction={loadingApprovalAction}
+        onApprovalAction={handleProdukApprovalAction}
         onClose={() => {
           setIsDetailMasterOpen(false);
           setSelectedProdukId(null);
@@ -389,6 +496,10 @@ export default function MasterProdukPage() {
         submitError={editProdukError}
         onClose={handleCloseEditProduk}
         onSubmit={handleUpdateProduk}
+      />
+      <MobileFloatingActionButton
+        ariaLabel="Tambah Produk"
+        onClick={() => setIsCreateMasterOpen(true)}
       />
     </>
   );

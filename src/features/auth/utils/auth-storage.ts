@@ -104,6 +104,16 @@ export function decryptEmployeeId(
   return decrypted.toString(CryptoJS.enc.Utf8);
 }
 
+export function getAuthEmployeeId(): string {
+  const encryptedEmployeeId = localStorage.getItem("username");
+
+  if (!encryptedEmployeeId) {
+    throw new Error("Data karyawan tidak ditemukan. Silakan login kembali.");
+  }
+
+  return decryptEmployeeId(encryptedEmployeeId);
+}
+
 export function saveAuthSession(
   profile: Omit<AuthProfile, "employee_id"> & { employee_id: string },
 ): void {

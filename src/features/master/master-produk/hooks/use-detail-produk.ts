@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getMasterProdukDetail } from "../service/master-produk-service";
 import type { ProdukDetail } from "../types/master-produk";
 
@@ -6,6 +6,11 @@ const useDetailProduk = (produkId: number | null, open: boolean) => {
   const [produk, setProduk] = useState<ProdukDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     if (!open || produkId === null) {
@@ -47,9 +52,9 @@ const useDetailProduk = (produkId: number | null, open: boolean) => {
     void fetchProdukDetail();
 
     return () => controller.abort();
-  }, [produkId, open]);
+  }, [produkId, open, refreshKey]);
 
-  return { produk, loading, error };
+  return { produk, loading, error, refetch };
 };
 
 export default useDetailProduk;

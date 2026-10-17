@@ -45,7 +45,7 @@ export function getMasterProdukColumns(
       accessorKey: "price",
       header: "Harga",
 
-       cell: ({ row }) => (
+      cell: ({ row }) => (
         <div className="whitespace-nowrap">
           {formatRupiah(row.original.price)}
         </div>
@@ -61,7 +61,11 @@ export function getMasterProdukColumns(
             ? "success"
             : status === "Menunggu Persetujuan SPV\/Manager Sales"
               ? "blue"
-              : "muted";
+              : status === "Waiting Finance"
+                ? "warning"
+                : status === "Done"
+                ? "success"
+                : "muted";
 
         return <Badge variant={variant}>{status}</Badge>;
       },
