@@ -62,15 +62,8 @@ const DetailMasterAgen = ({
   );
 
   const actions: DetailAction[] = [
-    {
-          id: "activity",
-          label: "Aktivitas",
-          icon: <MdWorkHistory size={16} />,
-          variant: "primer",
-          mobileColor: "bg-emerald-500",
-          position: "right",
-          onClick: () => setOpenActivity(true),
-        },
+    
+   
     {
       id: "close",
       label: "Tutup",
@@ -92,7 +85,7 @@ const DetailMasterAgen = ({
     >
     <DetailSection
           icon={Package}
-          title="Informasi Produk"
+          title="Informasi Agen"
           variant="blue"
           action={
             <Button

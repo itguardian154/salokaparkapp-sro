@@ -387,8 +387,9 @@ const CreateMasterAgen = ({
 
   const handleAddBranch = () => {
     setBranches((previous) => [
-      ...previous,
+
       { ...initialBranch },
+      ...previous,
     ]);
 
     clearError("branches");

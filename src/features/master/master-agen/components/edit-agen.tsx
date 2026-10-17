@@ -460,10 +460,10 @@ const EditMasterAgen = ({
       previous.map((branch, branchIndex) =>
         branchIndex === index
           ? {
-              ...branch,
-              province_id: id,
-              city_id: null,
-            }
+            ...branch,
+            province_id: id,
+            city_id: null,
+          }
           : branch,
       ),
     );
@@ -489,8 +489,9 @@ const EditMasterAgen = ({
 
   const handleAddBranch = () => {
     setBranches((previous) => [
-      ...previous,
+
       { ...initialBranch },
+      ...previous,
     ]);
 
     clearError("branches");
@@ -791,12 +792,12 @@ const EditMasterAgen = ({
                     {getError(
                       `branches.${index}.name`,
                     ) && (
-                      <p className="text-sm text-red-500">
-                        {getError(
-                          `branches.${index}.name`,
-                        )}
-                      </p>
-                    )}
+                        <p className="text-sm text-red-500">
+                          {getError(
+                            `branches.${index}.name`,
+                          )}
+                        </p>
+                      )}
                   </Field>
 
                   <Field>
@@ -815,12 +816,12 @@ const EditMasterAgen = ({
                     {getError(
                       `branches.${index}.contact_person`,
                     ) && (
-                      <p className="text-sm text-red-500">
-                        {getError(
-                          `branches.${index}.contact_person`,
-                        )}
-                      </p>
-                    )}
+                        <p className="text-sm text-red-500">
+                          {getError(
+                            `branches.${index}.contact_person`,
+                          )}
+                        </p>
+                      )}
                   </Field>
 
                   <Field>
@@ -839,12 +840,12 @@ const EditMasterAgen = ({
                     {getError(
                       `branches.${index}.phone`,
                     ) && (
-                      <p className="text-sm text-red-500">
-                        {getError(
-                          `branches.${index}.phone`,
-                        )}
-                      </p>
-                    )}
+                        <p className="text-sm text-red-500">
+                          {getError(
+                            `branches.${index}.phone`,
+                          )}
+                        </p>
+                      )}
                   </Field>
 
                   <StatusField
@@ -856,9 +857,9 @@ const EditMasterAgen = ({
                           (item, branchIndex) =>
                             branchIndex === index
                               ? {
-                                  ...item,
-                                  is_active: active,
-                                }
+                                ...item,
+                                is_active: active,
+                              }
                               : item,
                         ),
                       )
