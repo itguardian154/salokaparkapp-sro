@@ -1,14 +1,18 @@
+
 import AppModal from "@/components/base-modal";
+import SearchablePopover from "@/components/searchable-popover";
+
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import { useCities } from "@/features/wilayah/hooks/use-cities";
 import type { Province } from "@/features/wilayah/types/wilayah";
+
 import { useEffect, useState } from "react";
-import { FaSave } from "react-icons/fa";
-import { FaPlus, FaTrash } from "react-icons/fa6";
+import { FaSave, FaPlus, FaTrash } from "react-icons/fa";
+import { Building2, GitBranch } from "lucide-react";
 
 import { createMasterAgentSchema } from "../schemas/master-agen-schema";
 import type {
@@ -19,24 +23,19 @@ import type {
 type CreateMasterProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (payload: CreateMasterAgentPayload) => void;
+  onSubmit: (payload: CreateMasterAgentPayload) => Promise<void>;
+  submitting?: boolean;
 };
 
 type AgentTextField =
-  | "code"
   | "name"
   | "association_name"
-  | "type"
   | "company_name"
   | "contact_person"
-  | "phone"
-  | "address"
-  | "website"
-  | "logo";
+  | "phone";
 
 type BranchTextField =
   | "name"
-  | "code"
   | "contact_person"
   | "phone"
   | "address";
@@ -107,42 +106,94 @@ const ProvinceCityFields = ({
   provinceValidationError,
   cityValidationError,
 }: ProvinceCityFieldsProps) => {
+  const [openProvince, setOpenProvince] = useState(false);
+  const [openCity, setOpenCity] = useState(false);
+
+  const [searchProvince, setSearchProvince] = useState("");
+  const [searchCity, setSearchCity] = useState("");
+
   const {
     cities,
     loading: citiesLoading,
     error: citiesError,
   } = useCities(provinceId);
 
-  const selectClassName =
-    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50";
+  const selectedProvince = provinces.find(
+    (province) => province.id === provinceId,
+  );
+
+  const selectedCity = cities.find(
+    (city) => city.id === cityId,
+  );
+
+  const filteredProvinces = provinces.filter((province) =>
+    province.name
+      .toLowerCase()
+      .includes(searchProvince.toLowerCase().trim()),
+  );
+
+  const filteredCities = cities.filter((city) =>
+    city.name
+      .toLowerCase()
+      .includes(searchCity.toLowerCase().trim()),
+  );
+
+  const handleProvinceChange = (id: number | null) => {
+    if (id !== provinceId) {
+      onProvinceChange(id);
+      onCityChange(null);
+    }
+
+    setSearchProvince("");
+    setSearchCity("");
+    setOpenProvince(false);
+    setOpenCity(false);
+  };
+
+  const handleCityChange = (id: number | null) => {
+    onCityChange(id);
+    setSearchCity("");
+    setOpenCity(false);
+  };
 
   return (
     <>
       <Field>
         <FieldLabel>Provinsi</FieldLabel>
 
-        <select
-          value={provinceId ?? ""}
-          onChange={(event) => {
-            const value = event.target.value;
-            onProvinceChange(value ? Number(value) : null);
-          }}
+        <SearchablePopover<Province>
+          open={openProvince}
+          onOpenChange={setOpenProvince}
+          search={searchProvince}
+          onSearchChange={setSearchProvince}
+          placeholder={
+            provinceLoading
+              ? "Memuat provinsi..."
+              : "Pilih provinsi"
+          }
+          selectedLabel={selectedProvince?.name ?? null}
+          selectedKey={
+            provinceId !== null ? String(provinceId) : null
+          }
+          items={filteredProvinces}
+          getKey={(province) => String(province.id)}
+          renderItem={(province) => province.name}
+          onSelect={(province) =>
+            handleProvinceChange(province.id)
+          }
           disabled={provinceLoading}
-          className={selectClassName}
-        >
-          <option value="">
-            {provinceLoading ? "Memuat provinsi..." : "Pilih provinsi"}
-          </option>
-
-          {provinces.map((province) => (
-            <option key={province.id} value={province.id}>
-              {province.name}
-            </option>
-          ))}
-        </select>
+          emptyText={
+            provinceError
+              ? "Provinsi gagal dimuat."
+              : "Provinsi tidak ditemukan."
+          }
+          debounceDelay={500}
+        />
 
         {provinceError && (
-          <p className="text-sm text-red-500">{provinceError}</p>
+          <p className="text-sm text-red-500">
+            {provinceError}
+          </p>
         )}
 
         {provinceValidationError && (
@@ -155,32 +206,43 @@ const ProvinceCityFields = ({
       <Field>
         <FieldLabel>Kota/Kabupaten</FieldLabel>
 
-        <select
-          value={cityId ?? ""}
-          onChange={(event) => {
-            const value = event.target.value;
-            onCityChange(value ? Number(value) : null);
-          }}
-          disabled={provinceId === null || citiesLoading}
-          className={selectClassName}
-        >
-          <option value="">
-            {provinceId === null
+        <SearchablePopover
+          open={openCity}
+          onOpenChange={setOpenCity}
+          search={searchCity}
+          onSearchChange={setSearchCity}
+          placeholder={
+            provinceId === null
               ? "Pilih provinsi terlebih dahulu"
               : citiesLoading
                 ? "Memuat kota..."
-                : "Pilih kota/kabupaten"}
-          </option>
-
-          {cities.map((city) => (
-            <option key={city.id} value={city.id}>
-              {city.name}
-            </option>
-          ))}
-        </select>
+                : "Pilih kota/kabupaten"
+          }
+          selectedLabel={selectedCity?.name ?? null}
+          selectedKey={
+            cityId !== null ? String(cityId) : null
+          }
+          items={filteredCities}
+          getKey={(city) => String(city.id)}
+          renderItem={(city) => city.name}
+          onSelect={(city) => handleCityChange(city.id)}
+          disabled={
+            provinceId === null ||
+            citiesLoading ||
+            provinceLoading
+          }
+          emptyText={
+            citiesError
+              ? "Kota gagal dimuat."
+              : "Kota/kabupaten tidak ditemukan."
+          }
+          debounceDelay={500}
+        />
 
         {citiesError && (
-          <p className="text-sm text-red-500">{citiesError}</p>
+          <p className="text-sm text-red-500">
+            {citiesError}
+          </p>
         )}
 
         {cityValidationError && (
@@ -197,11 +259,13 @@ const CreateMasterAgen = ({
   open,
   onClose,
   onSubmit,
+  submitting = false,
 }: CreateMasterProps) => {
-  const [form, setForm] = useState<AgentForm>({ ...initialForm });
-  const [branches, setBranches] = useState<BranchForm[]>([
-    { ...initialBranch },
-  ]);
+  const [form, setForm] = useState<AgentForm>({
+    ...initialForm,
+  });
+
+  const [branches, setBranches] = useState<BranchForm[]>([]);
   const [validationErrors, setValidationErrors] =
     useState<ValidationErrors>({});
 
@@ -214,7 +278,7 @@ const CreateMasterAgen = ({
   useEffect(() => {
     if (open) {
       setForm({ ...initialForm });
-      setBranches([{ ...initialBranch }]);
+      setBranches([]);
       setValidationErrors({});
     }
   }, [open]);
@@ -227,11 +291,15 @@ const CreateMasterAgen = ({
 
       const next = { ...previous };
       delete next[field];
+
       return next;
     });
   };
 
-  const handleChange = (field: AgentTextField, value: string) => {
+  const handleChange = (
+    field: AgentTextField,
+    value: string,
+  ) => {
     setForm((previous) => ({
       ...previous,
       [field]: value,
@@ -318,7 +386,11 @@ const CreateMasterAgen = ({
   };
 
   const handleAddBranch = () => {
-    setBranches((previous) => [...previous, { ...initialBranch }]);
+    setBranches((previous) => [
+      ...previous,
+      { ...initialBranch },
+    ]);
+
     clearError("branches");
   };
 
@@ -357,8 +429,8 @@ const CreateMasterAgen = ({
     });
   };
 
-  const handleSubmit = () => {
-    console.log("[CREATE AGEN] Tombol Simpan diklik");
+  const handleSubmit = async () => {
+    if (submitting) return;
 
     const payload = {
       ...form,
@@ -372,11 +444,6 @@ const CreateMasterAgen = ({
     const result = createMasterAgentSchema.safeParse(payload);
 
     if (!result.success) {
-      console.error(
-        "[CREATE AGEN] Validasi gagal:",
-        result.error.issues,
-      );
-
       const errors: ValidationErrors = {};
 
       result.error.issues.forEach((issue) => {
@@ -387,17 +454,25 @@ const CreateMasterAgen = ({
         }
       });
 
+      console.error(
+        "[Master Agen] Validasi gagal:",
+        result.error.issues,
+      );
+
       setValidationErrors(errors);
       return;
     }
 
-    console.log("[CREATE AGEN] Validasi berhasil");
-    console.log("[CREATE AGEN] Memanggil onSubmit");
-
     setValidationErrors({});
-    onSubmit(result.data as CreateMasterAgentPayload);
-  };
 
+    try {
+      await onSubmit(
+        result.data as CreateMasterAgentPayload,
+      );
+    } catch (error) {
+      console.error("[Master Agen] onSubmit gagal:", error);
+    }
+  };
 
   return (
     <AppModal
@@ -407,34 +482,33 @@ const CreateMasterAgen = ({
       icon={<FaPlus />}
       footer={
         <div className="flex justify-end gap-3">
-          <Button variant="destructive" onClick={onClose}>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onClose}
+            disabled={submitting}
+          >
             Batal
           </Button>
 
-          <Button variant="primer" onClick={handleSubmit}>
+          <Button
+            type="button"
+            variant="primer"
+            onClick={() => void handleSubmit()}
+            disabled={submitting}
+          >
             <FaSave size={14} />
-            Simpan
+            {submitting ? "Menyimpan..." : "Simpan"}
           </Button>
         </div>
       }
     >
       <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-1">
-        <AppModal.Section title="Informasi Agen">
+        <AppModal.Section
+          title="Informasi Agen"
+          icon={<Building2 size={18} />}
+        >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* <Field>
-              <FieldLabel>Kode Agen</FieldLabel>
-              <Input
-                value={form.code}
-                onChange={(event) =>
-                  handleChange("code", event.target.value)
-                }
-                placeholder="Contoh: CMP-0003"
-              />
-              {getError("code") && (
-                <p className="text-sm text-red-500">{getError("code")}</p>
-              )}
-            </Field> */}
-
             <Field>
               <FieldLabel>Nama Travel</FieldLabel>
               <Input
@@ -445,7 +519,9 @@ const CreateMasterAgen = ({
                 placeholder="Masukkan nama travel"
               />
               {getError("name") && (
-                <p className="text-sm text-red-500">{getError("name")}</p>
+                <p className="text-sm text-red-500">
+                  {getError("name")}
+                </p>
               )}
             </Field>
 
@@ -454,7 +530,10 @@ const CreateMasterAgen = ({
               <Input
                 value={form.association_name}
                 onChange={(event) =>
-                  handleChange("association_name", event.target.value)
+                  handleChange(
+                    "association_name",
+                    event.target.value,
+                  )
                 }
                 placeholder="Contoh: ASITA"
               />
@@ -465,42 +544,15 @@ const CreateMasterAgen = ({
               )}
             </Field>
 
-            {/* <Field>
-              <FieldLabel>Tipe Agen</FieldLabel>
-              <Input
-                value={form.type}
-                onChange={(event) =>
-                  handleChange("type", event.target.value)
-                }
-                placeholder="Contoh: corporate"
-              />
-              {getError("type") && (
-                <p className="text-sm text-red-500">{getError("type")}</p>
-              )}
-            </Field> */}
-
-            {/* <Field>
-              <FieldLabel>Nama Perusahaan</FieldLabel>
-              <Input
-                value={form.company_name}
-                onChange={(event) =>
-                  handleChange("company_name", event.target.value)
-                }
-                placeholder="Masukkan nama perusahaan"
-              />
-              {getError("company_name") && (
-                <p className="text-sm text-red-500">
-                  {getError("company_name")}
-                </p>
-              )}
-            </Field> */}
-
             <Field>
               <FieldLabel>Nama PIC</FieldLabel>
               <Input
                 value={form.contact_person}
                 onChange={(event) =>
-                  handleChange("contact_person", event.target.value)
+                  handleChange(
+                    "contact_person",
+                    event.target.value,
+                  )
                 }
                 placeholder="Nama PIC"
               />
@@ -521,7 +573,9 @@ const CreateMasterAgen = ({
                 placeholder="Contoh: 6281234567890"
               />
               {getError("phone") && (
-                <p className="text-sm text-red-500">{getError("phone")}</p>
+                <p className="text-sm text-red-500">
+                  {getError("phone")}
+                </p>
               )}
             </Field>
 
@@ -536,56 +590,26 @@ const CreateMasterAgen = ({
               provinceValidationError={getError("province_id")}
               cityValidationError={getError("city_id")}
             />
-
-            {/* <Field>
-              <FieldLabel>Website</FieldLabel>
-              <Input
-                value={form.website}
-                onChange={(event) =>
-                  handleChange("website", event.target.value)
-                }
-                placeholder="https://contoh.co.id (opsional)"
-              />
-              {getError("website") && (
-                <p className="text-sm text-red-500">{getError("website")}</p>
-              )}
-            </Field> */}
-
-            {/* <Field>
-              <FieldLabel>Logo URL</FieldLabel>
-              <Input
-                value={form.logo}
-                onChange={(event) =>
-                  handleChange("logo", event.target.value)
-                }
-                placeholder="https://contoh.co.id/logo.png (opsional)"
-              />
-              {getError("logo") && (
-                <p className="text-sm text-red-500">{getError("logo")}</p>
-              )}
-            </Field> */}
-
-            {/* <div className="md:col-span-2">
-              <Field>
-                <FieldLabel>Alamat Agen</FieldLabel>
-                <Textarea
-                  value={form.address}
-                  onChange={(event) =>
-                    handleChange("address", event.target.value)
-                  }
-                  placeholder="Masukkan alamat agen"
-                />
-                {getError("address") && (
-                  <p className="text-sm text-red-500">
-                    {getError("address")}
-                  </p>
-                )}
-              </Field>
-            </div> */}
           </div>
         </AppModal.Section>
 
-        <AppModal.Section title="Cabang Agen">
+
+        <AppModal.Section
+          title="Cabang Agen"
+          icon={<GitBranch size={18} />}
+          headerAction={
+            <Button
+              type="button"
+              variant="blue"
+              onClick={handleAddBranch}
+              disabled={submitting}
+              className="shrink-0 whitespace-nowrap"
+            >
+              <FaPlus size={13} />
+              Tambah Cabang
+            </Button>
+          }
+        >
           {getError("branches") && (
             <p className="mb-3 text-sm text-red-500">
               {getError("branches")}
@@ -599,17 +623,19 @@ const CreateMasterAgen = ({
                 className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Cabang {index + 1}</h3>
+                  <h3 className="font-medium">
+                    Cabang {index + 1}
+                  </h3>
 
-                  {branches.length > 1 && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleRemoveBranch(index)}
-                    >
-                      <FaTrash size={13} />
-                      Hapus
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => handleRemoveBranch(index)}
+                    disabled={submitting}
+                  >
+                    <FaTrash size={12} />
+                    Hapus
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -629,26 +655,6 @@ const CreateMasterAgen = ({
                     {getError(`branches.${index}.name`) && (
                       <p className="text-sm text-red-500">
                         {getError(`branches.${index}.name`)}
-                      </p>
-                    )}
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>Kode Cabang</FieldLabel>
-                    <Input
-                      value={branch.code}
-                      onChange={(event) =>
-                        handleBranchChange(
-                          index,
-                          "code",
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Contoh: BR-JKT-001"
-                    />
-                    {getError(`branches.${index}.code`) && (
-                      <p className="text-sm text-red-500">
-                        {getError(`branches.${index}.code`)}
                       </p>
                     )}
                   </Field>
@@ -712,38 +718,13 @@ const CreateMasterAgen = ({
                       `branches.${index}.city_id`,
                     )}
                   />
-
-                  <div className="md:col-span-2">
-                    <Field>
-                      <FieldLabel>Alamat Cabang</FieldLabel>
-                      <Textarea
-                        value={branch.address}
-                        onChange={(event) =>
-                          handleBranchChange(
-                            index,
-                            "address",
-                            event.target.value,
-                          )
-                        }
-                        placeholder="Alamat cabang"
-                      />
-                      {getError(`branches.${index}.address`) && (
-                        <p className="text-sm text-red-500">
-                          {getError(`branches.${index}.address`)}
-                        </p>
-                      )}
-                    </Field>
-                  </div>
                 </div>
               </div>
             ))}
-
-            <Button variant="outline" onClick={handleAddBranch}>
-              <FaPlus size={13} />
-              Tambah Cabang
-            </Button>
           </div>
+
         </AppModal.Section>
+
       </div>
     </AppModal>
   );

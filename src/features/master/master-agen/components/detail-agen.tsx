@@ -1,15 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FaDatabase, FaTimes } from "react-icons/fa";
 import ActivitySheet from "@/components/activity/activity-sheet";
-import { Building2, GitBranch, MapPin } from "lucide-react";
+import type { ActivityItemData } from "@/components/activity/activity-item";
+import { GitBranch } from "lucide-react";
 import DetailPageLayout from "@/components/detail-page/detail-page-ayout";
 import DetailActionFooter, {
   type DetailAction,
 } from "@/components/detail-page/detail-action-footer";
+import { MdWorkHistory } from "react-icons/md";
+import { Package } from "lucide-react";
 import DetailSection from "@/components/detail-page/detail-section";
 import type { AgentDetail } from "../types/master-agen";
+import { Button } from "@/components/ui/button";
 
 type DetailMasterAgentProps = {
   open: boolean;
@@ -29,19 +33,21 @@ const DetailMasterAgen = ({
 }: DetailMasterAgentProps) => {
   const [openActivity, setOpenActivity] = useState(false);
 
-  if (!open || !agent) return null;
+  const activityLogs = useMemo<ActivityItemData[]>(
+    () =>
+      (agent?.activities ?? []).map((activity) => ({
+        id: activity.id,
+        primaryText: activity.user?.name ?? "System",
+        secondaryText: activity.description,
+        occurredAt: activity.created_at,
+        occurredAtLabel: activity.created_at_human,
+        changes: activity.changes?.after ?? {},
+        changesTitle: "Update",
+      })),
+    [agent?.activities],
+  );
 
-  const logs = (agent.activities ?? []).map((activity) => ({
-    id: activity.id,
-    created_at: activity.created_at,
-    activity: activity.user?.name ?? activity.description,
-    detail_activity: `${activity.description} ${
-      activity.changes?.after
-        ? Object.keys(activity.changes.after).join(", ")
-        : ""
-    }`.trim(),
-    pic: activity.user?.name ?? "-",
-  }));
+  if (!open || !agent) return null;
 
   const InfoItem = ({ label, value }: InfoItemProps) => (
     <div className="space-y-1">
@@ -56,6 +62,15 @@ const DetailMasterAgen = ({
   );
 
   const actions: DetailAction[] = [
+    {
+          id: "activity",
+          label: "Aktivitas",
+          icon: <MdWorkHistory size={16} />,
+          variant: "primer",
+          mobileColor: "bg-emerald-500",
+          position: "right",
+          onClick: () => setOpenActivity(true),
+        },
     {
       id: "close",
       label: "Tutup",
@@ -75,11 +90,22 @@ const DetailMasterAgen = ({
       onClose={onClose}
       footer={<DetailActionFooter actions={actions} />}
     >
-      <DetailSection
-        icon={Building2}
-        title="Informasi Agen"
-        variant="blue"
-      >
+    <DetailSection
+          icon={Package}
+          title="Informasi Produk"
+          variant="blue"
+          action={
+            <Button
+              onClick={() => setOpenActivity(true)}
+              variant="amberBorder"
+              size="lg"
+              className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <MdWorkHistory size={16} />
+              Log Aktivitas
+            </Button>
+          }
+        >
         <div className="p-5">
           {agent.logo_url && (
             <div className="mb-5">
@@ -95,57 +121,24 @@ const DetailMasterAgen = ({
           )}
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            <InfoItem label="Kode Agen" value={agent.code} />
-
             <InfoItem label="Nama Agen" value={agent.name} />
-
             <InfoItem
               label="Nama Asosiasi"
               value={agent.association_name}
             />
-
-            <InfoItem label="Tipe Agen" value={agent.type} />
-
             <InfoItem
-              label="Contact Person"
+              label="Nama PIC"
               value={agent.contact_person}
             />
-
             <InfoItem label="Nomor Telepon" value={agent.phone} />
-
             <InfoItem
               label="Provinsi"
               value={agent.province?.name}
             />
-
             <InfoItem
               label="Kota/Kabupaten"
               value={agent.city?.name}
             />
-
-            <InfoItem
-              label="Alamat"
-              value={agent.address}
-            />
-
-            <InfoItem
-              label="Website"
-              value={
-                agent.website ? (
-                  <a
-                    href={agent.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    {agent.website}
-                  </a>
-                ) : (
-                  "-"
-                )
-              }
-            />
-
             <InfoItem
               label="Status"
               value={
@@ -181,9 +174,6 @@ const DetailMasterAgen = ({
                     <h3 className="font-semibold text-slate-800 dark:text-slate-100">
                       {branch.name}
                     </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Kode cabang: {branch.code}
-                    </p>
                   </div>
 
                   <Badge
@@ -195,31 +185,21 @@ const DetailMasterAgen = ({
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <InfoItem
-                    label="Contact Person"
+                    label="Nama PIC"
                     value={branch.contact_person}
                   />
-
                   <InfoItem
                     label="Nomor Telepon"
                     value={branch.phone}
                   />
-
                   <InfoItem
                     label="Provinsi"
                     value={branch.province?.name}
                   />
-
                   <InfoItem
                     label="Kota/Kabupaten"
                     value={branch.city?.name}
                   />
-
-                  <div className="md:col-span-2 lg:col-span-3">
-                    <InfoItem
-                      label="Alamat Cabang"
-                      value={branch.address}
-                    />
-                  </div>
                 </div>
               </div>
             ))
@@ -227,28 +207,10 @@ const DetailMasterAgen = ({
         </div>
       </DetailSection>
 
-      <DetailSection
-        icon={MapPin}
-        title="Informasi Tambahan"
-        variant="blue"
-      >
-        <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
-          <InfoItem
-            label="Dibuat Pada"
-            value={agent.created_at}
-          />
-
-          <InfoItem
-            label="Terakhir Diperbarui"
-            value={agent.updated_at}
-          />
-        </div>
-      </DetailSection>
-
       <ActivitySheet
         open={openActivity}
         onOpenChange={setOpenActivity}
-        data={logs}
+        data={activityLogs}
       />
     </DetailPageLayout>
   );
