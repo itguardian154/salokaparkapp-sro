@@ -30,8 +30,12 @@ import type {
   CreateProdukPayload,
   UpdateProdukPayload,
 } from "../types/master-produk";
+import { getAuthSession } from "@/features/auth/utils/auth-storage";
 
 export default function MasterProdukPage() {
+  const permissions = getAuthSession()?.permissions ?? [];
+  const canCreateProduk = permissions.includes("product.create");
+  const canUpdateProduk = permissions.includes("product.update");
   const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [selectedProdukId, setSelectedProdukId] = useState<number | null>(null);
@@ -116,8 +120,9 @@ export default function MasterProdukPage() {
           setSelectedEditProdukId(produk.id);
           setIsEditMasterOpen(true);
         },
+        canUpdateProduk,
       ),
-    [clearEditProdukError],
+    [clearEditProdukError, canUpdateProduk],
   );
   const table = useTable({
     features: dataTableFeatures,
@@ -411,13 +416,15 @@ export default function MasterProdukPage() {
                 </FilterBar>
               </div>
               <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={() => setIsCreateMasterOpen(true)}
-                >
-                  <FaPlus className="text-[16px]" />
-                  Tambah
-                </Button>
+                {canCreateProduk && (
+                  <Button
+                    variant="primer"
+                    onClick={() => setIsCreateMasterOpen(true)}
+                  >
+                    <FaPlus className="text-[16px]" />
+                    Tambah
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -497,10 +504,12 @@ export default function MasterProdukPage() {
         onClose={handleCloseEditProduk}
         onSubmit={handleUpdateProduk}
       />
-      <MobileFloatingActionButton
-        ariaLabel="Tambah Produk"
-        onClick={() => setIsCreateMasterOpen(true)}
-      />
+      {canCreateProduk && (
+        <MobileFloatingActionButton
+          ariaLabel="Tambah Produk"
+          onClick={() => setIsCreateMasterOpen(true)}
+        />
+      )}
     </>
   );
 }

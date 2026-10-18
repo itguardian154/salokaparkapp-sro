@@ -32,7 +32,7 @@ export const navMainItems: {
   url: string;
   icon?: React.ReactNode;
   isActive?: boolean;
-  items?: { title: string; url: string }[];
+  items?: { title: string; url: string; permission?: string }[];
 }[] = [
     {
       title: "Dashboard",
@@ -48,6 +48,7 @@ export const navMainItems: {
         {
           title: "Master Produk",
           url: "/master/produk",
+          permission: "product.view",
         },
         {
           title: "Master Agen",

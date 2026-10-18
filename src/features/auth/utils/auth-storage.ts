@@ -10,6 +10,7 @@ const AUTH_STORAGE_KEYS = [
   "namakaryawan",
   "username",
   "pos",
+  "permissions",
   "sub_departemen",
   "token",
 ] as const;
@@ -133,6 +134,7 @@ export function saveAuthSession(
   localStorage.setItem("pos", profile.position);
   localStorage.setItem("sub_departemen", profile.sub_department.name);
   localStorage.setItem("token", profile.token);
+  localStorage.setItem("permissions", JSON.stringify(profile.permissions));
 }
 
 export function getAuthSession(): StoredAuthProfile | null {
@@ -146,6 +148,7 @@ export function getAuthSession(): StoredAuthProfile | null {
   const subDepartmentName = localStorage.getItem("sub_departemen");
   const userName = localStorage.getItem("namakaryawan");
   const position = localStorage.getItem("pos");
+  const permissions = localStorage.getItem("permissions");
   if (
     !employeeId ||
     !token ||
@@ -161,6 +164,20 @@ export function getAuthSession(): StoredAuthProfile | null {
     return null;
   }
 
+  let storedPermissions: string[] = [];
+  if (permissions) {
+    try {
+      const parsedPermissions: unknown = JSON.parse(permissions);
+      if (Array.isArray(parsedPermissions)) {
+        storedPermissions = parsedPermissions.filter(
+          (permission): permission is string => typeof permission === "string",
+        );
+      }
+    } catch {
+      // Ignore invalid permission data and keep the session usable.
+    }
+  }
+
   return {
     department: { id: departmentId, name: departmentName },
     grade: { id: gradeId, name: gradeName },
@@ -169,6 +186,7 @@ export function getAuthSession(): StoredAuthProfile | null {
     position,
     employee_id: employeeId,
     token,
+    permissions: storedPermissions,
   };
 }
 

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 export function getMasterProdukColumns(
   onDetail: (record: ProdukRecord) => void,
   onEdit: (record: ProdukRecord) => void,
+  canEdit: boolean,
 ): ColumnDef<typeof dataTableFeatures, ProdukRecord, unknown>[] {
   return [
     {
@@ -88,7 +89,7 @@ export function getMasterProdukColumns(
         <div className="flex items-center justify-center">
           <DropdownActions
             onDetail={() => onDetail(row.original)}
-            onEdit={() => onEdit(row.original)}
+            onEdit={canEdit ? () => onEdit(row.original) : undefined}
           />
         </div>
       ),

@@ -48,16 +48,18 @@ const DropdownActions = ({
           <span className="text-inherit">Detail</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={onEdit}
-          className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-amber-50! hover:text-amber-600! focus:bg-amber-50! focus:text-amber-600! data-highlighted:bg-amber-50! data-highlighted:text-amber-600! dark:text-slate-200 dark:hover:bg-amber-500/15! dark:hover:text-amber-400! dark:focus:bg-amber-500/15! dark:focus:text-amber-400! dark:data-highlighted:bg-amber-500/15! dark:data-highlighted:text-amber-400!"
-        >
-          <FaUserEdit
-            className="text-amber-500! dark:text-amber-400!"
-            size={13}
-          />
-          <span className="text-inherit">Edit Data</span>
-        </DropdownMenuItem>
+        {onEdit && (
+          <DropdownMenuItem
+            onClick={onEdit}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-amber-50! hover:text-amber-600! focus:bg-amber-50! focus:text-amber-600! data-highlighted:bg-amber-50! data-highlighted:text-amber-600! dark:text-slate-200 dark:hover:bg-amber-500/15! dark:hover:text-amber-400! dark:focus:bg-amber-500/15! dark:focus:text-amber-400! dark:data-highlighted:bg-amber-500/15! dark:data-highlighted:text-amber-400!"
+          >
+            <FaUserEdit
+              className="text-amber-500! dark:text-amber-400!"
+              size={13}
+            />
+            <span className="text-inherit">Edit Data</span>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

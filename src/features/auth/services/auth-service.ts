@@ -30,6 +30,7 @@ async function requestLogin(): Promise<void> {
       employee_id: user.employee_id,
       token,
       token_type: tokenType,
+      permissions: user.permissions,
     };
 
     saveAuthSession(session);

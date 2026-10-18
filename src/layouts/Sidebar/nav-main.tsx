@@ -18,6 +18,7 @@ import { cn } from "cn";
 
 import { ChevronRightIcon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { getAuthSession } from "@/features/auth/utils/auth-storage";
 
 export function NavMain({
   items,
@@ -30,95 +31,107 @@ export function NavMain({
     items?: {
       title: string;
       url: string;
+      permission?: string;
     }[];
   }[];
 }) {
   const { pathname } = useLocation();
+  const permissions = getAuthSession()?.permissions ?? [];
 
   return (
     <SidebarGroup>
-      
-    <SidebarMenu className="w-full">
-  {items.map((item) => {
-    // MENU TANPA SUBMENU
-    if (!item.items || item.items.length === 0) {
-      return (
-        <SidebarMenuItem key={item.title} className="p-0">
-          <NavLink
-            to={item.url}
-            className={({ isActive }) =>
-              cn("block w-full", isActive && "menuActive")
-            }
-          >
-            {({ isActive }) => (
-              <SidebarMenuButton
-                size="lg"
-                tooltip={item.title}
-                className={cn(
-                  "rounded-none bg-transparent hover:bg-transparent px-6",
-                  isActive && "item-menuActive"
-                )}
-              >
-                {item.icon}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            )}
-          </NavLink>
-        </SidebarMenuItem>
-      );
-    }
+      <SidebarMenu className="w-full">
+        {items.map((item) => {
+          const visibleSubItems = item.items?.filter(
+            (subItem) =>
+              !subItem.permission || permissions.includes(subItem.permission),
+          );
 
-    // MENU DENGAN SUBMENU
-    const hasActiveSubItem = item.items.some(
-      (subItem) => pathname === subItem.url || pathname.startsWith(`${subItem.url}/`)
-    );
-
-    return (
-      <Collapsible
-        key={item.title}
-        defaultOpen={item.isActive || hasActiveSubItem}
-        className="group/collapsible"
-        render={<SidebarMenuItem className="p-0" />}
-      >
-        <CollapsibleTrigger
-          render={
-            <SidebarMenuButton
-              size="lg"
-              tooltip={item.title}
-              className={cn(
-                "rounded-none bg-transparent hover:bg-transparent px-6",
-                hasActiveSubItem && "menuActive item-menuActive"
-              )}
-            />
+          if (item.items && visibleSubItems?.length === 0) {
+            return null;
           }
-        >
-          {item.icon}
 
-          <span>{item.title}</span>
-
-          <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {item.items.map((subItem) => (
-              <SidebarMenuSubItem key={subItem.title}>
+          // MENU TANPA SUBMENU
+          if (!visibleSubItems || visibleSubItems.length === 0) {
+            return (
+              <SidebarMenuItem key={item.title} className="p-0">
                 <NavLink
-                  to={subItem.url}
+                  to={item.url}
                   className={({ isActive }) =>
-                    isActive ? "item-sub-menuActive" : "item-sub-menuBase"
+                    cn("block w-full", isActive && "menuActive")
                   }
                 >
-                  {subItem.title}
+                  {({ isActive }) => (
+                    <SidebarMenuButton
+                      size="lg"
+                      tooltip={item.title}
+                      className={cn(
+                        "rounded-none bg-transparent hover:bg-transparent px-6",
+                        isActive && "item-menuActive",
+                      )}
+                    >
+                      {item.icon}
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  )}
                 </NavLink>
-              </SidebarMenuSubItem>
-            ))}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </Collapsible>
-    );
-  })}
-</SidebarMenu>
+              </SidebarMenuItem>
+            );
+          }
+
+          // MENU DENGAN SUBMENU
+          const hasActiveSubItem = visibleSubItems.some(
+            (subItem) =>
+              pathname === subItem.url ||
+              pathname.startsWith(`${subItem.url}/`),
+          );
+
+          return (
+            <Collapsible
+              key={item.title}
+              defaultOpen={item.isActive || hasActiveSubItem}
+              className="group/collapsible"
+              render={<SidebarMenuItem className="p-0" />}
+            >
+              <CollapsibleTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    tooltip={item.title}
+                    className={cn(
+                      "rounded-none bg-transparent hover:bg-transparent px-6",
+                      hasActiveSubItem && "menuActive item-menuActive",
+                    )}
+                  />
+                }
+              >
+                {item.icon}
+
+                <span>{item.title}</span>
+
+                <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {visibleSubItems.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <NavLink
+                        to={subItem.url}
+                        className={({ isActive }) =>
+                          isActive ? "item-sub-menuActive" : "item-sub-menuBase"
+                        }
+                      >
+                        {subItem.title}
+                      </NavLink>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+      </SidebarMenu>
     </SidebarGroup>
   );
 }

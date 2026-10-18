@@ -19,6 +19,7 @@ export type AuthProfile = {
   employee_id: string;
   token: string;
   token_type: string;
+  permissions: string[];
 };
 
 export type StoredAuthProfile = Omit<AuthProfile, "token_type">;
@@ -34,6 +35,7 @@ export type LoginResponse = {
       sub_department: { id: string; name: string };
       position: string;
       grade: { id: string; name: string };
+      permissions: string[];
     };
     token: string;
     token_type: string;
