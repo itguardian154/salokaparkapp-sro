@@ -31,6 +31,9 @@ const buttonVariants = cva(
           "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 gap-2", // mirip outline
         backGhost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900 gap-2", //
         blue: "bg-blue-600 text-white hover:bg-blue-700 rounded-full shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95",
+        litleSekunder: "bg-sekunder-20 text-sekunder-60 rounded-lg dark:bg-sekunder-60 dark:text-sekunder-20 hover:bg-sekunder-40 hover:text-white dark:hover:bg-sekunder-20 dark:hover:text-sekunder-60",
+        litleBlue: "bg-sky-100 text-sky-800 text-sm font-medium rounded-lg dark:bg-sky-900 dark:text-sky-300 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-700 dark:hover:text-white"
+            
       },
       size: {
         default:
@@ -38,6 +41,7 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        litle: "w-8 h-8 text-sm",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

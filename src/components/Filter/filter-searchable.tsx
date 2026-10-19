@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Popover,
   PopoverContent,
@@ -12,6 +12,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { FaChevronDown, FaCheck } from "react-icons/fa6";
+import useDebounce from "@/hooks/use-debounce";
 
 type FilterSearchableProps<T> = {
   label: string;
@@ -19,6 +20,7 @@ type FilterSearchableProps<T> = {
   onOpenChange: (open: boolean) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  debounceDelay?: number;
   placeholder?: string;
   selectedLabel?: string | null;
   selectedKey?: string | null;
@@ -36,6 +38,7 @@ export default function FilterSearchable<T>({
   onOpenChange,
   search,
   onSearchChange,
+  debounceDelay = 600,
   placeholder = "Pilih",
   selectedLabel,
   selectedKey,
@@ -46,6 +49,24 @@ export default function FilterSearchable<T>({
   onSelect,
   disabled = false,
 }: FilterSearchableProps<T>) {
+  const [searchValue, setSearchValue] = useState(search);
+  const debouncedSearch = useDebounce(searchValue, debounceDelay);
+  const onSearchChangeRef = useRef(onSearchChange);
+
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
+
+  useEffect(() => {
+    setSearchValue(search);
+  }, [search]);
+
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      onSearchChangeRef.current(debouncedSearch);
+    }
+  }, [debouncedSearch, search]);
+
   return (
     <div className="space-y-1.5">
       {/* Label sama seperti FilterSelect */}
@@ -87,8 +108,8 @@ export default function FilterSearchable<T>({
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Cari data disini..."
-              value={search}
-              onValueChange={onSearchChange}
+              value={searchValue}
+              onValueChange={setSearchValue}
               className="h-9 border-none bg-transparent focus:ring-0"
             />
 

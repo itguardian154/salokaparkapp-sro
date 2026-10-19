@@ -141,7 +141,7 @@ export default function DatatablePage() {
               <div className="w-full lg:w-96">
                 <FilterBar
                   search={search}
-                  onSearchChange={(event) => setSearch(event.target.value)}
+                  onSearchChange={setSearch}
                   active={hasActiveFilters}
                   onReset={resetFilters}
                 >

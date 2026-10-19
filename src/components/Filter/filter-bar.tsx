@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Popover,
   PopoverContent,
@@ -8,10 +8,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { FaFilter } from "react-icons/fa6";
 import { FaSearch } from "react-icons/fa";
+import useDebounce from "@/hooks/use-debounce";
 
 type FilterBarProps = {
   search: string;
-  onSearchChange: ChangeEventHandler<HTMLInputElement>;
+  onSearchChange: (value: string) => void;
+  debounceDelay?: number;
   placeholder?: string;
   active?: boolean;
   children?: ReactNode;
@@ -21,11 +23,30 @@ type FilterBarProps = {
 export default function FilterBar({
   search,
   onSearchChange,
+  debounceDelay = 600,
   placeholder = "Cari data disini...",
   active = false,
   children,
   onReset,
 }: FilterBarProps) {
+  const [searchValue, setSearchValue] = useState(search);
+  const debouncedSearch = useDebounce(searchValue, debounceDelay);
+  const onSearchChangeRef = useRef(onSearchChange);
+
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
+
+  useEffect(() => {
+    setSearchValue(search);
+  }, [search]);
+
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      onSearchChangeRef.current(debouncedSearch);
+    }
+  }, [debouncedSearch, search]);
+
   // Cek apakah ada isi filter
   const hasFilter = !!children;
 
@@ -35,8 +56,8 @@ export default function FilterBar({
       <div className="relative flex-1">
         <input
           type="text"
-          value={search}
-          onChange={onSearchChange}
+          value={searchValue}
+          onChange={(event) => setSearchValue(event.target.value)}
           placeholder={placeholder}
           className="
             w-full

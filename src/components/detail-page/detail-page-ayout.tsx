@@ -19,7 +19,7 @@ export default function DetailPageLayout({
   footer,
 }: DetailPageLayoutProps) {
   return (
-    <main className="fixed inset-0 z-100 flex flex-col bg-white dark:bg-slate-900">
+    <main className="fixed inset-0 z-100 flex flex-col bg-slate-50 dark:bg-slate-900">
       <PageHeader
         icon={icon}
         title={title}
@@ -28,7 +28,7 @@ export default function DetailPageLayout({
       />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-full space-y-6 p-4 pb-28 md:p-6">
+        <div className="mx-auto max-w-full space-y-6 p-4 pb-28">
           {children}
         </div>
       </div>

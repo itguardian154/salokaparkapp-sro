@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -61,13 +61,17 @@ export default function SearchablePopover<T>({
   multi = false,
   selected = [],
   onMultiSelect,
-  debounceDelay = 500,
+  debounceDelay = 600,
 }: SearchablePopoverProps<T>) {
   const [searchValue, setSearchValue] = useState(search ?? "");
+  const onSearchChangeRef = useRef(onSearchChange);
 
   // Debounce pencarian
   const debouncedSearch = useDebounce(searchValue, debounceDelay);
 
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
 
   useEffect(() => {
     setSearchValue(search ?? "");
@@ -75,9 +79,9 @@ export default function SearchablePopover<T>({
 
   useEffect(() => {
     if (debouncedSearch !== (search ?? "")) {
-      onSearchChange?.(debouncedSearch);
+      onSearchChangeRef.current?.(debouncedSearch);
     }
-  }, [debouncedSearch, search, onSearchChange]);
+  }, [debouncedSearch, search]);
 
   return (
     <Popover

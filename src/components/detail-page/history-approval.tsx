@@ -1,6 +1,7 @@
 import DetailSection from "./detail-section";
-import { QrCode } from "lucide-react";
+import { History, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { FaFileSignature } from "react-icons/fa6";
 
 type Approval = {
   action: string;
@@ -55,7 +56,19 @@ export default function SROHistoryApproval({
         </div>
       ) : (
         <div className="px-5 py-4 sm:px-6">
-          <p className="text-sm text-slate-500">Belum ada history approval</p>{" "}
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white ring-1 ring-slate-200 shadow-sm">
+              <FaFileSignature className="h-5 w-5 text-slate-400" strokeWidth={1.8} />
+            </div>
+
+            <p className="text-sm font-medium text-slate-700">
+              Belum ada history approval
+            </p>
+
+            <p className="mt-1 text-xs text-slate-400">
+              Riwayat perubahan status approval akan tampil di sini.
+            </p>
+          </div>
         </div>
       )}
     </DetailSection>

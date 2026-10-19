@@ -7,9 +7,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Grid2x2Check } from "lucide-react";
@@ -25,6 +22,7 @@ import {
 } from "react-icons/fa6";
 import { NavMain } from "./nav-main";
 import { NavLink } from "react-router-dom";
+import { MdOutlineSettingsInputComponent } from "react-icons/md";
 
 // This is sample data.
 export const navMainItems: {
@@ -34,103 +32,116 @@ export const navMainItems: {
   isActive?: boolean;
   items?: { title: string; url: string; permission?: string }[];
 }[] = [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: <FaChartSimple />,
-    },
-    {
-      title: "Master Data",
-      url: "/master/produk",
-      icon: <FaDatabase />,
-      isActive: true,
-      items: [
-        {
-          title: "Master Produk",
-          url: "/master/produk",
-          permission: "product.view",
-        },
-        {
-          title: "Master Agen",
-          url: "/master/agen",
-        },
-      ],
-    },
-    {
-      title: "Customers",
-      url: "/customers",
-      icon: <FaUserGroup />,
-    },
-    {
-      title: "Invoice",
-      url: "/invoice",
-      icon: <FaFileInvoice />,
-    },
-    {
-      title: "Reservation",
-      url: "/reservation",
-      icon: <FaCalendarDays />,
-    },
-    {
-      title: "Ticket Adjustment",
-      url: "/ticket-adjustment",
-      icon: <FaTicket />,
-      isActive: true,
-      items: [
-        {
-          title: "Refund",
-          url: "/ticket-adjustment/refund",
-        },
-        {
-          title: "Reschedule",
-          url: "/ticket-adjustment/reschedule",
-        },
-        {
-          title: "Deposit",
-          url: "/ticket-adjustment/deposit",
-        },
-      ],
-    },
-    {
-      title: "Arrival Control",
-      url: "/arrival-control",
-      icon: <FaMapPin />,
-    },
-    {
-      title: "Reports",
-      url: "/reports",
-      icon: <FaChartPie />,
-    },
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: <FaChartSimple />,
+  },
+  {
+    title: "Master Data",
+    url: "/master/produk",
+    icon: <FaDatabase />,
+    isActive: true,
+    items: [
+      {
+        title: "Produk",
+        url: "/master/produk",
+        permission: "product.view",
+      },
+      {
+        title: "Agen",
+        url: "/master/agen",
+      },
+      {
+        title: "Kategori Produk",
+        url: "/master/kategori-produk",
+      },
+    ],
+  },
 
-    {
-      title: "Datatable",
-      url: "/datatable",
-      icon: <Grid2x2Check />,
-    },
+  {
+    title: "Konfigurasi",
+    url: "/konfigurasi-tiket",
+    icon: <MdOutlineSettingsInputComponent />,
+    isActive: true,
+    items: [
+      {
+        title: "Tiket",
+        url: "/konfigurasi-tiket",
+      },
+    ],
+  },
+
+  {
+    title: "Customers",
+    url: "/customers",
+    icon: <FaUserGroup />,
+  },
+  {
+    title: "Invoice",
+    url: "/invoice",
+    icon: <FaFileInvoice />,
+  },
+  {
+    title: "Reservation",
+    url: "/reservation",
+    icon: <FaCalendarDays />,
+  },
+  {
+    title: "Ticket Adjustment",
+    url: "/ticket-adjustment",
+    icon: <FaTicket />,
+    isActive: true,
+    items: [
+      {
+        title: "Refund",
+        url: "/ticket-adjustment/refund",
+      },
+      {
+        title: "Reschedule",
+        url: "/ticket-adjustment/reschedule",
+      },
+      {
+        title: "Deposit",
+        url: "/ticket-adjustment/deposit",
+      },
+    ],
+  },
+  {
+    title: "Arrival Control",
+    url: "/arrival-control",
+    icon: <FaMapPin />,
+  },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: <FaChartPie />,
+  },
+
+  {
+    title: "Datatable",
+    url: "/datatable",
+    icon: <Grid2x2Check />,
+  },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" variant="sidebar" {...props}>
-      <SidebarHeader>
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton className="w-full relative flex items-center justify-center mb-3 mt-4">
-                {/* LOGO */}
-                <div className="w-28 h-auto flex items-center justify-center">
-                  <NavLink to={"/salokaparkapp"}>
-                    <img
-                      src="/img/logo-saloka.png"
-                      alt="Logo Saloka"
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </NavLink>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
+      <SidebarHeader className="p-1 md:p-2">
+        <div className="mb-3 mt-2 flex h-auto w-full items-center justify-center md:mt-4">
+          <NavLink
+            to="https://salokapark.app/salokaparkapp"
+            title="Saloka Park"
+            className="group-data-[collapsible=icon]:w-32 block w-28"
+          >
+            <img
+              src="/img/logo-saloka.png"
+              alt="Logo Saloka"
+              className="block h-auto w-full object-contain object-center"
+            />
+          </NavLink>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainItems} />

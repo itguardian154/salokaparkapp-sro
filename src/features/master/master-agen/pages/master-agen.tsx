@@ -274,9 +274,7 @@ export default function MasterAgentPage() {
               <div className="w-full lg:w-96">
                 <FilterBar
                   search={search}
-                  onSearchChange={(event) =>
-                    handleSearchChange(event.target.value)
-                  }
+                  onSearchChange={handleSearchChange}
                   active={hasActiveFilters}
                   onReset={resetFilters}
                 >

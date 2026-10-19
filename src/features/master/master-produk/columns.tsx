@@ -27,9 +27,11 @@ export function getMasterProdukColumns(
       accessorKey: "reference_file",
       header: "Referensi",
       cell: ({ row }) => (
-        <span onClick={(event) => event.stopPropagation()}>
-          <ReferenceFilePreview referenceFile={row.original.reference_file} />
-        </span>
+        <div className="flex justify-center">
+          <span onClick={(event) => event.stopPropagation()}>
+            <ReferenceFilePreview referenceFile={row.original.reference_file} />
+          </span>
+        </div>
       ),
     },
     {
@@ -65,10 +67,14 @@ export function getMasterProdukColumns(
               : status === "Waiting Finance"
                 ? "warning"
                 : status === "Done"
-                ? "success"
-                : "muted";
+                  ? "success"
+                  : "muted";
 
-        return <Badge variant={variant}>{status}</Badge>;
+        return (
+          <div className="flex justify-center">
+            <Badge variant={variant}>{status}</Badge>
+          </div>
+        );
       },
     },
     {
@@ -79,7 +85,14 @@ export function getMasterProdukColumns(
 
         const variant = status ? "success" : "warning";
 
-        return <Badge variant={variant}>{status ? "Aktif" : "Nonaktif"}</Badge>;
+        return (
+          <div className="flex justify-center">
+            {" "}
+            <Badge variant={variant}>
+              {status ? "Aktif" : "Nonaktif"}
+            </Badge>{" "}
+          </div>
+        );
       },
     },
     {

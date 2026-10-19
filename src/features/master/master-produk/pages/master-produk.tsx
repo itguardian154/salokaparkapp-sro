@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
-import { FaBox, FaFileInvoice, FaPlus } from "react-icons/fa6";
+import { FaBox, FaDatabase, FaPlus } from "react-icons/fa6";
 import FilterBar from "@/components/Filter/filter-bar";
 import ColumnVisibility from "@/components/data-table/column-visibility";
 import DataTable from "@/components/data-table/data-table";
@@ -304,7 +304,7 @@ export default function MasterProdukPage() {
           <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaFileInvoice
+                <FaDatabase
                   className="text-emerald-500"
                   aria-hidden="true"
                 />
@@ -321,7 +321,7 @@ export default function MasterProdukPage() {
               <div className="w-full lg:w-96">
                 <FilterBar
                   search={searchData}
-                  onSearchChange={(event) => setSearchData(event.target.value)}
+                  onSearchChange={setSearchData}
                   active={Boolean(
                     filterData.filter.department_id ||
                     filterData.filter.status ||

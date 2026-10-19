@@ -88,7 +88,8 @@ const DetailMasterProduk = ({
                 ? "Ditolak oleh,"
                 : approval.action,
         name: approval.employee_name,
-        grade: approval.grade ?? approval.position ?? approval.department ?? "-",
+        grade:
+          approval.grade ?? approval.position ?? approval.department ?? "-",
       })),
     [produk?.approvals],
   );
@@ -101,10 +102,10 @@ const DetailMasterProduk = ({
       : produk?.status_label === "Menunggu Persetujuan SPV/Manager Sales"
         ? "blue"
         : produk?.status_label === "Waiting Finance"
-        ? "warning"
-        : produk?.status_label === "Done"
-        ? "success"
-        : "muted";
+          ? "warning"
+          : produk?.status_label === "Done"
+            ? "success"
+            : "muted";
 
   const isDraft =
     produk?.status?.toLocaleLowerCase() === "draft" ||
@@ -129,24 +130,24 @@ const DetailMasterProduk = ({
   if (canApprove) {
     actions.push(
       {
-      id: "reject",
-      label: loadingApprovalAction === "reject" ? "Memproses..." : "Reject",
-      icon: <FaTimes size={15} />,
-      variant: "destructive",
-      mobileColor: "bg-red-500",
-      position: "right",
-      disabled: actionDisabled,
-      onClick: () => onApprovalAction("reject"),
+        id: "reject",
+        label: loadingApprovalAction === "reject" ? "Memproses..." : "Reject",
+        icon: <FaTimes size={15} />,
+        variant: "destructive",
+        mobileColor: "bg-red-500",
+        position: "right",
+        disabled: actionDisabled,
+        onClick: () => onApprovalAction("reject"),
       },
       {
-      id: "approve",
-      label: loadingApprovalAction === "approve" ? "Memproses..." : "Approve",
-      icon: <Signature size={15} />,
-      variant: "primer",
-      mobileColor: "bg-emerald-500",
-      position: "right",
-      disabled: actionDisabled,
-      onClick: () => onApprovalAction("approve"),
+        id: "approve",
+        label: loadingApprovalAction === "approve" ? "Memproses..." : "Approve",
+        icon: <Signature size={15} />,
+        variant: "primer",
+        mobileColor: "bg-emerald-500",
+        position: "right",
+        disabled: actionDisabled,
+        onClick: () => onApprovalAction("approve"),
       },
     );
   }
@@ -159,7 +160,9 @@ const DetailMasterProduk = ({
         subtitle={produk?.name ?? "Detail data master produk"}
         onClose={onClose}
         footer={
-          actions.length > 0 ? <DetailActionFooter actions={actions} /> : undefined
+          actions.length > 0 ? (
+            <DetailActionFooter actions={actions} />
+          ) : undefined
         }
       >
         {approvalPermissionError && (
@@ -196,57 +199,73 @@ const DetailMasterProduk = ({
                 {error}
               </p>
             ) : produk ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                <InfoItem label="Nama Produk" value={produk.name} />
-                <InfoItem label="Harga" value={formatRupiah(produk.price)} />
-                <InfoItem
-                  label="Referensi"
-                  value={
-                    <ReferenceFilePreview
-                      referenceFile={produk.reference_file}
-                      size="medium"
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2 lg:col-span-2">
+                    <InfoItem label="Nama Produk" value={produk.name} />
+                    <InfoItem
+                      label="Harga"
+                      value={
+                        <span className="text-emerald-700 dark:text-emerald-400">
+                          {formatRupiah(produk.price)}
+                        </span>
+                      }
                     />
-                  }
-                />
-                <InfoItem
-                  label="Departemen Terkait"
-                  value={
-                    <DepartmentOwnerList
-                      owners={produk.department_owner ?? []}
-                      fallback={produk.departemen}
+                    <InfoItem
+                      label="Departemen Terkait"
+                      value={
+                        <DepartmentOwnerList
+                          owners={produk.department_owner ?? []}
+                          fallback={produk.departemen}
+                        />
+                      }
                     />
-                  }
-                />
-                <InfoItem label="Tipe Hari" value={produk.day_type} />
-                <InfoItem
-                  label="Status Approval"
-                  value={
-                    <Badge variant={approvalVariant}>
-                      {produk.status_label}
-                    </Badge>
-                  }
-                />
-                <InfoItem
-                  label="Status Produk"
-                  value={
-                    <Badge variant={produk.is_active ? "success" : "warning"}>
-                      {produk.is_active ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  }
-                />
-                <InfoItem
-                  label="Jenis Produk"
-                  value={produk.is_ticket ? "Tiket" : "Non-tiket"}
-                />
-                <div className="md:col-span-2 lg:col-span-3">
+                    <InfoItem label="Tipe Hari" value={produk.day_type} />
+
+                    <InfoItem
+                      label="Jenis Produk"
+                      value={produk.is_ticket ? "Tiket" : "Non-tiket"}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 border-t border-slate-200 pt-5 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-1 lg:border-l lg:border-t-0 lg:py-0 lg:pl-6">
+                    <InfoItem
+                      label="Referensi"
+                      value={
+                        <ReferenceFilePreview
+                          referenceFile={produk.reference_file}
+                          size="medium"
+                        />
+                      }
+                    />
+                    <InfoItem
+                      label="Status Approval"
+                      value={
+                        <Badge variant={approvalVariant}>
+                          {produk.status_label}
+                        </Badge>
+                      }
+                    />
+                    <InfoItem
+                      label="Status Produk"
+                      value={
+                        <Badge
+                          variant={produk.is_active ? "success" : "warning"}
+                        >
+                          {produk.is_active ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 px-4 py-4 dark:bg-slate-800/70 sm:px-5">
                   <InfoItem
                     label="Deskripsi"
                     value={
-                      <div className="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700">
-                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                          "{produk.description || "-"}"
-                        </p>
-                      </div>
+                      <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
+                        {produk.description || "-"}
+                      </p>
                     }
                   />
                 </div>
