@@ -15,6 +15,7 @@ import { Toaster } from "./components/ui/toast";
 import MasterKategoriProdukPage from "./features/master/kategori-produk/pages/kategori-produk";
 import InvoicePage from "./features/invoice/pages/invoice";
 import KonfigurasiTiketPage from "./features/konfigurasi/tiket/pages/konfigurasi-tiket";
+import HolidayPage from "./features/konfigurasi/hari-libur/pages/holiday";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -26,38 +27,32 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                {/* Master */}
+                <Route path="/master/produk" element={<MasterProdukPage />} />
 
                 <Route path="/master/produk" element={<MasterProdukPage />} />
 
-                <Route
-                  path="/master/produk"
-                  element={<MasterProdukPage />}
-                />
+                <Route path="/datatable" element={<DatatablePage />} />
 
-                <Route
-                  path="/datatable"
-                  element={<DatatablePage />}
-                />
-
-                <Route
-                  path="/master/agen"
-                  element={<MasterAgentPage />}
-                />
+                <Route path="/master/agen" element={<MasterAgentPage />} />
 
                 <Route
                   path="/master/kategori-produk"
                   element={<MasterKategoriProdukPage />}
                 />
 
-                <Route
-                  path="/invoice"
-                  element={<InvoicePage />}
-                />
-
+                {/* Konfigurasi */}
                 <Route
                   path="/konfigurasi-tiket"
                   element={<KonfigurasiTiketPage />}
                 />
+                <Route
+                  path="/konfigurasi-hari-libur"
+                  element={<HolidayPage />}
+                />
+
+                {/* Invoice */}
+                <Route path="/invoice" element={<InvoicePage />} />
               </Route>
             </Routes>
           </AuthBootstrap>

@@ -69,6 +69,10 @@ export const navMainItems: {
         title: "Tiket",
         url: "/konfigurasi-tiket",
       },
+      {
+        title: "Hari Libur",
+        url: "/konfigurasi-hari-libur",
+      },
     ],
   },
 

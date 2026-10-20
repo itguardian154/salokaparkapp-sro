@@ -259,17 +259,15 @@ const DetailMasterProduk = ({
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 px-4 py-4 dark:bg-slate-800/70 sm:px-5">
                   <InfoItem
                     label="Deskripsi"
                     value={
-                      <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
-                        {produk.description || "-"}
+                      <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 pt-5 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-1 lg:border-l lg:border-t-0 lg:py-0 lg:pl-6">
+                        "{produk.description || "-"}"
                       </p>
                     }
                   />
                 </div>
-              </div>
             ) : null}
           </div>
         </DetailSection>
