@@ -8,6 +8,7 @@ import { FaFileInvoice, FaPlus } from "react-icons/fa6";
 
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSearchable from "@/components/Filter/filter-searchable";
+import FilterSelect from "@/components/Filter/filter-select";
 import ColumnVisibility from "@/components/data-table/column-visibility";
 import DataTable from "@/components/data-table/data-table";
 import TablePagination from "@/components/data-table/table-pagination";
@@ -16,6 +17,7 @@ import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
+
 import { getMasterAgentColumns } from "../columns";
 import CreateMasterAgent from "../components/create-agen";
 import EditMasterAgen from "../components/edit-agen";
@@ -48,17 +50,15 @@ export default function MasterAgentPage() {
   const [citySearch, setCitySearch] = useState("");
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
 
-  // Filter status
+  // Filter status seperti Master Produk
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [statusSearch, setStatusSearch] = useState("");
-  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
 
   // Modal
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
   const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
 
-  // Data Detail dan Edit dipisahkan
+  // Data detail dan edit
   const [selectedAgent, setSelectedAgent] =
     useState<AgentDetail | null>(null);
   const [selectedEditAgent, setSelectedEditAgent] =
@@ -79,7 +79,7 @@ export default function MasterAgentPage() {
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
-  // Data agen dan parameter filter API
+  // Data agen dan filter API
   const {
     agents,
     loading,
@@ -96,8 +96,7 @@ export default function MasterAgentPage() {
   } = useMasterAgent({
     city: cityFilter ?? undefined,
     association_name: associationFilter ?? undefined,
-    is_active:
-      statusFilter === null ? undefined : statusFilter === "true",
+    is_active: statusFilter ?? undefined,
   });
 
   const pagination: PaginationState = {
@@ -105,7 +104,7 @@ export default function MasterAgentPage() {
     pageSize: perPage,
   };
 
-  // Opsi kota dari response API
+  // Opsi kota
   const cityOptions = useMemo<string[]>(
     () => [
       ...new Set(
@@ -144,29 +143,14 @@ export default function MasterAgentPage() {
   const filteredAssociationOptions = useMemo(
     () =>
       associationOptions.filter((name) =>
-        name.toLowerCase().includes(
-          associationSearch.trim().toLowerCase(),
-        ),
+        name
+          .toLowerCase()
+          .includes(associationSearch.trim().toLowerCase()),
       ),
     [associationOptions, associationSearch],
   );
 
-  // Opsi status
-  const statusOptions = useMemo(() => ["true", "false"], []);
-
-  const filteredStatusOptions = useMemo(
-    () =>
-      statusOptions.filter((status) => {
-        const label = status === "true" ? "Aktif" : "Nonaktif";
-
-        return label
-          .toLowerCase()
-          .includes(statusSearch.trim().toLowerCase());
-      }),
-    [statusOptions, statusSearch],
-  );
-
-  // Ambil API detail saat modal Detail dibuka
+  // Ambil detail agen
   const handleOpenDetail = useCallback(async (agent: Agent) => {
     setSelectedAgent(null);
     setIsDetailMasterOpen(true);
@@ -177,7 +161,6 @@ export default function MasterAgentPage() {
       setSelectedAgent(response.data);
     } catch (err: unknown) {
       console.error("Gagal mengambil detail agen:", err);
-
       setIsDetailMasterOpen(false);
 
       toast.add({
@@ -194,7 +177,7 @@ export default function MasterAgentPage() {
     }
   }, []);
 
-  // Ambil API detail yang sama saat modal Edit dibuka
+  // Ambil data terbaru untuk modal edit
   const handleOpenEditAgent = useCallback(async (agent: Agent) => {
     setSelectedEditAgent(null);
     setIsEditMasterOpen(true);
@@ -205,7 +188,6 @@ export default function MasterAgentPage() {
       setSelectedEditAgent(response.data);
     } catch (err: unknown) {
       console.error("Gagal mengambil data edit agen:", err);
-
       setIsEditMasterOpen(false);
 
       toast.add({
@@ -223,7 +205,6 @@ export default function MasterAgentPage() {
   }, []);
 
   // Kolom tabel
-  // Callback Detail dan Edit diteruskan ke konfigurasi kolom.
   const columns = useMemo(
     () => getMasterAgentColumns(handleOpenDetail, handleOpenEditAgent),
     [handleOpenDetail, handleOpenEditAgent],
@@ -303,13 +284,13 @@ export default function MasterAgentPage() {
     }
   };
 
-  // Buka modal Create
+  // Buka modal tambah
   const handleOpenCreateAgent = () => {
     clearCreateAgentError();
     setIsCreateMasterOpen(true);
   };
 
-  // Tutup modal Create
+  // Tutup modal tambah
   const handleCloseCreateAgent = () => {
     if (submittingAgent) return;
 
@@ -317,7 +298,7 @@ export default function MasterAgentPage() {
     clearCreateAgentError();
   };
 
-  // Tutup modal Edit
+  // Tutup modal edit
   const handleCloseEditAgent = () => {
     if (updating || loadingEdit) return;
 
@@ -325,15 +306,13 @@ export default function MasterAgentPage() {
     setSelectedEditAgent(null);
   };
 
-  // Pencarian
-  const handleSearchChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  // Pencarian seperti Master Produk
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setPage(1);
-    setSearch(event.target.value);
   };
 
-  // Reset semua filter
+  // Reset seluruh filter dan pencarian
   const resetFilters = () => {
     setAssociationFilter(null);
     setAssociationSearch("");
@@ -344,13 +323,12 @@ export default function MasterAgentPage() {
     setCityPickerOpen(false);
 
     setStatusFilter(null);
-    setStatusSearch("");
-    setStatusPickerOpen(false);
 
     setSearch("");
     setPage(1);
   };
 
+  // Status filter aktif jika salah satu filter dipilih
   const hasActiveFilters = Boolean(
     associationFilter || cityFilter || statusFilter !== null,
   );
@@ -416,7 +394,7 @@ export default function MasterAgentPage() {
                   active={hasActiveFilters}
                   onReset={resetFilters}
                 >
-                  <div className="grid w-full grid-cols-2 gap-4">
+                  <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
                     {/* FILTER KOTA */}
                     <div className="w-full">
                       <FilterSearchable<string>
@@ -465,32 +443,18 @@ export default function MasterAgentPage() {
 
                     {/* FILTER STATUS */}
                     <div className="w-full">
-                      <FilterSearchable<string>
-                        label="Status"
-                        open={statusPickerOpen}
-                        onOpenChange={setStatusPickerOpen}
-                        search={statusSearch}
-                        onSearchChange={setStatusSearch}
-                        placeholder="Semua status"
-                        selectedLabel={
-                          statusFilter === "true"
-                            ? "Aktif"
-                            : statusFilter === "false"
-                              ? "Nonaktif"
-                              : null
-                        }
-                        selectedKey={statusFilter}
-                        items={filteredStatusOptions}
-                        getKey={(status) => status}
-                        renderItem={(status) =>
-                          status === "true" ? "Aktif" : "Nonaktif"
-                        }
-                        onSelect={(status) => {
-                          setStatusFilter(status);
+                      <FilterSelect
+                        label="Status Agen"
+                        value={statusFilter ?? ""}
+                        onChange={(value) => {
+                          setStatusFilter(value === "" ? null : value);
                           setPage(1);
-                          setStatusPickerOpen(false);
-                          setStatusSearch("");
                         }}
+                        placeholder="Semua"
+                        options={[
+                          { value: "true", label: "Aktif" },
+                          { value: "false", label: "Non Aktif" },
+                        ]}
                       />
                     </div>
                   </div>
@@ -515,7 +479,10 @@ export default function MasterAgentPage() {
             <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
               itemPerPage={perPage}
-              setItemPerPage={table.setPageSize}
+              setItemPerPage={(value) => {
+                setPerPage(value);
+                setPage(1);
+              }}
               currentPage={page}
               lastPage={Math.max(totalPages, 1)}
               fromPage={from}

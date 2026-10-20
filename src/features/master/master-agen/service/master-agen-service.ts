@@ -1,3 +1,4 @@
+
 import axios from "axios";
 import API_URLS from "@/config/env";
 
@@ -15,72 +16,77 @@ interface AgentResponse {
     last_page: number;
     current_page?: number;
     per_page?: number;
+    from?: number | null;
+    to?: number | null;
   };
 }
 
-export const getMasterAgent = async (
-  params: GetAgentParams = {},
-): Promise<AgentResponse> => {
+const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    throw new Error("Token tidak ditemukan. Silakan login kembali.");
+    throw new Error(
+      "Token tidak ditemukan. Silakan login kembali.",
+    );
   }
 
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  };
+};
+
+// GET MASTER AGEN
+export const getMasterAgent = async (
+  params: GetAgentParams,
+  signal?: AbortSignal,
+): Promise<AgentResponse> => {
   const response = await axios.get<AgentResponse>(
     `${API_URLS.sro}partners`,
     {
       params,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
+      signal,
     },
   );
 
   return response.data;
 };
 
+// CREATE MASTER AGEN
 export const createMasterAgent = async (
   payload: CreateMasterAgentPayload,
 ) => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    throw new Error("Token tidak ditemukan. Silakan login kembali.");
-  }
-
   try {
-    const url = `${API_URLS.sro}partners`;
-
-    console.log("POST URL:", url);
-    console.log("POST Payload:", payload);
-
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const response = await axios.post(
+      `${API_URLS.sro}partners`,
+      payload,
+      {
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
       },
-    });
-
-    console.log("POST Response:", response.status, response.data);
+    );
 
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      console.error("POST Status:", error.response?.status);
-      console.error("POST Response Error:", error.response?.data);
-
       const responseData = error.response?.data as
         | {
             message?: string;
-            errors?: Record<string, string[]>;
+            errors?: Record<string, string[] | string>;
           }
         | undefined;
 
       const validationMessages = responseData?.errors
-        ? Object.values(responseData.errors).flat().join("\n")
+        ? Object.values(responseData.errors)
+            .flatMap((messages) =>
+              Array.isArray(messages)
+                ? messages
+                : [messages],
+            )
+            .join("\n")
         : "";
 
       throw new Error(
@@ -100,34 +106,21 @@ export const updateMasterAgent = async (
   id: number,
   payload: CreateMasterAgentPayload,
 ) => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    throw new Error("Token tidak ditemukan. Silakan login kembali.");
-  }
-
   try {
-    const url = `${API_URLS.sro}partners/${id}`;
-
-    console.log("PUT URL:", url);
-    console.log("PUT Payload:", payload);
-
-    const response = await axios.put(url, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const response = await axios.put(
+      `${API_URLS.sro}partners/${id}`,
+      payload,
+      {
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
       },
-    });
-
-    console.log("PUT Response:", response.status, response.data);
+    );
 
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      console.error("PUT Status:", error.response?.status);
-      console.error("PUT Response Error:", error.response?.data);
-
       const responseData = error.response?.data as
         | {
             message?: string;
@@ -138,7 +131,9 @@ export const updateMasterAgent = async (
       const validationMessages = responseData?.errors
         ? Object.values(responseData.errors)
             .flatMap((messages) =>
-              Array.isArray(messages) ? messages : [messages],
+              Array.isArray(messages)
+                ? messages
+                : [messages],
             )
             .join("\n")
         : "";
@@ -155,22 +150,14 @@ export const updateMasterAgent = async (
   }
 };
 
+// GET DETAIL MASTER AGEN
 export const getMasterAgentDetail = async (
   id: number,
 ): Promise<AgentDetailResponse> => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    throw new Error("Token tidak ditemukan. Silakan login kembali.");
-  }
-
   const response = await axios.get<AgentDetailResponse>(
     `${API_URLS.sro}partners/${id}`,
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     },
   );
 

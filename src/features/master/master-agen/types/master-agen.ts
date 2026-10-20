@@ -74,12 +74,13 @@ export type AgentDetail = Omit<Agent, "province" | "city"> & {
 };
 
 export type GetAgentParams = {
-  page?: number;
-  per_page?: number;
-  search?: string;
-  city?: string;
-  association_name?: string;
-  is_active?: boolean;
+  page: number;
+  per_page: number;
+  "filter[search]"?: string;
+  "filter[city_id]"?: string;
+  "filter[association_name]"?: string;
+  "filter[is_active]"?: string;
+  "filter[type]"?: string;
 };
 
 export type AgentResponse = {
