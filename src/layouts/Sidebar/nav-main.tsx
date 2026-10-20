@@ -40,7 +40,7 @@ export function NavMain({
   const { pathname } = useLocation();
   const { state, isMobile } = useSidebar();
   const [collapsedOpen, setCollapsedOpen] = useState<string | null>(null);
-  const [pinnedOpen, setPinnedOpen] = useState<string | null>(null);
+  const [, setPinnedOpen] = useState<string | null>(null);
   const [popupTop, setPopupTop] = useState(0);
   const permissions = getAuthSession()?.permissions ?? [];
 

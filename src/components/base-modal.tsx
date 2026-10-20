@@ -1,6 +1,11 @@
 import { FaTimes } from "react-icons/fa";
 import type { ReactElement, ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 type AppModalProps = {
   open: boolean;
@@ -17,9 +22,12 @@ type AppModalSectionProps = {
   icon?: ReactNode;
   children: ReactNode;
   showHeader?: boolean;
+  headerAction?: ReactNode;
 };
 
-type AppModalComponent = ((props: AppModalProps) => ReactElement | null) & {
+type AppModalComponent = ((
+  props: AppModalProps,
+) => ReactElement | null) & {
   Section: (props: AppModalSectionProps) => ReactElement;
 };
 
@@ -35,24 +43,22 @@ const AppModal: AppModalComponent = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-poppins">
+    <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 p-4 font-poppins backdrop-blur-sm">
       <div
         className={`
-          bg-slate-50 dark:bg-slate-900
-          w-full max-w-4xl
-          max-h-full lg:max-h-[calc(100vh-2rem)]
-          rounded-3xl
-          shadow-2xl
-          flex flex-col
-          overflow-hidden
-          min-h-0
+          flex min-h-0 w-full max-w-4xl flex-col
+          overflow-hidden rounded-3xl
+          bg-slate-50 shadow-2xl
+          dark:bg-slate-900
+          max-h-full
+          lg:max-h-[calc(100vh-2rem)]
           ${className}
         `}
       >
-        {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
+        {/* HEADER MODAL */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-3 dark:border-slate-700">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
               {icon}
             </div>
 
@@ -64,20 +70,21 @@ const AppModal: AppModalComponent = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-500 text-slate-500 hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-rose-600 dark:hover:text-white flex items-center justify-center transition-colors duration-200"
+            aria-label="Tutup modal"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors duration-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-rose-600 dark:hover:text-white"
           >
             <FaTimes size={14} />
           </button>
         </div>
 
-        {/* CONTENT - YANG SCROLL */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
+        {/* CONTENT MODAL */}
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
           {children}
         </div>
 
-        {/* FOOTER */}
+        {/* FOOTER MODAL */}
         {footer && (
-          <div className="shrink-0 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900">
             {footer}
           </div>
         )}
@@ -91,22 +98,35 @@ AppModal.Section = function Section({
   icon,
   children,
   showHeader = true,
+  headerAction,
 }: AppModalSectionProps) {
   return (
-    <Card className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm rounded-2xl overflow-hidden">
+    <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      {/* HEADER SECTION */}
       {showHeader && (
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/20">
-          <CardTitle className="flex items-center gap-3 text-base font-semibold text-slate-800 dark:text-white">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-              {icon}
-            </span>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/20">
+          <CardTitle className="flex min-w-0 items-center gap-3 text-base font-semibold text-slate-800 dark:text-white">
+            {icon && (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                {icon}
+              </span>
+            )}
 
-            <span>{title}</span>
+            <span className="min-w-0">{title}</span>
           </CardTitle>
+
+          {headerAction && (
+            <div className="ml-auto shrink-0">
+              {headerAction}
+            </div>
+          )}
         </CardHeader>
       )}
 
-      <CardContent className="px-4 py-2">{children}</CardContent>
+      {/* CONTENT SECTION */}
+      <CardContent className="px-4 py-2">
+        {children}
+      </CardContent>
     </Card>
   );
 };

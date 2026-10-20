@@ -3,9 +3,11 @@ import type { dataTableFeatures } from "@/components/data-table/table-features";
 import DropdownActions from "@/components/dropdown-action";
 import type { Agent } from "./types/master-agen";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
 
 export function getMasterAgentColumns(
   onDetail: (record: Agent) => void,
+  onEdit: (record: Agent) => void,
 ): ColumnDef<typeof dataTableFeatures, Agent, unknown>[] {
   return [
     {
@@ -23,12 +25,12 @@ export function getMasterAgentColumns(
       header: "Nama PIC",
     },
     {
+      accessorKey: "phone",
+      header: "WhatsApp",
+    },
+    {
       accessorKey: "city.name",
       header: "Kota",
-    },
-     {
-      accessorKey: "phone",
-      header: "whatsApp",
     },
     {
       accessorKey: "association_name",
@@ -36,38 +38,15 @@ export function getMasterAgentColumns(
     },
     {
       accessorKey: "is_active",
-      header: "Status",
-      cell: ({ row }) => {
-        const isActive = row.original.is_active;
+      header: "Status Agen",
+      cell: ({ getValue }) => {
+        const status = getValue<Agent["is_active"]>();
+        const variant = status ? "success" : "warning";
 
         return (
-          <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2">
-              <div
-                className={`relative h-5 w-9 rounded-full transition-colors ${
-                  isActive
-                    ? "bg-green-500"
-                    : "bg-slate-300 dark:bg-slate-600"
-                }`}
-              >
-                <div
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                    isActive ? "translate-x-4" : "translate-x-0.5"
-                  }`}
-                />
-              </div>
-
-              <span
-                className={`text-xs font-medium ${
-                  isActive
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-slate-500 dark:text-slate-400"
-                }`}
-              >
-                {isActive ? "Aktif" : "Inactive"}
-              </span>
-            </div>
-          </div>
+          <Badge variant={variant}>
+            {status ? "Aktif" : "Nonaktif"}
+          </Badge>
         );
       },
     },
@@ -78,6 +57,7 @@ export function getMasterAgentColumns(
         <div className="flex items-center justify-center">
           <DropdownActions
             onDetail={() => onDetail(row.original)}
+            onEdit={() => onEdit(row.original)}
           />
         </div>
       ),
