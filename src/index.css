@@ -195,3 +195,48 @@ body {
   @apply inline-block py-1.5 hover:text-sekunder-60 transition-all duration-300 ease-in-out text-slate-500 dark:text-slate-300 dark:hover:text-sekunder-60 text-sm;
 }
 
+.date-range-calendar .date-range-start button,
+.date-range-calendar .date-range-end button {
+  border-radius: 9999px;
+  background: var(--color-emerald-600);
+  color: white;
+}
+
+.filter-date-calendar .filter-date-range-start button,
+.filter-date-calendar .filter-date-range-end button {
+  border-radius: 9999px;
+  background: var(--color-emerald-600);
+  color: white;
+}
+
+.filter-date-calendar .filter-date-range-middle {
+  background: var(--color-emerald-50);
+  color: var(--color-emerald-800);
+}
+
+.dark .filter-date-calendar .filter-date-range-middle {
+  background: rgb(16 185 129 / 0.2);
+  color: var(--color-emerald-200);
+}
+
+.dark .filter-date-calendar select,
+.dark .date-range-calendar select {
+  color-scheme: dark;
+}
+
+.dark .filter-date-calendar select option,
+.dark .date-range-calendar select option {
+  background-color: var(--color-slate-800);
+  color: var(--color-slate-100);
+}
+
+.date-range-calendar .date-range-middle {
+  background: var(--color-emerald-50);
+  color: var(--color-emerald-800);
+}
+
+.dark .date-range-calendar .date-range-middle {
+  background: rgb(16 185 129 / 0.2);
+  color: var(--color-emerald-200);
+}
+

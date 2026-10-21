@@ -14,8 +14,6 @@ const isStaging =
 
 const API_URLS = isLocal
   ? {
-    //  sro: "http://192.168.0.140:8000/api/",
-    // sro: "http://10.10.100.69:8710/api/",
       sro: "https://stagingsrvsro.salokapark.app/api/",
       provinces: "https://serviceevent.salokapark.app/api/get-provinces",
       cities: "https://serviceevent.salokapark.app/api/get-regencies",

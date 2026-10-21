@@ -68,6 +68,14 @@ export const navMainItems: {
         title: "Tiket",
         url: "/konfigurasi-tiket",
       },
+      {
+        title: "Hari Libur",
+        url: "/konfigurasi-hari-libur",
+      },
+      {
+        title: "Metode Pembayaran",
+        url: "/konfigurasi-metode-pembayaran",
+      },
     ],
   },
 
