@@ -116,23 +116,32 @@ export default function CustomerPage() {
     useState("");
 
   // Record yang dipilih pada kolom aksi.
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerRecord | null>(null);
+// Hapus state ini sementara
+// const [selectedCustomer, setSelectedCustomer] =
+//   useState<CustomerRecord | null>(null);
 
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+// const [detailOpen, setDetailOpen] = useState(false);
+// const [editOpen, setEditOpen] = useState(false);
 
-  const handleDetail = useCallback((record: CustomerRecord) => {
-    setSelectedCustomer(record);
-    setDetailOpen(true);
-    setEditOpen(false);
-  }, []);
+// const handleDetail = useCallback((record: CustomerRecord) => {
+//   setSelectedCustomer(record);
+//   setDetailOpen(true);
+//   setEditOpen(false);
+// }, []);
 
-  const handleEdit = useCallback((record: CustomerRecord) => {
-    setSelectedCustomer(record);
-    setEditOpen(true);
-    setDetailOpen(false);
-  }, []);
+// const handleEdit = useCallback((record: CustomerRecord) => {
+//   setSelectedCustomer(record);
+//   setEditOpen(true);
+//   setDetailOpen(false);
+// }, []);
+
+const handleDetail = useCallback((record: CustomerRecord) => {
+  console.log("Detail customer:", record);
+}, []);
+
+const handleEdit = useCallback((record: CustomerRecord) => {
+  console.log("Edit customer:", record);
+}, []);
 
   // Sesuaikan dengan mekanisme hak akses aplikasi.
   const canEdit = true;
