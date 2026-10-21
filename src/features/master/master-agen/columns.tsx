@@ -18,7 +18,7 @@ export function getMasterAgentColumns(
     },
     {
       accessorKey: "name",
-      header: "Nama Travel",
+      header: "Nama Agen",
     },
     {
       accessorKey: "contact_person",
@@ -29,27 +29,36 @@ export function getMasterAgentColumns(
       header: "WhatsApp",
     },
     {
-      accessorKey: "city.name",
+      accessorKey: "city_name",
       header: "Kota",
     },
     {
       accessorKey: "association_name",
       header: "Asosiasi",
+      cell: ({ getValue }) => (
+        <div className="flex justify-center">
+          {getValue<string>() || "-"}
+        </div>
+      ),
     },
     {
-      accessorKey: "is_active",
-      header: "Status Agen",
-      cell: ({ getValue }) => {
-        const status = getValue<Agent["is_active"]>();
-        const variant = status ? "success" : "warning";
-
-        return (
-          <Badge variant={variant}>
-            {status ? "Aktif" : "Nonaktif"}
-          </Badge>
-        );
-      },
-    },
+          accessorKey: "is_active",
+          header: "Status Agen",
+          cell: ({ getValue }) => {
+            const status = getValue<Agent["is_active"]>();
+    
+            const variant = status ? "success" : "warning";
+    
+            return (
+              <div className="flex justify-center">
+                {" "}
+                <Badge variant={variant}>
+                  {status ? "Aktif" : "Nonaktif"}
+                </Badge>{" "}
+              </div>
+            );
+          },
+        },
     {
       id: "aksi",
       header: "Aksi",

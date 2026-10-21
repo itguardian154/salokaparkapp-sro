@@ -14,18 +14,45 @@ import {
 
 import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import { useCities } from "@/features/wilayah/hooks/use-cities";
-import type { Province } from "@/features/wilayah/types/wilayah";
+import type {
+  Province,
+  City,
+} from "@/features/wilayah/types/wilayah";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import { FaSave, FaPlus, FaTrash } from "react-icons/fa";
 import { Building2, GitBranch } from "lucide-react";
 
 import { createMasterAgentSchema } from "../schemas/master-agen-schema";
+
 import type {
   AgentDetail,
   CreateMasterAgentPayload,
   CreateMasterAgentBranchPayload,
 } from "../types/master-agen";
+
+type EditMasterAgentBranchPayload = Omit<
+  CreateMasterAgentBranchPayload,
+  "province_id" | "city_id"
+> & {
+  id?: number;
+  province_name: string;
+  city_name: string;
+};
+
+type EditMasterAgentPayload = Omit<
+  CreateMasterAgentPayload,
+  "branches" | "province_id" | "city_id"
+> & {
+  province_name: string;
+  city_name: string;
+  branches: EditMasterAgentBranchPayload[];
+};
 
 type EditMasterProps = {
   open: boolean;
@@ -36,18 +63,6 @@ type EditMasterProps = {
     payload: EditMasterAgentPayload,
   ) => Promise<void>;
   submitting?: boolean;
-};
-
-type EditMasterAgentBranchPayload =
-  CreateMasterAgentBranchPayload & {
-    id?: number;
-  };
-
-type EditMasterAgentPayload = Omit<
-  CreateMasterAgentPayload,
-  "branches"
-> & {
-  branches: EditMasterAgentBranchPayload[];
 };
 
 type AgentTextField =
@@ -63,24 +78,31 @@ type BranchTextField =
   | "phone"
   | "address";
 
-type BranchForm = Omit<
-  EditMasterAgentBranchPayload,
-  "is_active" | "province_id" | "city_id"
-> & {
-  province_id: number | null;
-  city_id: number | null;
+type BranchForm = {
+  id?: number;
+  name: string;
+  province_name: string;
+  city_name: string;
+  code: string;
+  contact_person: string;
+  phone: string;
+  address: string;
   is_active: boolean;
 };
 
-type AgentForm = Omit<
-  CreateMasterAgentPayload,
-  | "branches"
-  | "is_active"
-  | "province_id"
-  | "city_id"
-> & {
-  province_id: number | null;
-  city_id: number | null;
+type AgentForm = {
+  code: string;
+  name: string;
+  association_name: string;
+  type: string;
+  company_name: string;
+  contact_person: string;
+  phone: string;
+  address: string;
+  province_name: string;
+  city_name: string;
+  website: string;
+  logo: string;
   is_active: boolean;
 };
 
@@ -88,8 +110,8 @@ type ValidationErrors = Record<string, string>;
 
 const initialBranch: BranchForm = {
   name: "",
-  province_id: null,
-  city_id: null,
+  province_name: "",
+  city_name: "",
   code: "",
   contact_person: "",
   phone: "",
@@ -106,19 +128,27 @@ const initialForm: AgentForm = {
   contact_person: "",
   phone: "",
   address: "",
-  province_id: null,
-  city_id: null,
+  province_name: "",
+  city_name: "",
   website: "",
   logo: "",
   is_active: true,
 };
 
+const normalizeName = (
+  value: string | null | undefined,
+) =>
+  (value ?? "")
+    .trim()
+    .toLocaleLowerCase("id-ID")
+    .replace(/\s+/g, " ");
+
 type ProvinceCityFieldsProps = {
   provinces: Province[];
-  provinceId: number | null;
-  cityId: number | null;
-  onProvinceChange: (id: number | null) => void;
-  onCityChange: (id: number | null) => void;
+  provinceName: string;
+  cityName: string;
+  onProvinceChange: (name: string) => void;
+  onCityChange: (name: string) => void;
   provinceLoading: boolean;
   provinceError: string | null;
   provinceValidationError?: string;
@@ -127,8 +157,8 @@ type ProvinceCityFieldsProps = {
 
 const ProvinceCityFields = ({
   provinces,
-  provinceId,
-  cityId,
+  provinceName,
+  cityName,
   onProvinceChange,
   onCityChange,
   provinceLoading,
@@ -142,48 +172,45 @@ const ProvinceCityFields = ({
   const [searchProvince, setSearchProvince] = useState("");
   const [searchCity, setSearchCity] = useState("");
 
+  // Cari ID provinsi berdasarkan provinceName yang dipilih untuk meload daftar kota
+  const selectedProvinceObj = provinces.find(
+    (p) => normalizeName(p.name) === normalizeName(provinceName)
+  );
+
   const {
     cities,
     loading: citiesLoading,
-    error: citiesError,
-  } = useCities(provinceId);
-
-  const selectedProvince = provinces.find(
-    (province) => province.id === provinceId,
-  );
-
-  const selectedCity = cities.find(
-    (city) => city.id === cityId,
-  );
+  } = useCities(selectedProvinceObj ? Number(selectedProvinceObj.id) : null);
 
   const filteredProvinces = provinces.filter((province) =>
-    province.name
-      .toLowerCase()
-      .includes(searchProvince.toLowerCase().trim()),
+    normalizeName(province.name).includes(
+      normalizeName(searchProvince),
+    ),
   );
 
   const filteredCities = cities.filter((city) =>
-    city.name
-      .toLowerCase()
-      .includes(searchCity.toLowerCase().trim()),
+    normalizeName(city.name).includes(
+      normalizeName(searchCity),
+    ),
   );
 
-  const handleProvinceChange = (id: number | null) => {
-    if (id !== provinceId) {
-      onProvinceChange(id);
-      onCityChange(null);
+  const handleProvinceSelect = (provinceNameVal: string) => {
+    if (normalizeName(provinceNameVal) !== normalizeName(provinceName)) {
+      onProvinceChange(provinceNameVal);
+      onCityNameChange(""); // Reset kota jika provinsi berubah
     }
-
-    setSearchProvince("");
-    setSearchCity("");
     setOpenProvince(false);
-    setOpenCity(false);
+    setSearchProvince("");
   };
 
-  const handleCityChange = (id: number | null) => {
-    onCityChange(id);
-    setSearchCity("");
+  const handleCitySelect = (cityNameVal: string) => {
+    onCityChange(cityNameVal);
     setOpenCity(false);
+    setSearchCity("");
+  };
+
+  const onCityNameChange = (name: string) => {
+    onCityChange(name);
   };
 
   return (
@@ -201,15 +228,13 @@ const ProvinceCityFields = ({
               ? "Memuat provinsi..."
               : "Pilih provinsi"
           }
-          selectedLabel={selectedProvince?.name ?? null}
-          selectedKey={
-            provinceId !== null ? String(provinceId) : null
-          }
+          selectedLabel={provinceName || null}
+          selectedKey={provinceName || null}
           items={filteredProvinces}
-          getKey={(province) => String(province.id)}
+          getKey={(province) => province.name}
           renderItem={(province) => province.name}
           onSelect={(province) =>
-            handleProvinceChange(province.id)
+            handleProvinceSelect(province.name)
           }
           disabled={provinceLoading}
           emptyText={
@@ -236,44 +261,34 @@ const ProvinceCityFields = ({
       <Field>
         <FieldLabel>Kota/Kabupaten</FieldLabel>
 
-        <SearchablePopover
+        <SearchablePopover<City>
           open={openCity}
           onOpenChange={setOpenCity}
           search={searchCity}
           onSearchChange={setSearchCity}
           placeholder={
-            provinceId === null
+            !provinceName
               ? "Pilih provinsi terlebih dahulu"
               : citiesLoading
                 ? "Memuat kota..."
                 : "Pilih kota/kabupaten"
           }
-          selectedLabel={selectedCity?.name ?? null}
-          selectedKey={
-            cityId !== null ? String(cityId) : null
-          }
+          selectedLabel={cityName || null}
+          selectedKey={cityName || null}
           items={filteredCities}
-          getKey={(city) => String(city.id)}
+          getKey={(city) => city.name}
           renderItem={(city) => city.name}
-          onSelect={(city) => handleCityChange(city.id)}
+          onSelect={(city) =>
+            handleCitySelect(city.name)
+          }
           disabled={
-            provinceId === null ||
+            !provinceName ||
             citiesLoading ||
             provinceLoading
           }
-          emptyText={
-            citiesError
-              ? "Kota gagal dimuat."
-              : "Kota/kabupaten tidak ditemukan."
-          }
+          emptyText="Kota/kabupaten tidak ditemukan."
           debounceDelay={500}
         />
-
-        {citiesError && (
-          <p className="text-sm text-red-500">
-            {citiesError}
-          </p>
-        )}
 
         {cityValidationError && (
           <p className="text-sm text-red-500">
@@ -297,35 +312,33 @@ const StatusField = ({
   active,
   onValueChange,
   disabled = false,
-}: StatusFieldProps) => {
-  return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
+}: StatusFieldProps) => (
+  <Field>
+    <FieldLabel>{label}</FieldLabel>
 
-      <Select
-        value={String(active)}
-        onValueChange={(value) =>
-          onValueChange(value === "true")
-        }
-        disabled={disabled}
+    <Select
+      value={String(active)}
+      onValueChange={(value) =>
+        onValueChange(value === "true")
+      }
+      disabled={disabled}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue>
+          {active ? "Aktif" : "Nonaktif"}
+        </SelectValue>
+      </SelectTrigger>
+
+      <SelectContent
+        align="start"
+        alignItemWithTrigger={false}
       >
-        <SelectTrigger className="w-full">
-          <SelectValue>
-            {active ? "Aktif" : "Nonaktif"}
-          </SelectValue>
-        </SelectTrigger>
-
-        <SelectContent
-          align="start"
-          alignItemWithTrigger={false}
-        >
-          <SelectItem value="true">Aktif</SelectItem>
-          <SelectItem value="false">Nonaktif</SelectItem>
-        </SelectContent>
-      </Select>
-    </Field>
-  );
-};
+        <SelectItem value="true">Aktif</SelectItem>
+        <SelectItem value="false">Nonaktif</SelectItem>
+      </SelectContent>
+    </Select>
+  </Field>
+);
 
 const EditMasterAgen = ({
   open,
@@ -348,6 +361,7 @@ const EditMasterAgen = ({
     error: provincesError,
   } = useProvinces();
 
+  // Memuat ulang nilai form dari API setiap kali modal dibuka.
   useEffect(() => {
     if (!open || !agent) return;
 
@@ -356,31 +370,46 @@ const EditMasterAgen = ({
       name: agent.name ?? "",
       association_name: agent.association_name ?? "",
       type: agent.type ?? "",
-      company_name: "",
+      company_name: agent.company_name ?? "",
       contact_person: agent.contact_person ?? "",
       phone: agent.phone ?? "",
       address: agent.address ?? "",
-      province_id:
-        agent.province?.id ?? agent.province_id ?? null,
-      city_id:
-        agent.city?.id ?? agent.city_id ?? null,
+
+      province_name:
+        agent.province?.name ?? agent.province_name ?? "",
+      city_name:
+        agent.city?.name ?? agent.city_name ?? "",
+
       website: agent.website ?? "",
       logo: agent.logo_url ?? "",
       is_active: agent.is_active ?? true,
     });
 
     setBranches(
-      (agent.branches ?? []).map((branch) => ({
-        id: branch.id,
-        name: branch.name ?? "",
-        province_id: branch.province?.id ?? null,
-        city_id: branch.city?.id ?? null,
-        code: branch.code ?? "",
-        contact_person: branch.contact_person ?? "",
-        phone: branch.phone ?? "",
-        address: branch.address ?? "",
-        is_active: branch.is_active ?? true,
-      })),
+      (agent.branches ?? []).map((branch) => {
+        const item = branch as typeof branch & {
+          province?: Province | null;
+          city?: City | null;
+        };
+
+        return {
+          id: item.id,
+          name: item.name ?? "",
+          province_name:
+            item.province?.name ??
+            item.province_name ??
+            "",
+          city_name:
+            item.city?.name ??
+            item.city_name ??
+            "",
+          code: item.code ?? "",
+          contact_person: item.contact_person ?? "",
+          phone: item.phone ?? "",
+          address: item.address ?? "",
+          is_active: item.is_active ?? true,
+        };
+      }),
     );
 
     setValidationErrors({});
@@ -428,68 +457,80 @@ const EditMasterAgen = ({
     clearError(`branches.${index}.${field}`);
   };
 
-  const handleAgentProvinceChange = (
-    id: number | null,
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      province_id: id,
-      city_id: null,
-    }));
+  const handleAgentProvinceChange = useCallback(
+    (name: string) => {
+      setForm((previous) => {
+        if (previous.province_name === name) {
+          return previous;
+        }
 
-    clearError("province_id");
-    clearError("city_id");
-  };
+        return {
+          ...previous,
+          province_name: name,
+          city_name: "",
+        };
+      });
 
-  const handleAgentCityChange = (
-    id: number | null,
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      city_id: id,
-    }));
+      clearError("province_name");
+      clearError("city_name");
+    },
+    [],
+  );
 
-    clearError("city_id");
-  };
+  const handleAgentCityChange = useCallback(
+    (name: string) => {
+      setForm((previous) => ({
+        ...previous,
+        city_name: name,
+      }));
 
-  const handleBranchProvinceChange = (
-    index: number,
-    id: number | null,
-  ) => {
-    setBranches((previous) =>
-      previous.map((branch, branchIndex) =>
-        branchIndex === index
-          ? {
+      clearError("city_name");
+    },
+    [],
+  );
+
+  const handleBranchProvinceChange = useCallback(
+    (index: number, name: string) => {
+      setBranches((previous) =>
+        previous.map((branch, branchIndex) => {
+          if (branchIndex !== index) return branch;
+
+          if (branch.province_name === name) return branch;
+
+          return {
             ...branch,
-            province_id: id,
-            city_id: null,
-          }
-          : branch,
-      ),
-    );
+            province_name: name,
+            city_name: "",
+          };
+        }),
+      );
 
-    clearError(`branches.${index}.province_id`);
-    clearError(`branches.${index}.city_id`);
-  };
+      clearError(`branches.${index}.province_name`);
+      clearError(`branches.${index}.city_name`);
+    },
+    [],
+  );
 
-  const handleBranchCityChange = (
-    index: number,
-    id: number | null,
-  ) => {
-    setBranches((previous) =>
-      previous.map((branch, branchIndex) =>
-        branchIndex === index
-          ? { ...branch, city_id: id }
-          : branch,
-      ),
-    );
+  const handleBranchCityChange = useCallback(
+    (index: number, name: string) => {
+      setBranches((previous) =>
+        previous.map((branch, branchIndex) =>
+          branchIndex === index
+            ? {
+                ...branch,
+                city_name: name,
+              }
+            : branch,
+        ),
+      );
 
-    clearError(`branches.${index}.city_id`);
-  };
+      clearError(`branches.${index}.city_name`);
+    },
+    [],
+  );
 
   const handleAddBranch = () => {
     setBranches((previous) => [
-
       { ...initialBranch },
       ...previous,
     ]);
@@ -513,9 +554,7 @@ const EditMasterAgen = ({
           return;
         }
 
-        const match = key.match(
-          /^branches\.(\d+)\.(.+)$/,
-        );
+        const match = key.match(/^branches\.(\d+)\.(.+)$/);
 
         if (!match) {
           next[key] = message;
@@ -570,23 +609,22 @@ const EditMasterAgen = ({
 
     const validatedPayload: EditMasterAgentPayload = {
       ...result.data,
-      branches: result.data.branches.map(
-        (branch, index) => ({
-          ...branch,
-          ...(branches[index]?.id !== undefined
-            ? { id: branches[index].id }
-            : {}),
-        }),
-      ),
+      province_name: form.province_name,
+      city_name: form.city_name,
+      branches: result.data.branches.map((branch, index) => ({
+        ...branch,
+        province_name: branches[index]?.province_name ?? "",
+        city_name: branches[index]?.city_name ?? "",
+        ...(branches[index]?.id !== undefined
+          ? { id: branches[index].id }
+          : {}),
+      })),
     };
 
     try {
       await onSubmit(agent.id, validatedPayload);
     } catch (error) {
-      console.error(
-        "[Master Agen] Update gagal:",
-        error,
-      );
+      console.error("[Master Agen] Update gagal:", error);
     }
   };
 
@@ -622,7 +660,6 @@ const EditMasterAgen = ({
       }
     >
       <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-1">
-        {/* INFORMASI AGEN */}
         <AppModal.Section
           title="Informasi Agen"
           icon={<Building2 size={18} />}
@@ -712,23 +749,18 @@ const EditMasterAgen = ({
 
             <ProvinceCityFields
               provinces={provinces}
-              provinceId={form.province_id}
-              cityId={form.city_id}
-              onProvinceChange={
-                handleAgentProvinceChange
-              }
+              provinceName={form.province_name}
+              cityName={form.city_name}
+              onProvinceChange={handleAgentProvinceChange}
               onCityChange={handleAgentCityChange}
               provinceLoading={provincesLoading}
               provinceError={provincesError}
-              provinceValidationError={getError(
-                "province_id",
-              )}
-              cityValidationError={getError("city_id")}
+              provinceValidationError={getError("province_name")}
+              cityValidationError={getError("city_name")}
             />
           </div>
         </AppModal.Section>
 
-        {/* CABANG AGEN */}
         <AppModal.Section
           title="Cabang Agen"
           icon={<GitBranch size={18} />}
@@ -765,9 +797,7 @@ const EditMasterAgen = ({
                   <Button
                     type="button"
                     variant="destructive"
-                    onClick={() =>
-                      handleRemoveBranch(index)
-                    }
+                    onClick={() => handleRemoveBranch(index)}
                     disabled={submitting}
                   >
                     <FaTrash size={12} />
@@ -789,15 +819,11 @@ const EditMasterAgen = ({
                       }
                       placeholder="Nama cabang"
                     />
-                    {getError(
-                      `branches.${index}.name`,
-                    ) && (
-                        <p className="text-sm text-red-500">
-                          {getError(
-                            `branches.${index}.name`,
-                          )}
-                        </p>
-                      )}
+                    {getError(`branches.${index}.name`) && (
+                      <p className="text-sm text-red-500">
+                        {getError(`branches.${index}.name`)}
+                      </p>
+                    )}
                   </Field>
 
                   <Field>
@@ -816,12 +842,12 @@ const EditMasterAgen = ({
                     {getError(
                       `branches.${index}.contact_person`,
                     ) && (
-                        <p className="text-sm text-red-500">
-                          {getError(
-                            `branches.${index}.contact_person`,
-                          )}
-                        </p>
-                      )}
+                      <p className="text-sm text-red-500">
+                        {getError(
+                          `branches.${index}.contact_person`,
+                        )}
+                      </p>
+                    )}
                   </Field>
 
                   <Field>
@@ -837,15 +863,11 @@ const EditMasterAgen = ({
                       }
                       placeholder="Nomor telepon"
                     />
-                    {getError(
-                      `branches.${index}.phone`,
-                    ) && (
-                        <p className="text-sm text-red-500">
-                          {getError(
-                            `branches.${index}.phone`,
-                          )}
-                        </p>
-                      )}
+                    {getError(`branches.${index}.phone`) && (
+                      <p className="text-sm text-red-500">
+                        {getError(`branches.${index}.phone`)}
+                      </p>
+                    )}
                   </Field>
 
                   <StatusField
@@ -853,14 +875,10 @@ const EditMasterAgen = ({
                     active={branch.is_active}
                     onValueChange={(active) =>
                       setBranches((previous) =>
-                        previous.map(
-                          (item, branchIndex) =>
-                            branchIndex === index
-                              ? {
-                                ...item,
-                                is_active: active,
-                              }
-                              : item,
+                        previous.map((item, branchIndex) =>
+                          branchIndex === index
+                            ? { ...item, is_active: active }
+                            : item,
                         ),
                       )
                     }
@@ -869,27 +887,27 @@ const EditMasterAgen = ({
 
                   <ProvinceCityFields
                     provinces={provinces}
-                    provinceId={branch.province_id}
-                    cityId={branch.city_id}
-                    onProvinceChange={(id) =>
+                    provinceName={branch.province_name}
+                    cityName={branch.city_name}
+                    onProvinceChange={(name) =>
                       handleBranchProvinceChange(
                         index,
-                        id,
+                        name,
                       )
                     }
-                    onCityChange={(id) =>
+                    onCityChange={(name) =>
                       handleBranchCityChange(
                         index,
-                        id,
+                        name,
                       )
                     }
                     provinceLoading={provincesLoading}
                     provinceError={provincesError}
                     provinceValidationError={getError(
-                      `branches.${index}.province_id`,
+                      `branches.${index}.province_name`,
                     )}
                     cityValidationError={getError(
-                      `branches.${index}.city_id`,
+                      `branches.${index}.city_name`,
                     )}
                   />
                 </div>

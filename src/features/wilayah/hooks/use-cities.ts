@@ -1,61 +1,32 @@
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getCities } from "../service/wilayah-service";
 import type { City } from "../types/wilayah";
 
 export const useCities = (provinceId: number | null) => {
-  const [allCities, setAllCities] = useState<City[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [cities, setCities] = useState<City[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (provinceId === null) {
+      setCities([]);
+      return;
+    }
 
     const fetchCities = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        const data = await getCities();
-
-        if (!cancelled) {
-          setAllCities(data);
-        }
+        const data = await getCities(provinceId);
+        setCities(data);
       } catch (error) {
-        if (!cancelled) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "Gagal mengambil data kota.",
-          );
-        }
+        console.error("Gagal mengambil data kota:", error);
+        setCities([]);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    void fetchCities();
+    fetchCities();
+  }, [provinceId]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const cities = useMemo(() => {
-    if (provinceId === null) {
-      return [];
-    }
-
-    return allCities.filter(
-      (city) => city.province_id === provinceId,
-    );
-  }, [allCities, provinceId]);
-
-  return {
-    cities,
-    loading,
-    error,
-  };
+  return { cities, loading };
 };

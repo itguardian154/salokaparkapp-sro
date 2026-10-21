@@ -3,15 +3,28 @@ import { z } from "zod";
 
 const branchSchema = z.object({
   name: z.string().trim().min(1, "Nama cabang wajib diisi"),
-  province_id: z.number().int().positive("Provinsi wajib dipilih"),
-  city_id: z.number().int().positive("Kota wajib dipilih"),
+
+  province_name: z
+    .string()
+    .trim()
+    .min(1, "Provinsi wajib dipilih"),
+
+  city_name: z
+    .string()
+    .trim()
+    .min(1, "Kota wajib dipilih"),
+
   contact_person: z
     .string()
     .trim()
     .min(1, "Contact person wajib diisi"),
+
   phone: z.string().trim().min(1, "Nomor telepon wajib diisi"),
+
   address: z.string().trim().optional().default(""),
+
   code: z.string().optional().default(""),
+
   is_active: z.boolean().default(true),
 });
 
@@ -38,11 +51,16 @@ export const createMasterAgentSchema = z.object({
 
   address: z.string().trim().optional().default(""),
 
-  province_id: z.number().int().positive("Provinsi wajib dipilih"),
+  province_name: z
+    .string()
+    .trim()
+    .min(1, "Provinsi wajib dipilih"),
 
-  city_id: z.number().int().positive("Kota wajib dipilih"),
+  city_name: z
+    .string()
+    .trim()
+    .min(1, "Kota wajib dipilih"),
 
-  // Cabang tidak wajib. Jika tidak ada, nilainya menjadi [].
   branches: z.array(branchSchema).optional().default([]),
 
   website: z

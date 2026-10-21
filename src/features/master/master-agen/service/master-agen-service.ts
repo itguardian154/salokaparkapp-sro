@@ -58,6 +58,8 @@ export const createMasterAgent = async (
   payload: CreateMasterAgentPayload,
 ) => {
   try {
+    console.log("Payload terkirim:", payload);
+
     const response = await axios.post(
       `${API_URLS.sro}partners`,
       payload,
