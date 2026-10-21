@@ -169,14 +169,14 @@ export default function FilterBar({
                   items-center
                   justify-center
                   rounded-full
-                  bg-emerald-500
+                  bg-primer-60
                   text-white
                   shadow-md
                   transition
-                  hover:bg-emerald-600
+                  hover:bg-primer-80
                   focus:outline-none
                   focus:ring-2
-                  focus:ring-emerald-500/30
+                  focus:ring-primer-80/30
                 "
             title="Tidak ada filter"
           >

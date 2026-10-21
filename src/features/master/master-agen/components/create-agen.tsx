@@ -1,4 +1,3 @@
-
 import AppModal from "@/components/base-modal";
 import SearchablePopover from "@/components/searchable-popover";
 
@@ -8,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import { useCities } from "@/features/wilayah/hooks/use-cities";
-import type { Province } from "@/features/wilayah/types/wilayah";
+import type { Province, City } from "@/features/wilayah/types/wilayah";
 
 import { useEffect, useState } from "react";
 import { FaSave, FaPlus, FaTrash } from "react-icons/fa";
@@ -42,10 +41,16 @@ type BranchTextField =
 
 type BranchForm = Omit<
   CreateMasterAgentBranchPayload,
-  "is_active" | "province_id" | "city_id"
+  | "is_active"
+  | "province_id"
+  | "city_id"
+  | "province_name"
+  | "city_name"
 > & {
   province_id: number | null;
   city_id: number | null;
+  province_name: string;
+  city_name: string;
 };
 
 type AgentForm = Omit<
@@ -62,6 +67,8 @@ const initialBranch: BranchForm = {
   name: "",
   province_id: null,
   city_id: null,
+  province_name: "",
+  city_name: "",
   code: "",
   contact_person: "",
   phone: "",
@@ -79,6 +86,8 @@ const initialForm: AgentForm = {
   address: "",
   province_id: null,
   city_id: null,
+  province_name: "",
+  city_name: "",
   website: "",
   logo: "",
 };
@@ -88,7 +97,7 @@ type ProvinceCityFieldsProps = {
   provinceId: number | null;
   cityId: number | null;
   onProvinceChange: (id: number | null) => void;
-  onCityChange: (id: number | null) => void;
+  onCityChange: (id: number | null, name: string) => void;
   provinceLoading: boolean;
   provinceError: string | null;
   provinceValidationError?: string;
@@ -115,7 +124,6 @@ const ProvinceCityFields = ({
   const {
     cities,
     loading: citiesLoading,
-    error: citiesError,
   } = useCities(provinceId);
 
   const selectedProvince = provinces.find(
@@ -141,7 +149,7 @@ const ProvinceCityFields = ({
   const handleProvinceChange = (id: number | null) => {
     if (id !== provinceId) {
       onProvinceChange(id);
-      onCityChange(null);
+      onCityChange(null, "");
     }
 
     setSearchProvince("");
@@ -150,8 +158,11 @@ const ProvinceCityFields = ({
     setOpenCity(false);
   };
 
-  const handleCityChange = (id: number | null) => {
-    onCityChange(id);
+  const handleCityChange = (
+    id: number | null,
+    name: string,
+  ) => {
+    onCityChange(id, name);
     setSearchCity("");
     setOpenCity(false);
   };
@@ -206,7 +217,7 @@ const ProvinceCityFields = ({
       <Field>
         <FieldLabel>Kota/Kabupaten</FieldLabel>
 
-        <SearchablePopover
+        <SearchablePopover<City>
           open={openCity}
           onOpenChange={setOpenCity}
           search={searchCity}
@@ -225,25 +236,17 @@ const ProvinceCityFields = ({
           items={filteredCities}
           getKey={(city) => String(city.id)}
           renderItem={(city) => city.name}
-          onSelect={(city) => handleCityChange(city.id)}
+          onSelect={(city) =>
+            handleCityChange(city.id, city.name)
+          }
           disabled={
             provinceId === null ||
             citiesLoading ||
             provinceLoading
           }
-          emptyText={
-            citiesError
-              ? "Kota gagal dimuat."
-              : "Kota/kabupaten tidak ditemukan."
-          }
+          emptyText="Kota/kabupaten tidak ditemukan."
           debounceDelay={500}
         />
-
-        {citiesError && (
-          <p className="text-sm text-red-500">
-            {citiesError}
-          </p>
-        )}
 
         {cityValidationError && (
           <p className="text-sm text-red-500">
@@ -283,16 +286,22 @@ const CreateMasterAgen = ({
     }
   }, [open]);
 
-  const getError = (field: string) => validationErrors[field];
+  const getError = (field: string) =>
+    validationErrors[field];
 
-  const clearError = (field: string) => {
+  const clearError = (...fields: string[]) => {
     setValidationErrors((previous) => {
-      if (!(field in previous)) return previous;
-
       const next = { ...previous };
-      delete next[field];
+      let changed = false;
 
-      return next;
+      fields.forEach((field) => {
+        if (field in next) {
+          delete next[field];
+          changed = true;
+        }
+      });
+
+      return changed ? next : previous;
     });
   };
 
@@ -316,10 +325,7 @@ const CreateMasterAgen = ({
     setBranches((previous) =>
       previous.map((branch, branchIndex) =>
         branchIndex === index
-          ? {
-            ...branch,
-            [field]: value,
-          }
+          ? { ...branch, [field]: value }
           : branch,
       ),
     );
@@ -327,49 +333,71 @@ const CreateMasterAgen = ({
     clearError(`branches.${index}.${field}`);
   };
 
-  const handleAgentProvinceChange = (id: number | null) => {
+  const handleAgentProvinceChange = (
+    id: number | null,
+  ) => {
+    const provinceName =
+      provinces.find((province) => province.id === id)
+        ?.name ?? "";
+
     setForm((previous) => ({
       ...previous,
       province_id: id,
+      province_name: provinceName,
       city_id: null,
+      city_name: "",
     }));
 
-    clearError("province_id");
-    clearError("city_id");
+    clearError("province_id", "province_name", "city_id", "city_name");
   };
 
-  const handleAgentCityChange = (id: number | null) => {
+  const handleAgentCityChange = (
+    id: number | null,
+    name: string,
+  ) => {
     setForm((previous) => ({
       ...previous,
       city_id: id,
+      city_name: name,
     }));
 
-    clearError("city_id");
+    clearError("city_id", "city_name");
   };
 
   const handleBranchProvinceChange = (
     index: number,
     id: number | null,
   ) => {
+    const provinceName =
+      provinces.find((province) => province.id === id)
+        ?.name ?? "";
+
     setBranches((previous) =>
       previous.map((branch, branchIndex) =>
         branchIndex === index
           ? {
             ...branch,
             province_id: id,
+            province_name: provinceName,
             city_id: null,
+            city_name: "",
           }
           : branch,
       ),
     );
 
-    clearError(`branches.${index}.province_id`);
-    clearError(`branches.${index}.city_id`);
+    clearError(
+      `branches.${index}.province_id`,
+      `branches.${index}.province_name`,
+      `branches.${index}.city_id`,
+      `branches.${index}.city_name`,
+    );
   };
 
   const handleBranchCityChange = (
     index: number,
     id: number | null,
+    name: string,
   ) => {
     setBranches((previous) =>
       previous.map((branch, branchIndex) =>
@@ -377,19 +405,22 @@ const CreateMasterAgen = ({
           ? {
             ...branch,
             city_id: id,
+            city_name: name,
           }
           : branch,
       ),
     );
 
-    clearError(`branches.${index}.city_id`);
+    clearError(
+      `branches.${index}.city_id`,
+      `branches.${index}.city_name`,
+    );
   };
 
   const handleAddBranch = () => {
     setBranches((previous) => [
-
-      { ...initialBranch },
       ...previous,
+      { ...initialBranch },
     ]);
 
     clearError("branches");
@@ -433,11 +464,15 @@ const CreateMasterAgen = ({
   const handleSubmit = async () => {
     if (submitting) return;
 
-    const payload = {
+    const payload: CreateMasterAgentPayload = {
       ...form,
+      province_name: form.province_name,
+      city_name: form.city_name,
       is_active: true,
       branches: branches.map((branch) => ({
         ...branch,
+        province_name: branch.province_name,
+        city_name: branch.city_name,
         is_active: true,
       })),
     };
@@ -467,14 +502,11 @@ const CreateMasterAgen = ({
     setValidationErrors({});
 
     try {
-      await onSubmit(
-        result.data as CreateMasterAgentPayload,
-      );
+      await onSubmit(payload);
     } catch (error) {
       console.error("[Master Agen] onSubmit gagal:", error);
     }
   };
-
   return (
     <AppModal
       open={open}
@@ -511,13 +543,13 @@ const CreateMasterAgen = ({
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field>
-              <FieldLabel>Nama Travel</FieldLabel>
+              <FieldLabel>Nama Agen</FieldLabel>
               <Input
                 value={form.name}
                 onChange={(event) =>
                   handleChange("name", event.target.value)
                 }
-                placeholder="Masukkan nama travel"
+                placeholder="Masukkan nama agen"
               />
               {getError("name") && (
                 <p className="text-sm text-red-500">
@@ -550,10 +582,7 @@ const CreateMasterAgen = ({
               <Input
                 value={form.contact_person}
                 onChange={(event) =>
-                  handleChange(
-                    "contact_person",
-                    event.target.value,
-                  )
+                  handleChange("contact_person", event.target.value)
                 }
                 placeholder="Nama PIC"
               />
@@ -588,12 +617,15 @@ const CreateMasterAgen = ({
               onCityChange={handleAgentCityChange}
               provinceLoading={provincesLoading}
               provinceError={provincesError}
-              provinceValidationError={getError("province_id")}
-              cityValidationError={getError("city_id")}
+              provinceValidationError={
+                getError("province_id") ?? getError("province_name")
+              }
+              cityValidationError={
+                getError("city_id") ?? getError("city_name")
+              }
             />
           </div>
         </AppModal.Section>
-
 
         <AppModal.Section
           title="Cabang Agen"
@@ -707,25 +739,25 @@ const CreateMasterAgen = ({
                     onProvinceChange={(id) =>
                       handleBranchProvinceChange(index, id)
                     }
-                    onCityChange={(id) =>
-                      handleBranchCityChange(index, id)
+                    onCityChange={(id, name) =>
+                      handleBranchCityChange(index, id, name)
                     }
                     provinceLoading={provincesLoading}
                     provinceError={provincesError}
-                    provinceValidationError={getError(
-                      `branches.${index}.province_id`,
-                    )}
-                    cityValidationError={getError(
-                      `branches.${index}.city_id`,
-                    )}
+                    provinceValidationError={
+                      getError(`branches.${index}.province_id`) ??
+                      getError(`branches.${index}.province_name`)
+                    }
+                    cityValidationError={
+                      getError(`branches.${index}.city_id`) ??
+                      getError(`branches.${index}.city_name`)
+                    }
                   />
                 </div>
               </div>
             ))}
           </div>
-
         </AppModal.Section>
-
       </div>
     </AppModal>
   );

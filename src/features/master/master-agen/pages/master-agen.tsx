@@ -104,21 +104,16 @@ export default function MasterAgentPage() {
     pageSize: perPage,
   };
 
-  // Opsi kota
-  const cityOptions = useMemo<string[]>(
-    () => [
-      ...new Set(
-        agents
-          .map((agent) =>
-            typeof agent.city === "string"
-              ? agent.city
-              : agent.city?.name ?? "",
-          )
-          .filter((city) => city.trim() !== ""),
-      ),
-    ],
-    [agents],
-  );
+const cityOptions = useMemo<string[]>(
+  () => [
+    ...new Set(
+      agents
+        .map((agent) => agent.city_name ?? "")
+        .filter((city) => city.trim() !== ""),
+    ),
+  ],
+  [agents],
+);
 
   const filteredCityOptions = useMemo(
     () =>

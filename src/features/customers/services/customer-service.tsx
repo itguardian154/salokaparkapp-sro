@@ -4,11 +4,12 @@ import type {
   CustomerQueryParams,
   CreateCustomerPayload,
   UpdateCustomerPayload,
+  CustomerListResponse,
+  CustomerDetailResponse,
 } from "../types/customer";
 
 export const createCustomer = async (
   payload: CreateCustomerPayload,
-  attachments: File[] = [],
 ): Promise<void> => {
   const token = localStorage.getItem("token");
 
@@ -16,24 +17,16 @@ export const createCustomer = async (
     throw new Error("Token tidak ditemukan. Silakan login kembali.");
   }
 
-  const url = `${API_URLS.sro}products`;
-  const headers = { Authorization: `Bearer ${token}` };
-
-  if (attachments.length === 0) {
-    await axios.post(url, payload, { headers });
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("name", payload.name);
-  formData.append("is_active", payload.is_active ? "1" : "0");
-  await axios.post(url, formData, { headers });
+  await axios.post(`${API_URLS.sro}customers`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 export const updateCustomer = async (
   id: number,
   payload: UpdateCustomerPayload,
-  referenceFile?: File | null,
 ): Promise<void> => {
   const token = localStorage.getItem("token");
 
@@ -41,19 +34,11 @@ export const updateCustomer = async (
     throw new Error("Token tidak ditemukan. Silakan login kembali.");
   }
 
-  const headers = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  if (!referenceFile) {
-    await axios.put(`${API_URLS.sro}products/${id}`, payload, { headers });
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("name", payload.name);
-  formData.append("is_active", payload.is_active ? "1" : "0");
-  await axios.put(`${API_URLS.sro}customers/${id}`, formData, { headers });
+  await axios.put(`${API_URLS.sro}customers/${id}`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 export const getCustomer = async (
@@ -91,7 +76,7 @@ export const getCustomerDetail = async (
   }
 
   const response = await axios.get<CustomerDetailResponse>(
-    `${API_URLS.sro}products/${id}`,
+    `${API_URLS.sro}customers/${id}`,
     {
       signal,
       headers: {

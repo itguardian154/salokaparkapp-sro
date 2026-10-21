@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
 import { FaDatabase, FaUsers } from "react-icons/fa6";
@@ -13,20 +13,17 @@ import TablePagination from "@/components/data-table/table-pagination";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { dataTableFeatures } from "@/components/data-table/table-features";
 
-import useMasterCustomer from "../hooks/use-customer";
+import useCustomer from "../hooks/use-customer";
 import { getCustomerColumns } from "../columns";
+import type { CustomerRecord } from "../types/customer";
 
 interface RegionOption {
-  id: string | number;
+  id: string;
   name: string;
 }
 
 interface CustomerRegionData {
-  province?: RegionOption | string | null;
-  province_id?: string | number | null;
   province_name?: string | null;
-  city?: RegionOption | string | null;
-  city_id?: string | number | null;
   city_name?: string | null;
 }
 
@@ -34,39 +31,23 @@ interface CustomerFilterOption {
   value: string;
   label: string;
 }
+
 function getRegionOption(
   customer: CustomerRegionData,
   type: "province" | "city",
 ): RegionOption | null {
-  const region = customer[type];
+  const name =
+    type === "province"
+      ? customer.province_name
+      : customer.city_name;
 
-  const regionId =
-    region && typeof region === "object"
-      ? region.id
-      : type === "province"
-        ? customer.province_id
-        : customer.city_id;
-
-  const regionName =
-    region && typeof region === "object"
-      ? region.name
-      : typeof region === "string"
-        ? region
-        : type === "province"
-          ? customer.province_name
-          : customer.city_name;
-
-  if (
-    regionId === null ||
-    regionId === undefined ||
-    !regionName
-  ) {
+  if (!name) {
     return null;
   }
 
   return {
-    id: regionId,
-    name: String(regionName),
+    id: name,
+    name,
   };
 }
 
@@ -80,7 +61,7 @@ function getUniqueRegions(
     const region = getRegionOption(customer, type);
 
     if (region) {
-      uniqueRegions.set(String(region.id), region);
+      uniqueRegions.set(region.name, region);
     }
   });
 
@@ -89,9 +70,9 @@ function getUniqueRegions(
   );
 }
 
-export default function MasterCustomerPage() {
+export default function CustomerPage() {
   const {
-    dataMasterCustomer,
+    dataCustomer,
     loadingData,
     error,
     searchData,
@@ -107,12 +88,11 @@ export default function MasterCustomerPage() {
     toPage,
     handleNextPage,
     handlePrevPage,
-  } = useMasterCustomer();
+  } = useCustomer();
 
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
-  // State khusus filter provinsi dan kota.
   const [provincePickerOpen, setProvincePickerOpen] =
     useState(false);
   const [cityPickerOpen, setCityPickerOpen] =
@@ -126,7 +106,7 @@ export default function MasterCustomerPage() {
   const [selectedCity, setSelectedCity] =
     useState<RegionOption | null>(null);
 
-  // State filter segment.
+  // Opsi ini dapat diisi dari API segment dan segment detail.
   const [segmentOptions] = useState<CustomerFilterOption[]>([]);
   const [segmentDetailOptions] =
     useState<CustomerFilterOption[]>([]);
@@ -135,54 +115,64 @@ export default function MasterCustomerPage() {
   const [selectedSegmentDetail, setSelectedSegmentDetail] =
     useState("");
 
-  /**
-   * Pilihan provinsi diambil dari data customer.
-   * Provinsi yang belum memiliki customer tidak ditampilkan.
-   */
-  const provinceOptions = useMemo(
-    () =>
-      getUniqueRegions(
-        dataMasterCustomer as CustomerRegionData[],
-        "province",
-      ),
-    [dataMasterCustomer],
+  // Record yang dipilih pada kolom aksi.
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerRecord | null>(null);
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const handleDetail = useCallback((record: CustomerRecord) => {
+    setSelectedCustomer(record);
+    setDetailOpen(true);
+    setEditOpen(false);
+  }, []);
+
+  const handleEdit = useCallback((record: CustomerRecord) => {
+    setSelectedCustomer(record);
+    setEditOpen(true);
+    setDetailOpen(false);
+  }, []);
+
+  // Sesuaikan dengan mekanisme hak akses aplikasi.
+  const canEdit = true;
+
+  const customers = useMemo(
+    () => (dataCustomer ?? []) as CustomerRecord[],
+    [dataCustomer],
   );
 
-  /**
-   * Pilihan kota diambil dari data customer.
-   * Jika provinsi dipilih, hanya kota dari provinsi tersebut
-   * yang ditampilkan.
-   */
+  const regionCustomers = useMemo<CustomerRegionData[]>(
+    () => customers,
+    [customers],
+  );
+
+  const provinceOptions = useMemo(
+    () => getUniqueRegions(regionCustomers, "province"),
+    [regionCustomers],
+  );
+
   const cityOptions = useMemo(() => {
-    const customers =
-      dataMasterCustomer as CustomerRegionData[];
+    if (!selectedProvince) {
+      return [];
+    }
 
-    const filteredCustomers = selectedProvince
-      ? customers.filter((customer) => {
-          const province = getRegionOption(
-            customer,
-            "province",
-          );
-
-          return (
-            province &&
-            String(province.id) ===
-              String(selectedProvince.id)
-          );
-        })
-      : customers;
+    const filteredCustomers = regionCustomers.filter(
+      (customer) =>
+        customer.province_name === selectedProvince.name,
+    );
 
     return getUniqueRegions(filteredCustomers, "city");
-  }, [dataMasterCustomer, selectedProvince]);
+  }, [regionCustomers, selectedProvince]);
 
   const columns = useMemo(
-    () => getCustomerColumns(),
-    [],
+    () => getCustomerColumns(handleDetail, handleEdit, canEdit),
+    [handleDetail, handleEdit, canEdit],
   );
 
   const table = useTable({
     features: dataTableFeatures,
-    data: dataMasterCustomer,
+    data: customers,
     columns,
     state: {
       columnVisibility,
@@ -203,8 +193,10 @@ export default function MasterCustomerPage() {
         ...current.filter,
         segment_id: "",
         segment_detail_id: "",
-        province_id: "",
-        city_id: "",
+        province_name: "",
+        city_name: "",
+        status: "",
+        is_active: "",
       },
     }));
 
@@ -223,14 +215,16 @@ export default function MasterCustomerPage() {
   const activeFilters = Boolean(
     filterData.filter.segment_id ||
       filterData.filter.segment_detail_id ||
-      filterData.filter.province_id ||
-      filterData.filter.city_id,
+      filterData.filter.province_name ||
+      filterData.filter.city_name ||
+      filterData.filter.status ||
+      filterData.filter.is_active,
   );
 
   return (
     <section className="min-w-0 space-y-5">
       <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        {/* Header dan pencarian */}
+        {/* Header */}
         <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -240,7 +234,7 @@ export default function MasterCustomerPage() {
               />
 
               <h1 className="text-lg font-bold text-slate-800 dark:text-white">
-                Master Customer
+                Customer
               </h1>
             </div>
 
@@ -249,6 +243,7 @@ export default function MasterCustomerPage() {
             </p>
           </div>
 
+          {/* Search dan filter */}
           <div className="w-full lg:w-96">
             <FilterBar
               search={searchData}
@@ -257,7 +252,7 @@ export default function MasterCustomerPage() {
               onReset={resetFilters}
             >
               <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
-                {/* Filter segment */}
+                {/* Segment */}
                 <div className="w-full">
                   <FilterSelect
                     label="Segment"
@@ -280,7 +275,7 @@ export default function MasterCustomerPage() {
                   />
                 </div>
 
-                {/* Filter segment detail */}
+                {/* Segment detail */}
                 <div className="w-full">
                   <FilterSelect
                     label="Segment Detail"
@@ -301,7 +296,7 @@ export default function MasterCustomerPage() {
                   />
                 </div>
 
-                {/* Filter provinsi dari data customer */}
+                {/* Provinsi */}
                 <div className="w-full">
                   <FilterSearchable<RegionOption>
                     label="Provinsi"
@@ -325,10 +320,8 @@ export default function MasterCustomerPage() {
                         ...current,
                         filter: {
                           ...current.filter,
-                          province_id: item
-                            ? String(item.id)
-                            : "",
-                          city_id: "",
+                          province_name: item?.name ?? "",
+                          city_name: "",
                         },
                       }));
 
@@ -338,7 +331,7 @@ export default function MasterCustomerPage() {
                   />
                 </div>
 
-                {/* Filter kota dari data customer */}
+                {/* Kota */}
                 <div className="w-full">
                   <FilterSearchable<RegionOption>
                     label="Kota"
@@ -364,9 +357,7 @@ export default function MasterCustomerPage() {
                         ...current,
                         filter: {
                           ...current.filter,
-                          city_id: item
-                            ? String(item.id)
-                            : "",
+                          city_name: item?.name ?? "",
                         },
                       }));
 
@@ -380,7 +371,7 @@ export default function MasterCustomerPage() {
           </div>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination dan pengaturan kolom */}
         <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
           <TablePagination
             leftSlot={<ColumnVisibility table={table} />}
@@ -396,7 +387,7 @@ export default function MasterCustomerPage() {
           />
         </div>
 
-        {/* Data customer */}
+        {/* Tabel customer */}
         {error ? (
           <p
             role="alert"

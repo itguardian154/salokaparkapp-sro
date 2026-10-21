@@ -19,6 +19,7 @@ const getAuthHeaders = () => {
   };
 };
 
+// GET PROVINCES
 export const getProvinces = async (): Promise<Province[]> => {
   const response = await axios.get<PaginatedResponse<Province>>(
     API_URLS.provinces,
@@ -31,31 +32,23 @@ export const getProvinces = async (): Promise<Province[]> => {
   return response.data.data;
 };
 
-export const getCities = async (): Promise<City[]> => {
-  const headers = getAuthHeaders();
+// GET CITIES / REGENCIES BASED ON PROVINCE
+export const getCities = async (
+  provinceId: number,
+): Promise<City[]> => {
+  if (!provinceId) {
+    return [];
+  }
 
-  const firstResponse = await axios.get<PaginatedResponse<City>>(
+  const response = await axios.get<PaginatedResponse<City>>(
     API_URLS.cities,
     {
-      params: { page: 1, per_page: 100 },
-      headers,
+      params: {
+        province_id: provinceId,
+      },
+      headers: getAuthHeaders(),
     },
   );
 
-  const result = [...firstResponse.data.data];
-  const lastPage = firstResponse.data.meta.last_page;
-
-  for (let page = 2; page <= lastPage; page += 1) {
-    const response = await axios.get<PaginatedResponse<City>>(
-      API_URLS.cities,
-      {
-        params: { page, per_page: 100 },
-        headers,
-      },
-    );
-
-    result.push(...response.data.data);
-  }
-
-  return result;
+  return response.data.data;
 };

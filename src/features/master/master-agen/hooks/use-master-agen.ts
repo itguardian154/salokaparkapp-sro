@@ -1,11 +1,7 @@
-
 import { useCallback, useEffect, useState } from "react";
 
 import { getMasterAgent } from "../service/master-agen-service";
-import type {
-  Agent,
-  GetAgentParams,
-} from "../types/master-agen";
+import type { Agent, GetAgentParams } from "../types/master-agen";
 
 const DEFAULT_ITEM_PER_PAGE = 25;
 
@@ -26,9 +22,7 @@ export const useMasterAgent = ({
 
   const [search, setSearchValue] = useState("");
   const [page, setPageValue] = useState(1);
-  const [perPage, setPerPageValue] = useState(
-    DEFAULT_ITEM_PER_PAGE,
-  );
+  const [perPage, setPerPageValue] = useState(DEFAULT_ITEM_PER_PAGE);
 
   const [totalData, setTotalData] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -49,7 +43,7 @@ export const useMasterAgent = ({
           }),
 
           ...(city && {
-            "filter[city]": city,
+            "filter[city_name]": city,
           }),
 
           ...(association_name && {
@@ -67,10 +61,7 @@ export const useMasterAgent = ({
             }),
         };
 
-        const response = await getMasterAgent(
-          params,
-          signal,
-        );
+        const response = await getMasterAgent(params, signal);
 
         if (signal.aborted) return;
 
@@ -80,10 +71,7 @@ export const useMasterAgent = ({
       } catch (err: unknown) {
         if (signal.aborted) return;
 
-        console.error(
-          "Gagal mengambil data master agen:",
-          err,
-        );
+        console.error("Gagal mengambil data master agen:", err);
 
         setError(
           err instanceof Error
@@ -100,14 +88,7 @@ export const useMasterAgent = ({
         }
       }
     },
-    [
-      page,
-      perPage,
-      search,
-      city,
-      association_name,
-      is_active,
-    ],
+    [page, perPage, search, city, association_name, is_active],
   );
 
   useEffect(() => {
