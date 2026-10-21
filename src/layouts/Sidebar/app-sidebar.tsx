@@ -9,7 +9,6 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Grid2x2Check } from "lucide-react";
 import {
   FaCalendarDays,
   FaChartPie,
@@ -73,6 +72,10 @@ export const navMainItems: {
         title: "Hari Libur",
         url: "/konfigurasi-hari-libur",
       },
+      {
+        title: "Metode Pembayaran",
+        url: "/konfigurasi-metode-pembayaran",
+      },
     ],
   },
 
@@ -120,12 +123,6 @@ export const navMainItems: {
     title: "Reports",
     url: "/reports",
     icon: <FaChartPie />,
-  },
-
-  {
-    title: "Datatable",
-    url: "/datatable",
-    icon: <Grid2x2Check />,
   },
 ];
 

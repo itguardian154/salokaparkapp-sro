@@ -1,5 +1,5 @@
 import DetailSection from "./detail-section";
-import { History, QrCode } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { FaFileSignature } from "react-icons/fa6";
 

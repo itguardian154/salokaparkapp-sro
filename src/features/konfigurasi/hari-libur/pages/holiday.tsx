@@ -9,13 +9,23 @@ import DataTable from "@/components/data-table/data-table";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import type { HolidayRecord } from "../types/holiday";
 import { getHolidayColumns } from "../columns";
+import CreateHoliday from "../components/create-holiday";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
+import FilterDate, { type FilterDateValue } from "@/components/Filter/filter-date";
+import EditHoliday from "../components/edit-holiday";
 
 export default function HolidayPage() {
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
-  const columns = useMemo(() => getHolidayColumns(), []);
 
-  const dataHoliday= useMemo<HolidayRecord[]>(
+  const [isCreateHolidayOpen, setIsCreateHolidayOpen] = useState(false);
+  const [isEditHolidayOpen, setIsEditHolidayOpen] = useState(false);
+  const [filterDate, setFilterDate] = useState<FilterDateValue>({
+    startDate: null,
+    endDate: null,
+  });
+
+  const dataHoliday = useMemo<HolidayRecord[]>(
     () => [
       {
         id: 1,
@@ -27,6 +37,12 @@ export default function HolidayPage() {
     ],
     [],
   );
+
+  const columns = useMemo(
+    () => getHolidayColumns(setIsEditHolidayOpen),
+    [setIsEditHolidayOpen],
+  );
+
   const table = useTable({
     features: dataTableFeatures,
     data: dataHoliday,
@@ -38,6 +54,13 @@ export default function HolidayPage() {
     onColumnVisibilityChange: setColumnVisibility,
   });
 
+  const handleCloseCreateHoliday = () => {
+    setIsCreateHolidayOpen(false);
+  };
+
+  const handleCloseEditHoliday = () => {
+    setIsEditHolidayOpen(false);
+  };
 
   return (
     <>
@@ -81,13 +104,19 @@ export default function HolidayPage() {
                         options={[{ value: "draft", label: "Draft" }]}
                       />
                     </div>
+                    <FilterDate
+                      label="Tanggal"
+                      useRange
+                      value={filterDate}
+                      onChange={(value) => setFilterDate(value)}
+                    />
                   </div>
                 </FilterBar>
               </div>
               <div className="hidden gap-2 xl:flex">
                 <Button
                   variant="primer"
-                 // onClick={() => setIsCreateMasterOpen(true)}
+                  onClick={() => setIsCreateHolidayOpen(true)}
                 >
                   <FaPlus className="text-[16px]" />
                   Tambah
@@ -137,6 +166,18 @@ export default function HolidayPage() {
           </>
         </div>
       </section>
+
+      <MobileFloatingActionButton
+        ariaLabel="Tambah Hari Libur"
+        onClick={() => setIsCreateHolidayOpen(true)}
+      />
+
+      <CreateHoliday
+        open={isCreateHolidayOpen}
+        onClose={handleCloseCreateHoliday}
+      />
+
+      <EditHoliday open={isEditHolidayOpen} onClose={handleCloseEditHoliday} />
     </>
   );
 }

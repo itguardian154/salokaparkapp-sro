@@ -1,81 +1,142 @@
-import { useCallback, useEffect, useState } from "react";
-import { getMasterAgent } from "../service/master-agen-service";
-import type { GetAgentParams, Agent } from "../types/master-agen";
 
-type MasterAgentFilters = Pick<
+import { useCallback, useEffect, useState } from "react";
+
+import { getMasterAgent } from "../service/master-agen-service";
+import type {
+  Agent,
   GetAgentParams,
-  "city" | "association_name" | "is_active"
->;
+} from "../types/master-agen";
+
+const DEFAULT_ITEM_PER_PAGE = 25;
+
+type UseMasterAgentOptions = {
+  city?: string;
+  association_name?: string;
+  is_active?: string;
+};
 
 export const useMasterAgent = ({
   city,
   association_name,
   is_active,
-}: MasterAgentFilters = {}) => {
+}: UseMasterAgentOptions = {}) => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
+  const [search, setSearchValue] = useState("");
+  const [page, setPageValue] = useState(1);
+  const [perPage, setPerPageValue] = useState(
+    DEFAULT_ITEM_PER_PAGE,
+  );
+
   const [totalData, setTotalData] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const fetchAgent = useCallback(async () => {
-    try {
+  const fetchAgent = useCallback(
+    async (signal: AbortSignal) => {
       setLoading(true);
       setError(null);
 
-      const params: GetAgentParams = {
-        page,
-        per_page: perPage,
-        search: search.trim() || undefined,
-        city,
-        association_name: association_name || undefined,
-        is_active,
-      };
+      try {
+        const params: GetAgentParams = {
+          page,
+          per_page: perPage,
 
-      const response = await getMasterAgent(params);
+          ...(search.trim() && {
+            "filter[search]": search.trim(),
+          }),
 
-      setAgents(response.data);
-      setTotalData(response.meta.total);
-      setTotalPages(response.meta.last_page);
-    } catch (err) {
-      console.error("Gagal mengambil data master agen:", err);
-      setError("Gagal mengambil data master agen.");
-      setAgents([]);
-      setTotalData(0);
-      setTotalPages(1);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    page,
-    perPage,
-    search,
-    city,
-    association_name,
-    is_active,
-  ]);
+          ...(city && {
+            "filter[city]": city,
+          }),
+
+          ...(association_name && {
+            "filter[association_name]": association_name,
+          }),
+
+          ...(is_active !== undefined &&
+            is_active !== "" && {
+              "filter[is_active]":
+                is_active === "true"
+                  ? "1"
+                  : is_active === "false"
+                    ? "0"
+                    : is_active,
+            }),
+        };
+
+        const response = await getMasterAgent(
+          params,
+          signal,
+        );
+
+        if (signal.aborted) return;
+
+        setAgents(response.data);
+        setTotalData(response.meta.total);
+        setTotalPages(response.meta.last_page || 1);
+      } catch (err: unknown) {
+        if (signal.aborted) return;
+
+        console.error(
+          "Gagal mengambil data master agen:",
+          err,
+        );
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Gagal mengambil data master agen.",
+        );
+
+        setAgents([]);
+        setTotalData(0);
+        setTotalPages(1);
+      } finally {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [
+      page,
+      perPage,
+      search,
+      city,
+      association_name,
+      is_active,
+    ],
+  );
 
   useEffect(() => {
-    void fetchAgent();
-  }, [fetchAgent]);
+    const controller = new AbortController();
 
-  const changeSearch = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
+    void fetchAgent(controller.signal);
 
-  const changePage = (value: number) => {
-    setPage(value);
-  };
+    return () => {
+      controller.abort();
+    };
+  }, [fetchAgent, refreshKey]);
 
-  const changePerPage = (value: number) => {
-    setPerPage(value);
-    setPage(1);
-  };
+  const setSearch = useCallback((value: string) => {
+    setSearchValue(value);
+    setPageValue(1);
+  }, []);
+
+  const setPage = useCallback((value: number) => {
+    setPageValue(value);
+  }, []);
+
+  const setPerPage = useCallback((value: number) => {
+    setPerPageValue(value);
+    setPageValue(1);
+  }, []);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((previous) => previous + 1);
+  }, []);
 
   return {
     agents,
@@ -86,9 +147,11 @@ export const useMasterAgent = ({
     perPage,
     totalData,
     totalPages,
-    setSearch: changeSearch,
-    setPage: changePage,
-    setPerPage: changePerPage,
-    refetch: fetchAgent,
+    setSearch,
+    setPage,
+    setPerPage,
+    refetch,
   };
 };
+
+export default useMasterAgent;

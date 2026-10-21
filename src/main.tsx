@@ -7,7 +7,6 @@ import "./index.css";
 import { ThemeProvider } from "./components/theme-provider";
 import Layout from "./layouts/Sidebar/layout";
 import DashboardPage from "./features/dashboard/pages/dashboard";
-import DatatablePage from "./features/datatable/pages/data-tablelist";
 import MasterProdukPage from "./features/master/master-produk/pages/master-produk";
 import MasterAgentPage from "./features/master/master-agen/pages/master-agen";
 import AuthBootstrap from "./features/auth/components/auth";
@@ -16,6 +15,7 @@ import MasterKategoriProdukPage from "./features/master/kategori-produk/pages/ka
 import InvoicePage from "./features/invoice/pages/invoice";
 import KonfigurasiTiketPage from "./features/konfigurasi/tiket/pages/konfigurasi-tiket";
 import HolidayPage from "./features/konfigurasi/hari-libur/pages/holiday";
+import PaymentMetodePage from "./features/konfigurasi/metode/pages/holiday";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -32,9 +32,14 @@ createRoot(document.getElementById("root")!).render(
 
                 <Route path="/master/produk" element={<MasterProdukPage />} />
 
-                <Route path="/datatable" element={<DatatablePage />} />
-
-                <Route path="/master/agen" element={<MasterAgentPage />} />
+                <Route
+                  path="/master/produk"
+                  element={<MasterProdukPage />}
+                />
+                <Route
+                  path="/master/agen"
+                  element={<MasterAgentPage />}
+                />
 
                 <Route
                   path="/master/kategori-produk"
@@ -49,6 +54,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route
                   path="/konfigurasi-hari-libur"
                   element={<HolidayPage />}
+                />
+                 <Route
+                  path="/konfigurasi-metode-pembayaran"
+                  element={<PaymentMetodePage />}
                 />
 
                 {/* Invoice */}

@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { FaUserEdit } from "react-icons/fa";
-import { FaEye } from "react-icons/fa6";
 
 export function getMasterKategoriProdukColumns(onEdit: () => void) {
   return [

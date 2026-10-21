@@ -1,6 +1,6 @@
-import ColumnVisibility from "@/components/data-table/column-visibility";
+// import ColumnVisibility from "@/components/data-table/column-visibility";
 import { dataTableFeatures } from "@/components/data-table/table-features";
-import TablePagination from "@/components/data-table/table-pagination";
+// import TablePagination from "@/components/data-table/table-pagination";
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSelect from "@/components/Filter/filter-select";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ export default function MasterKategoriProdukPage() {
                       <FilterSelect
                         label="Status Produk"
                         value={""}
-                        onChange={(is_active) => {}}
+                        onChange={() => {}}
                         placeholder="Semua"
                         options={[
                           { value: "true", label: "Aktif" },

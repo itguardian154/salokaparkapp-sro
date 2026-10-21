@@ -12,7 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { FaUserEdit } from "react-icons/fa";
 
-export function getHolidayColumns(): ColumnDef<
+export function getHolidayColumns(
+  setIsEditHolidayOpen: (open: boolean) => void,
+): ColumnDef<
   typeof dataTableFeatures,
   HolidayRecord,
   unknown
@@ -56,6 +58,7 @@ export function getHolidayColumns(): ColumnDef<
                   variant="litleSekunder"
                   size="litle"
                   aria-label="Edit hari libur"
+                  onClick={() => setIsEditHolidayOpen(true)}
                 >
                   <FaUserEdit />
                 </Button>

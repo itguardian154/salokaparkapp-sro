@@ -26,5 +26,14 @@ export const useCreateMasterAgent = () => {
     }
   };
 
-  return { submit, loading, error };
+  const clearError = () => {
+    setError(null);
+  };
+
+  return {
+    submit,
+    loading,
+    error,
+    clearError,
+  };
 };

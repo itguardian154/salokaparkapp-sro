@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useTable } from "@tanstack/react-table";
 import type {
   ColumnVisibilityState,
@@ -8,22 +8,29 @@ import { FaFileInvoice, FaPlus } from "react-icons/fa6";
 
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSearchable from "@/components/Filter/filter-searchable";
+import FilterSelect from "@/components/Filter/filter-select";
 import ColumnVisibility from "@/components/data-table/column-visibility";
 import DataTable from "@/components/data-table/data-table";
 import TablePagination from "@/components/data-table/table-pagination";
 import { dataTableFeatures } from "@/components/data-table/table-features";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
 
 import { getMasterAgentColumns } from "../columns";
 import CreateMasterAgent from "../components/create-agen";
+import EditMasterAgen from "../components/edit-agen";
 import DetailMasterAgent from "../components/detail-agen";
+
 import { useMasterAgent } from "../hooks/use-master-agen";
+import { useCreateMasterAgent } from "../hooks/use-create-agen";
+
 import {
-  createMasterAgent,
   getMasterAgentDetail,
+  updateMasterAgent,
 } from "../service/master-agen-service";
+
 import type {
   Agent,
   AgentDetail,
@@ -32,34 +39,47 @@ import type {
 
 export default function MasterAgentPage() {
   // Filter asosiasi
-  const [associationFilter, setAssociationFilter] = useState<string | null>(
-    null,
-  );
+  const [associationFilter, setAssociationFilter] =
+    useState<string | null>(null);
   const [associationSearch, setAssociationSearch] = useState("");
-  const [associationPickerOpen, setAssociationPickerOpen] = useState(false);
+  const [associationPickerOpen, setAssociationPickerOpen] =
+    useState(false);
 
   // Filter kota
   const [cityFilter, setCityFilter] = useState<string | null>(null);
   const [citySearch, setCitySearch] = useState("");
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
 
-  // Filter status
+  // Filter status seperti Master Produk
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [statusSearch, setStatusSearch] = useState("");
-  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
 
   // Modal
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
+
+  // Data detail dan edit
+  const [selectedAgent, setSelectedAgent] =
+    useState<AgentDetail | null>(null);
+  const [selectedEditAgent, setSelectedEditAgent] =
+    useState<AgentDetail | null>(null);
+
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  // Hook create agen
+  const {
+    submit: createAgent,
+    loading: submittingAgent,
+    clearError: clearCreateAgentError,
+  } = useCreateMasterAgent();
 
   // Visibilitas kolom
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
-  // Data agen dan parameter filter API
+  // Data agen dan filter API
   const {
     agents,
     loading,
@@ -76,8 +96,7 @@ export default function MasterAgentPage() {
   } = useMasterAgent({
     city: cityFilter ?? undefined,
     association_name: associationFilter ?? undefined,
-    is_active:
-      statusFilter === null ? undefined : statusFilter === "true",
+    is_active: statusFilter ?? undefined,
   });
 
   const pagination: PaginationState = {
@@ -85,7 +104,7 @@ export default function MasterAgentPage() {
     pageSize: perPage,
   };
 
-  // Opsi kota dari response API
+  // Opsi kota
   const cityOptions = useMemo<string[]>(
     () => [
       ...new Set(
@@ -124,77 +143,176 @@ export default function MasterAgentPage() {
   const filteredAssociationOptions = useMemo(
     () =>
       associationOptions.filter((name) =>
-        name.toLowerCase().includes(associationSearch.trim().toLowerCase()),
+        name
+          .toLowerCase()
+          .includes(associationSearch.trim().toLowerCase()),
       ),
     [associationOptions, associationSearch],
   );
 
-  // Opsi status
-  const statusOptions = useMemo(() => ["true", "false"], []);
+  // Ambil detail agen
+  const handleOpenDetail = useCallback(async (agent: Agent) => {
+    setSelectedAgent(null);
+    setIsDetailMasterOpen(true);
+    setLoadingDetail(true);
 
-  const filteredStatusOptions = useMemo(
-    () =>
-      statusOptions.filter((status) => {
-        const label = status === "true" ? "Aktif" : "Nonaktif";
-
-        return label.toLowerCase().includes(statusSearch.trim().toLowerCase());
-      }),
-    [statusOptions, statusSearch],
-  );
-
-  // Buka detail agen
-  const handleOpenDetail = async (agent: Agent) => {
     try {
       const response = await getMasterAgentDetail(agent.id);
-
       setSelectedAgent(response.data);
-      setIsDetailMasterOpen(true);
-    } catch (error) {
-      console.error("Gagal mengambil detail agen:", error);
+    } catch (err: unknown) {
+      console.error("Gagal mengambil detail agen:", err);
+      setIsDetailMasterOpen(false);
+
+      toast.add({
+        title: "Gagal memuat detail agen",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat mengambil detail agen.",
+        type: "error",
+        timeout: 6000,
+      });
+    } finally {
+      setLoadingDetail(false);
     }
-  };
+  }, []);
 
-  const columns = useMemo(
-    () => getMasterAgentColumns(handleOpenDetail),
-    [],
-  );
-
-  // Submit agen baru ke API
-  const handleCreateAgent = async (
-    payload: CreateMasterAgentPayload,
-  ) => {
-    if (isCreating) return;
-
-    setIsCreating(true);
-    setCreateError(null);
+  // Ambil data terbaru untuk modal edit
+  const handleOpenEditAgent = useCallback(async (agent: Agent) => {
+    setSelectedEditAgent(null);
+    setIsEditMasterOpen(true);
+    setLoadingEdit(true);
 
     try {
-      await createMasterAgent(payload);
+      const response = await getMasterAgentDetail(agent.id);
+      setSelectedEditAgent(response.data);
+    } catch (err: unknown) {
+      console.error("Gagal mengambil data edit agen:", err);
+      setIsEditMasterOpen(false);
+
+      toast.add({
+        title: "Gagal memuat data agen",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat mengambil data agen.",
+        type: "error",
+        timeout: 6000,
+      });
+    } finally {
+      setLoadingEdit(false);
+    }
+  }, []);
+
+  // Kolom tabel
+  const columns = useMemo(
+    () => getMasterAgentColumns(handleOpenDetail, handleOpenEditAgent),
+    [handleOpenDetail, handleOpenEditAgent],
+  );
+
+  // Submit agen baru
+  const handleCreateAgent = async (
+    payload: CreateMasterAgentPayload,
+  ): Promise<void> => {
+    try {
+      await createAgent(payload);
 
       setIsCreateMasterOpen(false);
       setPage(1);
 
       await refetch();
-    } catch (error: unknown) {
-      console.error("Gagal membuat agen:", error);
 
-      setCreateError(
-        error instanceof Error
-          ? error.message
-          : "Gagal menyimpan data agen. Silakan coba lagi.",
-      );
-    } finally {
-      setIsCreating(false);
+      toast.add({
+        title: "Agen berhasil dibuat",
+        description: "Master agen baru sudah ditambahkan ke daftar.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      console.error("Gagal membuat agen:", err);
+
+      toast.add({
+        title: "Agen gagal dibuat",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat menyimpan master agen.",
+        type: "error",
+        timeout: 6000,
+      });
+
+      throw err;
     }
   };
 
-  // Pencarian
-  const handleSearchChange = (value: string) => {
-    setPage(1);
-    setSearch(value);
+  // Submit perubahan agen
+  const handleUpdateAgent: React.ComponentProps<
+    typeof EditMasterAgen
+  >["onSubmit"] = async (id, payload) => {
+    try {
+      setUpdating(true);
+
+      await updateMasterAgent(id, payload);
+
+      setIsEditMasterOpen(false);
+      setSelectedEditAgent(null);
+
+      await refetch();
+
+      toast.add({
+        title: "Agen berhasil diperbarui",
+        description: "Perubahan data agen berhasil disimpan.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      console.error("Gagal memperbarui agen:", err);
+
+      toast.add({
+        title: "Agen gagal diperbarui",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat memperbarui data agen.",
+        type: "error",
+        timeout: 6000,
+      });
+
+      throw err;
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  // Reset semua filter
+  // Buka modal tambah
+  const handleOpenCreateAgent = () => {
+    clearCreateAgentError();
+    setIsCreateMasterOpen(true);
+  };
+
+  // Tutup modal tambah
+  const handleCloseCreateAgent = () => {
+    if (submittingAgent) return;
+
+    setIsCreateMasterOpen(false);
+    clearCreateAgentError();
+  };
+
+  // Tutup modal edit
+  const handleCloseEditAgent = () => {
+    if (updating || loadingEdit) return;
+
+    setIsEditMasterOpen(false);
+    setSelectedEditAgent(null);
+  };
+
+  // Pencarian seperti Master Produk
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  // Reset seluruh filter dan pencarian
   const resetFilters = () => {
     setAssociationFilter(null);
     setAssociationSearch("");
@@ -205,18 +323,17 @@ export default function MasterAgentPage() {
     setCityPickerOpen(false);
 
     setStatusFilter(null);
-    setStatusSearch("");
-    setStatusPickerOpen(false);
 
     setSearch("");
     setPage(1);
   };
 
+  // Status filter aktif jika salah satu filter dipilih
   const hasActiveFilters = Boolean(
     associationFilter || cityFilter || statusFilter !== null,
   );
 
-  // Tabel menggunakan data hasil API
+  // Tabel
   const table = useTable({
     features: dataTableFeatures,
     data: agents,
@@ -270,7 +387,6 @@ export default function MasterAgentPage() {
             </div>
 
             <div className="flex w-full items-center gap-3 lg:w-auto">
-              {/* SEARCH DAN FILTER */}
               <div className="w-full lg:w-96">
                 <FilterBar
                   search={search}
@@ -278,7 +394,7 @@ export default function MasterAgentPage() {
                   active={hasActiveFilters}
                   onReset={resetFilters}
                 >
-                  <div className="grid w-full grid-cols-2 gap-4">
+                  <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
                     {/* FILTER KOTA */}
                     <div className="w-full">
                       <FilterSearchable<string>
@@ -327,32 +443,18 @@ export default function MasterAgentPage() {
 
                     {/* FILTER STATUS */}
                     <div className="w-full">
-                      <FilterSearchable<string>
-                        label="Status"
-                        open={statusPickerOpen}
-                        onOpenChange={setStatusPickerOpen}
-                        search={statusSearch}
-                        onSearchChange={setStatusSearch}
-                        placeholder="Semua status"
-                        selectedLabel={
-                          statusFilter === "true"
-                            ? "Aktif"
-                            : statusFilter === "false"
-                              ? "Nonaktif"
-                              : null
-                        }
-                        selectedKey={statusFilter}
-                        items={filteredStatusOptions}
-                        getKey={(status) => status}
-                        renderItem={(status) =>
-                          status === "true" ? "Aktif" : "Nonaktif"
-                        }
-                        onSelect={(status) => {
-                          setStatusFilter(status);
+                      <FilterSelect
+                        label="Status Agen"
+                        value={statusFilter ?? ""}
+                        onChange={(value) => {
+                          setStatusFilter(value === "" ? null : value);
                           setPage(1);
-                          setStatusPickerOpen(false);
-                          setStatusSearch("");
                         }}
+                        placeholder="Semua"
+                        options={[
+                          { value: "true", label: "Aktif" },
+                          { value: "false", label: "Non Aktif" },
+                        ]}
                       />
                     </div>
                   </div>
@@ -363,10 +465,7 @@ export default function MasterAgentPage() {
               <div className="hidden gap-2 xl:flex">
                 <Button
                   variant="primer"
-                  onClick={() => {
-                    setCreateError(null);
-                    setIsCreateMasterOpen(true);
-                  }}
+                  onClick={handleOpenCreateAgent}
                 >
                   <FaPlus className="text-[16px]" />
                   Tambah
@@ -380,7 +479,10 @@ export default function MasterAgentPage() {
             <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
               itemPerPage={perPage}
-              setItemPerPage={table.setPageSize}
+              setItemPerPage={(value) => {
+                setPerPage(value);
+                setPage(1);
+              }}
               currentPage={page}
               lastPage={Math.max(totalPages, 1)}
               fromPage={from}
@@ -405,12 +507,10 @@ export default function MasterAgentPage() {
             </div>
           ) : (
             <>
-              {/* Tampilan desktop */}
               <div className="hidden md:block">
                 <DataTable table={table} cellClassName="px-3 py-2" />
               </div>
 
-              {/* Tampilan mobile */}
               <div className="p-3 md:hidden">
                 <MobileDataCard table={table} titleKey="name" />
               </div>
@@ -422,42 +522,15 @@ export default function MasterAgentPage() {
       {/* CREATE AGEN */}
       <CreateMasterAgent
         open={isCreateMasterOpen}
-        onClose={() => {
-          if (isCreating) return;
-
-          setCreateError(null);
-          setIsCreateMasterOpen(false);
-        }}
+        onClose={handleCloseCreateAgent}
         onSubmit={handleCreateAgent}
+        submitting={submittingAgent}
       />
-
-      {/* Pesan error submit */}
-      {createError && (
-        <div
-          role="alert"
-          className="fixed bottom-5 right-5 z-100 max-w-md rounded-lg border border-red-200 bg-white p-4 text-sm text-red-600 shadow-lg dark:border-red-800 dark:bg-slate-800"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <p>{createError}</p>
-            <button
-              type="button"
-              aria-label="Tutup pesan"
-              onClick={() => setCreateError(null)}
-              className="font-bold"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* FLOATING BUTTON TAMBAH AGEN - MOBILE */}
       <MobileFloatingActionButton
         ariaLabel="Tambah Agen"
-        onClick={() => {
-          setCreateError(null);
-          setIsCreateMasterOpen(true);
-        }}
+        onClick={handleOpenCreateAgent}
       />
 
       {/* DETAIL AGEN */}
@@ -465,9 +538,20 @@ export default function MasterAgentPage() {
         open={isDetailMasterOpen}
         agent={selectedAgent}
         onClose={() => {
+          if (loadingDetail) return;
+
           setIsDetailMasterOpen(false);
           setSelectedAgent(null);
         }}
+      />
+
+      {/* EDIT AGEN */}
+      <EditMasterAgen
+        open={isEditMasterOpen}
+        onClose={handleCloseEditAgent}
+        agent={selectedEditAgent}
+        submitting={updating || loadingEdit}
+        onSubmit={handleUpdateAgent}
       />
     </>
   );
