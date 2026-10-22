@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
-import { FaDatabase, FaUsers } from "react-icons/fa6";
+import { FaDatabase, FaUsers, FaPlus } from "react-icons/fa6";
+
+import { Button } from "@/components/ui/button";
 
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSearchable from "@/components/Filter/filter-searchable";
@@ -14,8 +16,15 @@ import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { dataTableFeatures } from "@/components/data-table/table-features";
 
 import useCustomer from "../hooks/use-customer";
+import useCreateCustomer from "../hooks/use-create-customer";
+
+import CreateCustomer from "../components/create-customer";
+
 import { getCustomerColumns } from "../columns";
-import type { CustomerRecord } from "../types/customer";
+import type {
+  CustomerRecord,
+  CreateCustomerPayload,
+} from "../types/customer";
 
 interface RegionOption {
   id: string;
@@ -90,9 +99,20 @@ export default function CustomerPage() {
     handlePrevPage,
   } = useCustomer();
 
+  const {
+    submit: submitCustomer,
+    loading: submittingCreate,
+    error: createError,
+    clearError: clearCreateError,
+  } = useCreateCustomer();
+
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
+  // Modal tambah customer
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // Filter provinsi dan kota
   const [provincePickerOpen, setProvincePickerOpen] =
     useState(false);
   const [cityPickerOpen, setCityPickerOpen] =
@@ -106,7 +126,8 @@ export default function CustomerPage() {
   const [selectedCity, setSelectedCity] =
     useState<RegionOption | null>(null);
 
-  // Opsi ini dapat diisi dari API segment dan segment detail.
+  // Opsi segment dan segment detail.
+  // Data dapat dihubungkan ke API nantinya.
   const [segmentOptions] = useState<CustomerFilterOption[]>([]);
   const [segmentDetailOptions] =
     useState<CustomerFilterOption[]>([]);
@@ -115,10 +136,9 @@ export default function CustomerPage() {
   const [selectedSegmentDetail, setSelectedSegmentDetail] =
     useState("");
 
-  // Record yang dipilih pada kolom aksi.
-// Hapus state ini sementara
-// const [selectedCustomer, setSelectedCustomer] =
-//   useState<CustomerRecord | null>(null);
+  // Data customer terpilih untuk detail dan edit.
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerRecord | null>(null);
 
 // const [detailOpen, setDetailOpen] = useState(false);
 // const [editOpen, setEditOpen] = useState(false);
@@ -193,6 +213,27 @@ const handleEdit = useCallback((record: CustomerRecord) => {
     onColumnVisibilityChange: setColumnVisibility,
   });
 
+  // Buka modal tambah customer.
+  const handleOpenCreate = () => {
+    clearCreateError();
+    setCreateOpen(true);
+  };
+
+  // Kirim data customer tanpa attachments atau upload file.
+  const handleCreateCustomer = async (
+    payload: CreateCustomerPayload,
+  ) => {
+    await submitCustomer(payload);
+  };
+
+  // Tutup modal dan bersihkan error.
+  const handleCloseCreate = () => {
+    if (submittingCreate) return;
+
+    clearCreateError();
+    setCreateOpen(false);
+  };
+
   const resetFilters = () => {
     setSearchData("");
 
@@ -252,131 +293,143 @@ const handleEdit = useCallback((record: CustomerRecord) => {
             </p>
           </div>
 
-          {/* Search dan filter */}
-          <div className="w-full lg:w-96">
-            <FilterBar
-              search={searchData}
-              onSearchChange={setSearchData}
-              active={activeFilters}
-              onReset={resetFilters}
+          {/* Search dan tombol tambah */}
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+            <div className="w-full sm:min-w-0 sm:flex-1 lg:w-96 lg:flex-none">
+              <FilterBar
+                search={searchData}
+                onSearchChange={setSearchData}
+                active={activeFilters}
+                onReset={resetFilters}
+              >
+                <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
+                  {/* Segment */}
+                  <div className="w-full">
+                    <FilterSelect
+                      label="Segment"
+                      value={selectedSegment}
+                      onChange={(value) => {
+                        setSelectedSegment(value);
+                        setSelectedSegmentDetail("");
+
+                        setFilterData((current) => ({
+                          ...current,
+                          filter: {
+                            ...current.filter,
+                            segment_id: value,
+                            segment_detail_id: "",
+                          },
+                        }));
+                      }}
+                      placeholder="Semua"
+                      options={segmentOptions}
+                    />
+                  </div>
+
+                  {/* Segment detail */}
+                  <div className="w-full">
+                    <FilterSelect
+                      label="Segment Detail"
+                      value={selectedSegmentDetail}
+                      onChange={(value) => {
+                        setSelectedSegmentDetail(value);
+
+                        setFilterData((current) => ({
+                          ...current,
+                          filter: {
+                            ...current.filter,
+                            segment_detail_id: value,
+                          },
+                        }));
+                      }}
+                      placeholder="Semua"
+                      options={segmentDetailOptions}
+                    />
+                  </div>
+
+                  {/* Provinsi */}
+                  <div className="w-full">
+                    <FilterSearchable<RegionOption>
+                      label="Provinsi"
+                      open={provincePickerOpen}
+                      onOpenChange={setProvincePickerOpen}
+                      search={provinceSearch}
+                      onSearchChange={setProvinceSearch}
+                      placeholder="Semua"
+                      selectedLabel={selectedProvince?.name}
+                      selectedKey={selectedProvince?.id}
+                      emptyText="Provinsi tidak ditemukan pada data customer"
+                      items={provinceOptions}
+                      getKey={(item) => item.id}
+                      renderItem={(item) => item.name}
+                      onSelect={(item) => {
+                        setSelectedProvince(item);
+                        setSelectedCity(null);
+                        setCitySearch("");
+
+                        setFilterData((current) => ({
+                          ...current,
+                          filter: {
+                            ...current.filter,
+                            province_name: item?.name ?? "",
+                            city_name: "",
+                          },
+                        }));
+
+                        setProvinceSearch("");
+                        setProvincePickerOpen(false);
+                      }}
+                    />
+                  </div>
+
+                  {/* Kota */}
+                  <div className="w-full">
+                    <FilterSearchable<RegionOption>
+                      label="Kota"
+                      open={cityPickerOpen}
+                      onOpenChange={setCityPickerOpen}
+                      search={citySearch}
+                      onSearchChange={setCitySearch}
+                      placeholder="Semua"
+                      selectedLabel={selectedCity?.name}
+                      selectedKey={selectedCity?.id}
+                      emptyText={
+                        !selectedProvince
+                          ? "Pilih provinsi terlebih dahulu"
+                          : "Kota tidak ditemukan pada data customer"
+                      }
+                      items={cityOptions}
+                      getKey={(item) => item.id}
+                      renderItem={(item) => item.name}
+                      onSelect={(item) => {
+                        setSelectedCity(item);
+
+                        setFilterData((current) => ({
+                          ...current,
+                          filter: {
+                            ...current.filter,
+                            city_name: item?.name ?? "",
+                          },
+                        }));
+
+                        setCitySearch("");
+                        setCityPickerOpen(false);
+                      }}
+                    />
+                  </div>
+                </div>
+              </FilterBar>
+            </div>
+
+            <Button
+              type="button"
+              variant="primer"
+              onClick={handleOpenCreate}
+              className="w-full shrink-0 sm:w-auto"
             >
-              <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
-                {/* Segment */}
-                <div className="w-full">
-                  <FilterSelect
-                    label="Segment"
-                    value={selectedSegment}
-                    onChange={(value) => {
-                      setSelectedSegment(value);
-                      setSelectedSegmentDetail("");
-
-                      setFilterData((current) => ({
-                        ...current,
-                        filter: {
-                          ...current.filter,
-                          segment_id: value,
-                          segment_detail_id: "",
-                        },
-                      }));
-                    }}
-                    placeholder="Semua"
-                    options={segmentOptions}
-                  />
-                </div>
-
-                {/* Segment detail */}
-                <div className="w-full">
-                  <FilterSelect
-                    label="Segment Detail"
-                    value={selectedSegmentDetail}
-                    onChange={(value) => {
-                      setSelectedSegmentDetail(value);
-
-                      setFilterData((current) => ({
-                        ...current,
-                        filter: {
-                          ...current.filter,
-                          segment_detail_id: value,
-                        },
-                      }));
-                    }}
-                    placeholder="Semua"
-                    options={segmentDetailOptions}
-                  />
-                </div>
-
-                {/* Provinsi */}
-                <div className="w-full">
-                  <FilterSearchable<RegionOption>
-                    label="Provinsi"
-                    open={provincePickerOpen}
-                    onOpenChange={setProvincePickerOpen}
-                    search={provinceSearch}
-                    onSearchChange={setProvinceSearch}
-                    placeholder="Semua"
-                    selectedLabel={selectedProvince?.name}
-                    selectedKey={selectedProvince?.id}
-                    emptyText="Provinsi tidak ditemukan pada data customer"
-                    items={provinceOptions}
-                    getKey={(item) => item.id}
-                    renderItem={(item) => item.name}
-                    onSelect={(item) => {
-                      setSelectedProvince(item);
-                      setSelectedCity(null);
-                      setCitySearch("");
-
-                      setFilterData((current) => ({
-                        ...current,
-                        filter: {
-                          ...current.filter,
-                          province_name: item?.name ?? "",
-                          city_name: "",
-                        },
-                      }));
-
-                      setProvinceSearch("");
-                      setProvincePickerOpen(false);
-                    }}
-                  />
-                </div>
-
-                {/* Kota */}
-                <div className="w-full">
-                  <FilterSearchable<RegionOption>
-                    label="Kota"
-                    open={cityPickerOpen}
-                    onOpenChange={setCityPickerOpen}
-                    search={citySearch}
-                    onSearchChange={setCitySearch}
-                    placeholder="Semua"
-                    selectedLabel={selectedCity?.name}
-                    selectedKey={selectedCity?.id}
-                    emptyText={
-                      !selectedProvince
-                        ? "Pilih provinsi terlebih dahulu"
-                        : "Kota tidak ditemukan pada data customer"
-                    }
-                    items={cityOptions}
-                    getKey={(item) => item.id}
-                    renderItem={(item) => item.name}
-                    onSelect={(item) => {
-                      setSelectedCity(item);
-
-                      setFilterData((current) => ({
-                        ...current,
-                        filter: {
-                          ...current.filter,
-                          city_name: item?.name ?? "",
-                        },
-                      }));
-
-                      setCitySearch("");
-                      setCityPickerOpen(false);
-                    }}
-                  />
-                </div>
-              </div>
-            </FilterBar>
+              <FaPlus size={14} />
+              Tambah
+            </Button>
           </div>
         </div>
 
@@ -435,6 +488,15 @@ const handleEdit = useCallback((record: CustomerRecord) => {
           </>
         )}
       </div>
+
+      {/* Modal tambah customer */}
+      <CreateCustomer
+        open={createOpen}
+        onClose={handleCloseCreate}
+        onSubmit={handleCreateCustomer}
+        submitting={submittingCreate}
+        submitError={createError}
+      />
     </section>
   );
 }
