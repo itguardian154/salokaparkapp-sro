@@ -137,8 +137,8 @@ export default function CustomerPage() {
     useState("");
 
   // Data customer terpilih untuk detail dan edit.
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerRecord | null>(null);
+  // const [selectedCustomer, setSelectedCustomer] =
+  //   useState<CustomerRecord | null>(null);
 
 // const [detailOpen, setDetailOpen] = useState(false);
 // const [editOpen, setEditOpen] = useState(false);
