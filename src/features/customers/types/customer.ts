@@ -1,26 +1,27 @@
 export type CreateCustomerPayload = {
   name: string;
-  province_id: number;
-  city_id: number;
-  code: string;
+  province_name: string;
+  city_name: string;
   email: string;
   phone: string;
   npwp: string;
+  segment_id: number;
+  segment_detail_id: number;
   contact_person: string;
   contact_phone: string | null;
   contact_email: string | null;
-  address: string | null;
-  is_active: boolean;
 };
 
 export type UpdateCustomerPayload = {
   name: string;
-  province_id: number;
-  city_id: number;
+  province_name: string;
+  city_name: string;
   code: string;
   email: string;
   phone: string;
   npwp: string;
+  segment_id: number;
+  segment_detail_id: number;
   contact_person: string;
   contact_phone: string | null;
   contact_email: string | null;
@@ -41,9 +42,6 @@ export type CustomerRecord = {
   created_at: string;
   updated_at: string;
 };
-
-
-
 
 export type CustomerPaginationLink = {
   url: string | null;
@@ -109,7 +107,6 @@ export type CustomerFilter = {
   province_name: string;
   city_name: string;
 };
-
 
 export type CustomerFilters = {
   filter: CustomerFilter;
