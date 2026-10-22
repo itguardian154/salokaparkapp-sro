@@ -28,6 +28,7 @@ export const createMasterProduk = async (
 
   const formData = new FormData();
   formData.append("name", payload.name);
+  formData.append("product_category_id", String(payload.product_category_id));
   formData.append("description", payload.description);
   formData.append("price", String(payload.price));
   formData.append("day_type", payload.day_type);
@@ -72,6 +73,7 @@ export const updateMasterProduk = async (
 
   const formData = new FormData();
   formData.append("name", payload.name);
+  formData.append("product_category_id", String(payload.product_category_id));
   formData.append("description", payload.description);
   formData.append("price", String(payload.price));
   formData.append("day_type", payload.day_type);

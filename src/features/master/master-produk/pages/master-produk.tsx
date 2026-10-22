@@ -10,11 +10,13 @@ import TablePagination from "@/components/data-table/table-pagination";
 import { dataTableFeatures } from "@/components/data-table/table-features";
 import { getMasterProdukColumns } from "../columns";
 import useMasterProduk from "../hooks/use-master-produk";
+import useMasterKategoriProduk from "@/features/master/kategori-produk/hooks/use-master-kategori";
 import useDetailProduk from "../hooks/use-detail-produk";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 import type { Departemen } from "@/features/departemen/types/departemen";
+import type { KategoriProdukRecord } from "@/features/master/kategori-produk/types/kategori-produk";
 import FilterSearchable from "@/components/Filter/filter-searchable";
 import FilterSelect from "@/components/Filter/filter-select";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
@@ -63,6 +65,13 @@ export default function MasterProdukPage() {
     refetch,
   } = useMasterProduk();
   const {
+    dataMasterKategoriProduk: kategoriProduk,
+    loadingData: loadingKategoriProduk,
+    error: kategoriProdukError,
+    searchData: kategoriSearch,
+    setSearchData: setKategoriSearch,
+  } = useMasterKategoriProduk();
+  const {
     submit: createProduk,
     loading: submittingProduk,
     error: createProdukError,
@@ -107,6 +116,9 @@ export default function MasterProdukPage() {
   const [departemenPickerOpen, setDepartemenPickerOpen] = useState(false);
   const [selectedDepartemen, setSelectedDepartemen] =
     useState<Departemen | null>(null);
+  const [kategoriFilterOpen, setKategoriFilterOpen] = useState(false);
+  const [selectedKategoriFilter, setSelectedKategoriFilter] =
+    useState<KategoriProdukRecord | null>(null);
 
   const columns = useMemo(
     () =>
@@ -116,6 +128,8 @@ export default function MasterProdukPage() {
           setIsDetailMasterOpen(true);
         },
         (produk) => {
+          setSearchDepartemen("");
+          setKategoriSearch("");
           clearEditProdukError();
           setSelectedEditProdukId(produk.id);
           setIsEditMasterOpen(true);
@@ -142,6 +156,7 @@ export default function MasterProdukPage() {
       filter: {
         ...current.filter,
         department_id: "",
+        product_category_id: "",
         status: "",
         is_active: "",
       },
@@ -149,6 +164,9 @@ export default function MasterProdukPage() {
     setSelectedDepartemen(null);
     setSearchDepartemen("");
     setDepartemenPickerOpen(false);
+    setSelectedKategoriFilter(null);
+    setKategoriSearch("");
+    setKategoriFilterOpen(false);
   };
 
   const handleCreateProduk = async (
@@ -183,6 +201,12 @@ export default function MasterProdukPage() {
   const handleCloseCreateProduk = () => {
     setIsCreateMasterOpen(false);
     clearCreateProdukError();
+  };
+
+  const handleOpenCreateProduk = () => {
+    setSearchDepartemen("");
+    setKategoriSearch("");
+    setIsCreateMasterOpen(true);
   };
 
   const handleUpdateProduk = async (
@@ -297,6 +321,21 @@ export default function MasterProdukPage() {
     }
   };
 
+  const kategoriOptions = {
+    items: kategoriProduk,
+    search: kategoriSearch,
+    onSearchChange: setKategoriSearch,
+    loading: loadingKategoriProduk,
+    error: kategoriProdukError,
+  };
+  const departemenOptions = {
+    items: departemen,
+    search: searchDepartemen,
+    onSearchChange: setSearchDepartemen,
+    loading: loadingDepartemen,
+    error: departemenError,
+  };
+
   return (
     <>
       <section className="min-w-0 space-y-5">
@@ -324,6 +363,7 @@ export default function MasterProdukPage() {
                   onSearchChange={setSearchData}
                   active={Boolean(
                     filterData.filter.department_id ||
+                    filterData.filter.product_category_id ||
                     filterData.filter.status ||
                     filterData.filter.is_active,
                   )}
@@ -359,6 +399,45 @@ export default function MasterProdukPage() {
                           }));
                           setSearchDepartemen("");
                           setDepartemenPickerOpen(false);
+                        }}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSearchable<KategoriProdukRecord>
+                        label="Kategori Produk"
+                        open={kategoriFilterOpen}
+                        onOpenChange={setKategoriFilterOpen}
+                        search={kategoriSearch}
+                        onSearchChange={setKategoriSearch}
+                        placeholder="Semua"
+                        selectedLabel={selectedKategoriFilter?.name}
+                        selectedKey={
+                          selectedKategoriFilter
+                            ? String(selectedKategoriFilter.id)
+                            : null
+                        }
+                        emptyText={
+                          loadingKategoriProduk
+                            ? "Memuat kategori produk..."
+                            : (kategoriProdukError ?? "Kategori produk tidak ditemukan")
+                        }
+                        items={kategoriProduk}
+                        getKey={(kategori) => String(kategori.id)}
+                        renderItem={(kategori) => kategori.name}
+                        onSelect={(kategori) => {
+                          setSelectedKategoriFilter(kategori);
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              product_category_id: kategori
+                                ? String(kategori.id)
+                                : "",
+                            },
+                          }));
+                          setKategoriSearch("");
+                          setKategoriFilterOpen(false);
                         }}
                       />
                     </div>
@@ -419,7 +498,7 @@ export default function MasterProdukPage() {
                 {canCreateProduk && (
                   <Button
                     variant="primer"
-                    onClick={() => setIsCreateMasterOpen(true)}
+                    onClick={handleOpenCreateProduk}
                   >
                     <FaPlus className="text-[16px]" />
                     Tambah
@@ -493,6 +572,8 @@ export default function MasterProdukPage() {
         onSubmit={handleCreateProduk}
         submitting={submittingProduk}
         submitError={createProdukError}
+        kategoriOptions={kategoriOptions}
+        departemenOptions={departemenOptions}
       />
       <EditMasterProduk
         open={isEditMasterOpen}
@@ -501,13 +582,15 @@ export default function MasterProdukPage() {
         produkError={loadEditProdukError}
         submitting={submittingEditProduk}
         submitError={editProdukError}
+        kategoriOptions={kategoriOptions}
+        departemenOptions={departemenOptions}
         onClose={handleCloseEditProduk}
         onSubmit={handleUpdateProduk}
       />
       {canCreateProduk && (
         <MobileFloatingActionButton
           ariaLabel="Tambah Produk"
-          onClick={() => setIsCreateMasterOpen(true)}
+          onClick={handleOpenCreateProduk}
         />
       )}
     </>

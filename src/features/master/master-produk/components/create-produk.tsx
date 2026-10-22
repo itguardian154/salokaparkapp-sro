@@ -11,14 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 import { formatRupiah } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaFilePdf, FaPlus, FaUpload, FaXmark } from "react-icons/fa6";
 
 import type { Departemen } from "@/features/departemen/types/departemen";
-import type { CreateProdukPayload } from "../types/master-produk";
+import type { KategoriProdukRecord } from "@/features/master/kategori-produk/types/kategori-produk";
+import type {
+  CreateProdukPayload,
+  SearchableOptions,
+} from "../types/master-produk";
 import {
   createProdukFormSchema,
   type CreateProdukFormValues,
@@ -42,6 +45,8 @@ type CreateMasterProps = {
   ) => Promise<void>;
   submitting?: boolean;
   submitError?: string | null;
+  kategoriOptions: SearchableOptions<KategoriProdukRecord>;
+  departemenOptions: SearchableOptions<Departemen>;
 };
 
 const CreateMasterProduk = ({
@@ -49,7 +54,23 @@ const CreateMasterProduk = ({
   onClose,
   onSubmit,
   submitting = false,
+  kategoriOptions,
+  departemenOptions,
 }: CreateMasterProps) => {
+  const {
+    items: kategoriProduk,
+    search: kategoriSearch,
+    onSearchChange: onKategoriSearchChange,
+    loading: loadingKategoriProduk,
+    error: kategoriProdukError,
+  } = kategoriOptions;
+  const {
+    items: departemen,
+    search: searchDepartemen,
+    onSearchChange: setSearchDepartemen,
+    loading: loadingDepartemen,
+    error: departemenError,
+  } = departemenOptions;
   const [formData, setFormData] = useState<ProdukFormData>({
     name: "",
     description: "",
@@ -66,17 +87,12 @@ const CreateMasterProduk = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrls = useRef(new Map<File, string>());
   const [openDepartemen, setOpenDepartemen] = useState(false);
+  const [openKategoriProduk, setOpenKategoriProduk] = useState(false);
+  const [selectedKategoriProduk, setSelectedKategoriProduk] =
+    useState<KategoriProdukRecord | null>(null);
   const [selectedDepartemen, setSelectedDepartemen] = useState<
     { id: string; name: string }[]
   >([]);
-  const {
-    departemen,
-    searchDepartemen,
-    setSearchDepartemen,
-    loading: loadingDepartemen,
-    error: departemenError,
-  } = useDepartemen();
-
   useEffect(
     () => () => {
       previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -137,6 +153,9 @@ const CreateMasterProduk = ({
       typeDay: "",
       is_ticket: null,
     });
+    setSelectedKategoriProduk(null);
+    setOpenKategoriProduk(false);
+    onKategoriSearchChange("");
     setValidationErrors({});
     setSelectedDepartemen([]);
     setSearchDepartemen("");
@@ -158,6 +177,7 @@ const CreateMasterProduk = ({
 
     const validation = createProdukFormSchema.safeParse({
       name: formData.name,
+      product_category_id: selectedKategoriProduk?.id ?? 0,
       price: formData.price,
       typeDay: formData.typeDay,
       is_ticket: formData.is_ticket,
@@ -177,6 +197,7 @@ const CreateMasterProduk = ({
     setValidationErrors({});
     const payload: CreateProdukPayload = {
       name: validation.data.name,
+      product_category_id: validation.data.product_category_id,
       description: formData.description.trim(),
       price: Number(validation.data.price),
       department_owners: validation.data.department_owners.map((item) => ({
@@ -238,6 +259,40 @@ const CreateMasterProduk = ({
             {validationErrors.name && (
               <p role="alert" className="text-sm text-red-500">
                 {validationErrors.name}
+              </p>
+            )}
+          </Field>
+
+          <Field>
+            <FieldLabel>Kategori Produk</FieldLabel>
+            <SearchablePopover<KategoriProdukRecord>
+              open={openKategoriProduk}
+              onOpenChange={setOpenKategoriProduk}
+              search={kategoriSearch}
+              onSearchChange={onKategoriSearchChange}
+              placeholder="Pilih kategori produk"
+              selectedLabel={selectedKategoriProduk?.name ?? null}
+              selectedKey={selectedKategoriProduk ? String(selectedKategoriProduk.id) : null}
+              items={kategoriProduk}
+              onSelect={(kategori) => {
+                setSelectedKategoriProduk(kategori);
+                setOpenKategoriProduk(false);
+                setValidationErrors((current) => ({
+                  ...current,
+                  product_category_id: undefined,
+                }));
+              }}
+              renderItem={(kategori) => kategori.name}
+              getKey={(kategori) => String(kategori.id)}
+              emptyText={
+                loadingKategoriProduk
+                  ? "Memuat kategori produk..."
+                  : (kategoriProdukError ?? "Kategori produk tidak ditemukan")
+              }
+            />
+            {validationErrors.product_category_id && (
+              <p role="alert" className="text-sm text-red-500">
+                {validationErrors.product_category_id}
               </p>
             )}
           </Field>

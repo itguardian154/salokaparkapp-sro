@@ -28,7 +28,7 @@ const FIELD_LABELS: Record<string, string> = {
   day_type: "Tipe Hari",
   has_bonus: "Bonus",
   is_active: "Status Aktif",
-  is_ticket: "Tipe Tiket",
+  is_ticket: "Jenis Produk",
   description: "Deskripsi",
   phone: "No. HP",
   city_name: "Kota/Kabupaten",
