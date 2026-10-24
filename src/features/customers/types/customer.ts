@@ -77,6 +77,8 @@ export type CustomerActivity = {
   id: number;
   description: string;
   log_name: string;
+  event?: string | null;
+  action_label?: string | null;
   subject: {
     id: number;
     type: string;
@@ -89,6 +91,12 @@ export type CustomerActivity = {
   changes: {
     before: unknown[] | Record<string, unknown>;
     after: Record<string, unknown>;
+    items?: {
+      key: string;
+      label: string;
+      before: unknown;
+      after: unknown;
+    }[];
   };
   created_at: string;
   created_at_human: string;

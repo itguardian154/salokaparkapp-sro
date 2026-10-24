@@ -56,8 +56,12 @@ const DetailCustomer = ({
         secondaryText: activity.description,
         occurredAt: activity.created_at,
         occurredAtLabel: activity.created_at_human,
-        changes: activity.changes.after,
-        changesTitle: "Update",
+        changes: activity.changes ?? {},
+        action: activity.event,
+        detailText:
+          activity.event?.toLowerCase() === "created"
+            ? "Data Customer berhasil ditambahkan."
+            : undefined,
       })),
     [customer?.activities],
   );
