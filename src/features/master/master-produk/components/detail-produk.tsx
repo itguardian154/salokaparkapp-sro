@@ -70,8 +70,12 @@ const DetailMasterProduk = ({
         secondaryText: activity.description,
         occurredAt: activity.created_at,
         occurredAtLabel: activity.created_at_human,
-        changes: activity.changes.after,
-        changesTitle: "Update",
+        changes: activity.changes ?? {},
+        action: activity.event,
+        detailText:
+          activity.event?.toLowerCase() === "created"
+            ? "Data produk berhasil ditambahkan."
+            : undefined,
       })),
     [produk?.activities],
   );
@@ -203,6 +207,10 @@ const DetailMasterProduk = ({
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
                   <div className="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2 lg:col-span-2">
                     <InfoItem label="Nama Produk" value={produk.name} />
+                    <InfoItem
+                      label="Kategori Produk"
+                      value={produk.product_category?.name ?? "-"}
+                    />
                     <InfoItem
                       label="Harga"
                       value={

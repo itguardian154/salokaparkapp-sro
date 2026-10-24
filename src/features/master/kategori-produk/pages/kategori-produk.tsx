@@ -1,6 +1,4 @@
-// import ColumnVisibility from "@/components/data-table/column-visibility";
 import { dataTableFeatures } from "@/components/data-table/table-features";
-// import TablePagination from "@/components/data-table/table-pagination";
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSelect from "@/components/Filter/filter-select";
 import { Button } from "@/components/ui/button";
@@ -12,39 +10,160 @@ import DataTable from "@/components/data-table/data-table";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import CreateMasterKategoriProduk from "../components/create-kategori";
 import EditMasterKategoriProduk from "../components/edit-kategori";
+import useMasterKategoriProduk from "../hooks/use-master-kategori";
+import useCreateKategoriProduk from "../hooks/use-create-kategori";
+import TablePagination from "@/components/data-table/table-pagination";
+import ColumnVisibility from "@/components/data-table/column-visibility";
+import type { CreateKategoriProdukPayload, UpdateKategoriProdukPayload } from "../types/kategori-produk";
+import { toast } from "@/components/ui/toast";
+import useEditKategoriProduk from "../hooks/use-edit-kategori";
+import useDetailKategoriProduk from "../hooks/use-detail-kategori";
 
 export default function MasterKategoriProdukPage() {
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
+  const [selectedEditProdukId, setSelectedEditProdukId] = useState<
+    number | null
+  >(null);
+
+  const {
+    dataMasterKategoriProduk,
+    loadingData,
+    error,
+    searchData,
+    setSearchData,
+    filterData,
+    setFilterData,
+    itemPerPage,
+    setItemPerPage,
+    currentPage,
+    lastPage,
+    totalData,
+    fromPage,
+    toPage,
+    handleNextPage,
+    handlePrevPage,
+    refetch,
+  } = useMasterKategoriProduk();
+
+  const { submit: createKategoriProduk, loading: submittingProduk } =
+    useCreateKategoriProduk();
+
+  const {
+    submit: editProduk,
+    loading: submittingEditProduk,
+    error: editProdukError,
+    clearError: clearEditProdukError,
+  } = useEditKategoriProduk();
+
+  const {
+    produk: editProdukDetail,
+    loading: loadingEditProduk,
+    error: loadEditProdukError,
+  } = useDetailKategoriProduk(selectedEditProdukId, isEditMasterOpen);
+
+  const resetFilters = () => {
+    setSearchData("");
+    setFilterData((current) => ({
+      ...current,
+      filter: {
+        ...current.filter,
+        name: "",
+        is_active: "",
+      },
+    }));
+  };
 
   const columns = useMemo(
-    () => getMasterKategoriProdukColumns(() => setIsEditMasterOpen(true)),
+    () =>
+      getMasterKategoriProdukColumns((kategori) => {
+        setSelectedEditProdukId(kategori.id);
+        clearEditProdukError();
+        setIsEditMasterOpen(true);
+      }, true),
     [],
   );
 
-  const dataMasterKategori = [
-    {
-      id: 1,
-      kategori: "Agent",
-      is_active: "Aktif",
-    }
-  ]
   const table = useTable({
     features: dataTableFeatures,
-    data: dataMasterKategori,
+    data: dataMasterKategoriProduk,
     columns,
     state: {
       columnVisibility,
-      // pagination: { pageIndex: 0, pageSize: itemPerPage },
+      pagination: { pageIndex: 0, pageSize: itemPerPage },
     },
     onColumnVisibilityChange: setColumnVisibility,
   });
 
+  const handleCreateKategoriProduk = async (
+    payload: CreateKategoriProdukPayload,
+  ) => {
+    try {
+      await createKategoriProduk(payload);
+      setIsCreateMasterOpen(false);
+      refetch();
+      toast.add({
+        title: "Kategori Produk berhasil dibuat",
+        description: "Master kategori produk baru sudah ditambahkan ke daftar.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Kategori Produk gagal dibuat",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat menyimpan kategori produk.",
+        type: "error",
+        timeout: 6000,
+      });
+      throw err;
+    }
+  };
+
   const handleCloseCreateProduk = () => {
     setIsCreateMasterOpen(false);
   };
+
+  const handleUpdateKategoriProduk = async (
+    payload: UpdateKategoriProdukPayload,
+  ) => {
+    if (selectedEditProdukId === null) return;
+
+    try {
+      await editProduk(selectedEditProdukId, payload);
+      setIsEditMasterOpen(false);
+      setSelectedEditProdukId(null);
+      refetch();
+      toast.add({
+        title: "Kategori produk berhasil diperbarui",
+        description: "Perubahan master kategori produk sudah disimpan.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Kategori produk gagal diperbarui",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat memperbarui kategori produk.",
+        type: "error",
+        timeout: 6000,
+      });
+      throw err;
+    }
+  };
+
+  const handleCloseEditProduk = () => {
+    setIsEditMasterOpen(false);
+    setSelectedEditProdukId(null);
+    clearEditProdukError();
+  };
+
   return (
     <>
       <section className="min-w-0 space-y-5">
@@ -65,21 +184,24 @@ export default function MasterKategoriProdukPage() {
             <div className="flex w-full items-center gap-3 lg:w-auto">
               <div className="w-full lg:w-96">
                 <FilterBar
-                  search={""}
-                  onSearchChange={() => {}}
-                  // active={Boolean(
-                  //   filterData.filter.department_id ||
-                  //   filterData.filter.status ||
-                  //   filterData.filter.is_active,
-                  // )}
-                  // onReset={resetFilters}
+                  search={searchData}
+                  onSearchChange={setSearchData}
+                  active={Boolean(
+                    filterData.filter.name || filterData.filter.is_active,
+                  )}
+                  onReset={resetFilters}
                 >
                   <div className="grid w-full grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="w-full">
                       <FilterSelect
-                        label="Status Produk"
-                        value={""}
-                        onChange={() => {}}
+                        label="Status"
+                        value={filterData.filter.is_active}
+                        onChange={(is_active) =>
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: { ...current.filter, is_active },
+                          }))
+                        }
                         placeholder="Semua"
                         options={[
                           { value: "true", label: "Aktif" },
@@ -106,7 +228,7 @@ export default function MasterKategoriProdukPage() {
           </div>
 
           <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
-            {/* <TablePagination
+            <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
               itemPerPage={itemPerPage}
               setItemPerPage={setItemPerPage}
@@ -117,44 +239,53 @@ export default function MasterKategoriProdukPage() {
               totalData={totalData}
               onPrev={handlePrevPage}
               onNext={handleNextPage}
-            /> */}
+            />
           </div>
 
-          {/* {error ? (
+          {error ? (
             <p role="alert" className="px-4 py-3 text-sm text-red-600">
               {error}
             </p>
           ) : loadingData ? (
             <p className="px-4 py-8 text-center text-sm text-slate-500">
-              Memuat data produk...
+              Memuat data kategori produk...
             </p>
-          ) : ( */}
-          <>
-            <div className="hidden md:block">
-              <DataTable table={table} cellClassName="px-3 py-2" />
-            </div>
-            <div className="p-3 md:hidden">
-              <MobileDataCard
-                table={table}
-                titleKey="kategori"
-                titleLabel="Produk"
-                icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
-                emptyTitle="Belum ada data kategori produk"
-                emptyDescription="Data kategori produk akan ditampilkan di sini."
-              />
-            </div>
-          </>
-          {/* )} */}
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <DataTable table={table} cellClassName="px-3 py-2" />
+              </div>
+              <div className="p-3 md:hidden">
+                <MobileDataCard
+                  table={table}
+                  titleKey="name"
+                  titleLabel="Kategori Produk"
+                  icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
+                  emptyTitle="Belum ada data kategori produk"
+                  emptyDescription="Data kategori produk akan ditampilkan di sini."
+                />
+              </div>
+            </>
+          )}
         </div>
       </section>
 
       <CreateMasterKategoriProduk
         open={isCreateMasterOpen}
         onClose={handleCloseCreateProduk}
+        onSubmit={handleCreateKategoriProduk}
+        submitting={submittingProduk}
       />
+
       <EditMasterKategoriProduk
         open={isEditMasterOpen}
-        onClose={() => setIsEditMasterOpen(false)}
+        produk={editProdukDetail}
+        loadingProduk={loadingEditProduk}
+        produkError={loadEditProdukError}
+        submitting={submittingEditProduk}
+        submitError={editProdukError}
+        onClose={handleCloseEditProduk}
+        onSubmit={handleUpdateKategoriProduk}
       />
     </>
   );

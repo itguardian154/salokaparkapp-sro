@@ -1,7 +1,16 @@
 export type ProdukStatus = string;
 
+export type SearchableOptions<T> = {
+  items: T[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  loading: boolean;
+  error: string | null;
+};
+
 export type CreateProdukPayload = {
   name: string;
+  product_category_id: number;
   description: string;
   price: number;
   department_owners: { department_id: string; department_name: string }[];
@@ -13,6 +22,7 @@ export type CreateProdukPayload = {
 
 export type UpdateProdukPayload = {
   name: string;
+  product_category_id: number;
   description: string;
   price: number;
   department_owners: { department_id: string; department_name: string }[];
@@ -24,6 +34,8 @@ export type UpdateProdukPayload = {
 export type ProdukRecord = {
   id: number;
   name: string;
+  product_category_id?: number | null;
+  product_category?: { id: number; name: string } | null;
   reference?: string | null;
   reference_file?: ProdukReferenceFile | string | null;
   department_owner?: ProdukDepartmentOwner[] | null;
@@ -63,11 +75,26 @@ export type ProdukActivity = {
   id: number;
   description: string;
   log_name: string;
-  subject: { id: number; type: string } | null;
-  user: { id: number; name: string; email: string } | null;
+  event?: string | null;
+  action_label?: string | null;
+  subject: {
+    id: number;
+    type: string;
+  } | null;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
   changes: {
     before: unknown[] | Record<string, unknown>;
     after: Record<string, unknown>;
+    items?: {
+      key: string;
+      label: string;
+      before: unknown;
+      after: unknown;
+    }[];
   };
   created_at: string;
   created_at_human: string;
@@ -124,6 +151,7 @@ export type ProdukListResponse = {
 
 export type ProdukFilter = {
   department_id: string;
+  product_category_id: string;
   status: string;
   is_active: string;
 };
@@ -137,6 +165,7 @@ export type ProdukQueryParams = {
   per_page: number;
   "filter[search]"?: string;
   "filter[department_id]"?: string;
+  "filter[product_category_id]"?: string;
   "filter[is_active]"?: string;
   "filter[status]"?: string;
 };

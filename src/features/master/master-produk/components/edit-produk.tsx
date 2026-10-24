@@ -14,12 +14,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 import type { Departemen } from "@/features/departemen/types/departemen";
+import type { KategoriProdukRecord } from "@/features/master/kategori-produk/types/kategori-produk";
 import { formatRupiah } from "@/lib/utils";
 import type { CreateProdukFormValues } from "../schemas/create-produk-schema";
 import { createProdukFormSchema } from "../schemas/create-produk-schema";
-import type { ProdukDetail, UpdateProdukPayload } from "../types/master-produk";
+import type {
+  ProdukDetail,
+  SearchableOptions,
+  UpdateProdukPayload,
+} from "../types/master-produk";
 
 type EditMasterProdukProps = {
   open: boolean;
@@ -28,6 +32,8 @@ type EditMasterProdukProps = {
   produkError: string | null;
   submitting: boolean;
   submitError: string | null;
+  kategoriOptions: SearchableOptions<KategoriProdukRecord>;
+  departemenOptions: SearchableOptions<Departemen>;
   onClose: () => void;
   onSubmit: (
     payload: UpdateProdukPayload,
@@ -45,6 +51,7 @@ type EditProdukFormData = {
   is_active: boolean;
   is_ticket: boolean;
   department_owners: SelectedDepartment[];
+  product_category_id: number | null;
 };
 
 const EditMasterProduk = ({
@@ -55,7 +62,23 @@ const EditMasterProduk = ({
   submitting,
   onClose,
   onSubmit,
+  kategoriOptions,
+  departemenOptions,
 }: EditMasterProdukProps) => {
+  const {
+    items: kategoriProduk,
+    search: kategoriSearch,
+    onSearchChange: onKategoriSearchChange,
+    loading: loadingKategoriProduk,
+    error: kategoriProdukError,
+  } = kategoriOptions;
+  const {
+    items: departemen,
+    search: searchDepartemen,
+    onSearchChange: setSearchDepartemen,
+    loading: loadingDepartemen,
+    error: departemenError,
+  } = departemenOptions;
   const [formData, setFormData] = useState<EditProdukFormData>({
     name: "",
     description: "",
@@ -64,23 +87,17 @@ const EditMasterProduk = ({
     is_active: true,
     is_ticket: false,
     department_owners: [],
+    product_category_id: null,
   });
   const selectedDepartemen = formData.department_owners;
   const [departemenPickerOpen, setDepartemenPickerOpen] = useState(false);
+  const [kategoriPickerOpen, setKategoriPickerOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
     {},
   );
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    departemen,
-    searchDepartemen,
-    setSearchDepartemen,
-    loading: loadingDepartemen,
-    error: departemenError,
-  } = useDepartemen();
-
   useEffect(() => {
     if (!open || !produk) return;
 
@@ -93,13 +110,17 @@ const EditMasterProduk = ({
       day_type: produk.day_type,
       is_active: produk.is_active,
       is_ticket: produk.is_ticket,
+      product_category_id:
+        produk.product_category_id ?? produk.product_category?.id ?? null,
       department_owners: (produk.department_owner ?? []).map((owner) => ({
         id: owner.department_id,
         name: owner.department_name,
       })),
     });
     setDepartemenPickerOpen(false);
+    setKategoriPickerOpen(false);
     setSearchDepartemen("");
+    onKategoriSearchChange("");
     setReferenceFile(null);
     setFileError("");
     setValidationErrors({});
@@ -114,8 +135,10 @@ const EditMasterProduk = ({
       is_active: true,
       is_ticket: false,
       department_owners: [],
+      product_category_id: null,
     });
     setDepartemenPickerOpen(false);
+    setKategoriPickerOpen(false);
     setSearchDepartemen("");
     setReferenceFile(null);
     setFileError("");
@@ -128,6 +151,7 @@ const EditMasterProduk = ({
 
     const validation = createProdukFormSchema.safeParse({
       name: formData.name,
+      product_category_id: formData.product_category_id ?? 0,
       price: formData.price,
       typeDay: formData.day_type,
       is_ticket: formData.is_ticket,
@@ -147,6 +171,7 @@ const EditMasterProduk = ({
     setValidationErrors({});
     const payload: UpdateProdukPayload = {
       name: validation.data.name,
+      product_category_id: validation.data.product_category_id,
       description: formData.description.trim(),
       price: Number(validation.data.price),
       department_owners: validation.data.department_owners.map((owner) => ({
@@ -239,6 +264,50 @@ const EditMasterProduk = ({
               {validationErrors.name && (
                 <p role="alert" className="text-sm text-red-500">
                   {validationErrors.name}
+                </p>
+              )}
+            </Field>
+            <Field>
+              <FieldLabel>Kategori Produk</FieldLabel>
+              <SearchablePopover<KategoriProdukRecord>
+                open={kategoriPickerOpen}
+                onOpenChange={setKategoriPickerOpen}
+                search={kategoriSearch}
+                onSearchChange={onKategoriSearchChange}
+                placeholder="Pilih kategori produk"
+                selectedLabel={
+                  kategoriProduk.find(
+                    (kategori) => kategori.id === formData.product_category_id,
+                  )?.name ?? produk.product_category?.name ?? null
+                }
+                selectedKey={
+                  formData.product_category_id === null
+                    ? null
+                    : String(formData.product_category_id)
+                }
+                items={kategoriProduk}
+                onSelect={(kategori) => {
+                  setFormData((current) => ({
+                    ...current,
+                    product_category_id: kategori.id,
+                  }));
+                  setKategoriPickerOpen(false);
+                  setValidationErrors((current) => ({
+                    ...current,
+                    product_category_id: undefined,
+                  }));
+                }}
+                renderItem={(kategori) => kategori.name}
+                getKey={(kategori) => String(kategori.id)}
+                emptyText={
+                  loadingKategoriProduk
+                    ? "Memuat kategori produk..."
+                    : (kategoriProdukError ?? "Kategori produk tidak ditemukan")
+                }
+              />
+              {validationErrors.product_category_id && (
+                <p role="alert" className="text-sm text-red-500">
+                  {validationErrors.product_category_id}
                 </p>
               )}
             </Field>
