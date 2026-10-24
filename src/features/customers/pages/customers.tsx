@@ -4,6 +4,7 @@ import type { ColumnVisibilityState } from "@tanstack/react-table";
 import { FaDatabase, FaUsers, FaPlus } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSearchable from "@/components/Filter/filter-searchable";
@@ -17,13 +18,19 @@ import { dataTableFeatures } from "@/components/data-table/table-features";
 
 import useCustomer from "../hooks/use-customer";
 import useCreateCustomer from "../hooks/use-create-customer";
+import useEditCustomer from "../hooks/use-update-customer";
+import useDetailCustomer from "../hooks/use-detail-customer";
 
 import CreateCustomer from "../components/create-customer";
+import UpdateCustomer from "../components/update-customer";
+import DetailCustomer from "../components/detail-customer";
 
 import { getCustomerColumns } from "../columns";
+
 import type {
   CustomerRecord,
   CreateCustomerPayload,
+  UpdateCustomerPayload,
 } from "../types/customer";
 
 interface RegionOption {
@@ -31,46 +38,30 @@ interface RegionOption {
   name: string;
 }
 
-interface CustomerRegionData {
-  province_name?: string | null;
-  city_name?: string | null;
-}
-
 interface CustomerFilterOption {
   value: string;
   label: string;
 }
 
-function getRegionOption(
-  customer: CustomerRegionData,
-  type: "province" | "city",
-): RegionOption | null {
-  const name =
-    type === "province"
-      ? customer.province_name
-      : customer.city_name;
-
-  if (!name) {
-    return null;
-  }
-
-  return {
-    id: name,
-    name,
-  };
-}
+type CustomerFilterData = CustomerRecord;
 
 function getUniqueRegions(
-  customers: CustomerRegionData[],
+  customers: CustomerFilterData[],
   type: "province" | "city",
 ): RegionOption[] {
   const uniqueRegions = new Map<string, RegionOption>();
 
   customers.forEach((customer) => {
-    const region = getRegionOption(customer, type);
+    const name =
+      type === "province"
+        ? customer.province_name
+        : customer.city_name;
 
-    if (region) {
-      uniqueRegions.set(region.name, region);
+    if (name) {
+      uniqueRegions.set(name, {
+        id: name,
+        name,
+      });
     }
   });
 
@@ -97,6 +88,7 @@ export default function CustomerPage() {
     toPage,
     handleNextPage,
     handlePrevPage,
+    refetch,
   } = useCustomer();
 
   const {
@@ -106,13 +98,34 @@ export default function CustomerPage() {
     clearError: clearCreateError,
   } = useCreateCustomer();
 
+  const {
+    submit: submitUpdateCustomer,
+    loading: submittingUpdate,
+    error: updateError,
+    clearError: clearUpdateError,
+  } = useEditCustomer();
+
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
-  // Modal tambah customer
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Filter provinsi dan kota
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerRecord | null>(null);
+
+  const [updateOpen, setUpdateOpen] = useState(false);
+
+  // State untuk detail customer
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDetailCustomerId, setSelectedDetailCustomerId] =
+    useState<number | null>(null);
+
+  const {
+    customer: detailCustomer,
+    loading: loadingDetailCustomer,
+    error: detailCustomerError,
+  } = useDetailCustomer(selectedDetailCustomerId, detailOpen);
+
   const [provincePickerOpen, setProvincePickerOpen] =
     useState(false);
   const [cityPickerOpen, setCityPickerOpen] =
@@ -126,69 +139,95 @@ export default function CustomerPage() {
   const [selectedCity, setSelectedCity] =
     useState<RegionOption | null>(null);
 
-  // Opsi segment dan segment detail.
-  // Data dapat dihubungkan ke API nantinya.
-  const [segmentOptions] = useState<CustomerFilterOption[]>([]);
-  const [segmentDetailOptions] =
-    useState<CustomerFilterOption[]>([]);
-
   const [selectedSegment, setSelectedSegment] = useState("");
   const [selectedSegmentDetail, setSelectedSegmentDetail] =
     useState("");
 
-  // Data customer terpilih untuk detail dan edit.
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerRecord | null>(null);
-
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-
-  const handleDetail = useCallback((record: CustomerRecord) => {
-    setSelectedCustomer(record);
-    setDetailOpen(true);
-    setEditOpen(false);
-  }, []);
-
-  const handleEdit = useCallback((record: CustomerRecord) => {
-    setSelectedCustomer(record);
-    setEditOpen(true);
-    setDetailOpen(false);
-  }, []);
-
-  // Sesuaikan dengan mekanisme hak akses aplikasi.
-  const canEdit = true;
-
-  const customers = useMemo(
-    () => (dataCustomer ?? []) as CustomerRecord[],
+  const customers = useMemo<CustomerRecord[]>(
+    () => dataCustomer ?? [],
     [dataCustomer],
   );
 
-  const regionCustomers = useMemo<CustomerRegionData[]>(
-    () => customers,
+  const provinceOptions = useMemo(
+    () => getUniqueRegions(customers, "province"),
     [customers],
   );
 
-  const provinceOptions = useMemo(
-    () => getUniqueRegions(regionCustomers, "province"),
-    [regionCustomers],
+  const cityOptions = useMemo(
+    () => getUniqueRegions(customers, "city"),
+    [customers],
   );
 
-  const cityOptions = useMemo(() => {
-    if (!selectedProvince) {
-      return [];
+  const segmentOptions = useMemo<CustomerFilterOption[]>(() => {
+  const uniqueSegments = new Map<string, string>();
+
+  customers.forEach((customer) => {
+    const segment = customer.segment;
+
+    if (segment?.id && segment.name) {
+      uniqueSegments.set(String(segment.id), segment.name);
+    }
+  });
+
+  return Array.from(uniqueSegments.entries())
+    .map(([id, name]) => ({
+      value: id,
+      label: name,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "id"));
+}, [customers]);
+
+  const segmentDetailOptions = useMemo<CustomerFilterOption[]>(() => {
+  const uniqueDetails = new Map<string, string>();
+
+  customers.forEach((customer) => {
+    const detail = customer.segment_detail;
+
+    if (!detail?.id || !detail.name) return;
+
+    if (
+      selectedSegment &&
+      String(customer.segment?.id) !== selectedSegment
+    ) {
+      return;
     }
 
-    const filteredCustomers = regionCustomers.filter(
-      (customer) =>
-        customer.province_name === selectedProvince.name,
-    );
+    uniqueDetails.set(String(detail.id), detail.name);
+  });
 
-    return getUniqueRegions(filteredCustomers, "city");
-  }, [regionCustomers, selectedProvince]);
+  return Array.from(uniqueDetails.entries())
+    .map(([id, name]) => ({
+      value: id,
+      label: name,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "id"));
+}, [customers, selectedSegment]);
+
+
+  const handleOpenEdit = useCallback(
+    (customer: CustomerRecord) => {
+      clearUpdateError();
+      setSelectedCustomer(customer);
+      setUpdateOpen(true);
+    },
+    [clearUpdateError],
+  );
+
+  // Callback membuka detail customer
+  const handleDetail = useCallback((customer: CustomerRecord) => {
+    setSelectedDetailCustomerId(customer.id);
+    setDetailOpen(true);
+  }, []);
+
+  // Callback menutup detail customer
+  const handleCloseDetail = useCallback(() => {
+    setDetailOpen(false);
+    setSelectedDetailCustomerId(null);
+  }, []);
 
   const columns = useMemo(
-    () => getCustomerColumns(handleDetail, handleEdit, canEdit),
-    [handleDetail, handleEdit, canEdit],
+    () => getCustomerColumns(handleDetail, handleOpenEdit, true),
+    [handleDetail, handleOpenEdit],
   );
 
   const table = useTable({
@@ -205,25 +244,84 @@ export default function CustomerPage() {
     onColumnVisibilityChange: setColumnVisibility,
   });
 
-  // Buka modal tambah customer.
   const handleOpenCreate = () => {
     clearCreateError();
     setCreateOpen(true);
   };
 
-  // Kirim data customer tanpa attachments atau upload file.
   const handleCreateCustomer = async (
     payload: CreateCustomerPayload,
   ) => {
-    await submitCustomer(payload);
+    try {
+      await submitCustomer(payload);
+
+      setCreateOpen(false);
+      clearCreateError();
+      refetch();
+
+      toast.add({
+        title: "Customer berhasil dibuat",
+        description: "Customer baru sudah ditambahkan ke daftar.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Customer gagal dibuat",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat menyimpan data customer.",
+        type: "error",
+        timeout: 6000,
+      });
+    }
   };
 
-  // Tutup modal dan bersihkan error.
+  const handleUpdateCustomer = async (
+    id: number,
+    payload: UpdateCustomerPayload,
+  ) => {
+    try {
+      await submitUpdateCustomer(id, payload);
+
+      setUpdateOpen(false);
+      setSelectedCustomer(null);
+      clearUpdateError();
+      refetch();
+
+      toast.add({
+        title: "Customer berhasil diperbarui",
+        description: "Perubahan data customer berhasil disimpan.",
+        type: "success",
+        timeout: 4000,
+      });
+    } catch (err: unknown) {
+      toast.add({
+        title: "Customer gagal diperbarui",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat memperbarui customer.",
+        type: "error",
+        timeout: 6000,
+      });
+    }
+  };
+
   const handleCloseCreate = () => {
     if (submittingCreate) return;
 
     clearCreateError();
     setCreateOpen(false);
+  };
+
+  const handleCloseEdit = () => {
+    if (submittingUpdate) return;
+
+    clearUpdateError();
+    setUpdateOpen(false);
+    setSelectedCustomer(null);
   };
 
   const resetFilters = () => {
@@ -256,17 +354,16 @@ export default function CustomerPage() {
 
   const activeFilters = Boolean(
     filterData.filter.segment_id ||
-      filterData.filter.segment_detail_id ||
-      filterData.filter.province_name ||
-      filterData.filter.city_name ||
-      filterData.filter.status ||
-      filterData.filter.is_active,
+    filterData.filter.segment_detail_id ||
+    filterData.filter.province_name ||
+    filterData.filter.city_name ||
+    filterData.filter.status ||
+    filterData.filter.is_active,
   );
 
   return (
     <section className="min-w-0 space-y-5">
       <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        {/* Header */}
         <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -285,7 +382,6 @@ export default function CustomerPage() {
             </p>
           </div>
 
-          {/* Search dan tombol tambah */}
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
             <div className="w-full sm:min-w-0 sm:flex-1 lg:w-96 lg:flex-none">
               <FilterBar
@@ -295,7 +391,6 @@ export default function CustomerPage() {
                 onReset={resetFilters}
               >
                 <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
-                  {/* Segment */}
                   <div className="w-full">
                     <FilterSelect
                       label="Segment"
@@ -318,7 +413,6 @@ export default function CustomerPage() {
                     />
                   </div>
 
-                  {/* Segment detail */}
                   <div className="w-full">
                     <FilterSelect
                       label="Segment Detail"
@@ -339,7 +433,6 @@ export default function CustomerPage() {
                     />
                   </div>
 
-                  {/* Provinsi */}
                   <div className="w-full">
                     <FilterSearchable<RegionOption>
                       label="Provinsi"
@@ -356,15 +449,12 @@ export default function CustomerPage() {
                       renderItem={(item) => item.name}
                       onSelect={(item) => {
                         setSelectedProvince(item);
-                        setSelectedCity(null);
-                        setCitySearch("");
 
                         setFilterData((current) => ({
                           ...current,
                           filter: {
                             ...current.filter,
                             province_name: item?.name ?? "",
-                            city_name: "",
                           },
                         }));
 
@@ -374,7 +464,6 @@ export default function CustomerPage() {
                     />
                   </div>
 
-                  {/* Kota */}
                   <div className="w-full">
                     <FilterSearchable<RegionOption>
                       label="Kota"
@@ -385,11 +474,7 @@ export default function CustomerPage() {
                       placeholder="Semua"
                       selectedLabel={selectedCity?.name}
                       selectedKey={selectedCity?.id}
-                      emptyText={
-                        !selectedProvince
-                          ? "Pilih provinsi terlebih dahulu"
-                          : "Kota tidak ditemukan pada data customer"
-                      }
+                      emptyText="Kota tidak ditemukan pada data customer"
                       items={cityOptions}
                       getKey={(item) => item.id}
                       renderItem={(item) => item.name}
@@ -425,7 +510,6 @@ export default function CustomerPage() {
           </div>
         </div>
 
-        {/* Pagination dan pengaturan kolom */}
         <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
           <TablePagination
             leftSlot={<ColumnVisibility table={table} />}
@@ -441,7 +525,6 @@ export default function CustomerPage() {
           />
         </div>
 
-        {/* Tabel customer */}
         {error ? (
           <p
             role="alert"
@@ -481,13 +564,29 @@ export default function CustomerPage() {
         )}
       </div>
 
-      {/* Modal tambah customer */}
       <CreateCustomer
         open={createOpen}
         onClose={handleCloseCreate}
         onSubmit={handleCreateCustomer}
         submitting={submittingCreate}
         submitError={createError}
+      />
+
+      <UpdateCustomer
+        open={updateOpen}
+        onClose={handleCloseEdit}
+        customer={selectedCustomer}
+        onSubmit={handleUpdateCustomer}
+        submitting={submittingUpdate}
+        submitError={updateError}
+      />
+
+      <DetailCustomer
+        open={detailOpen}
+        customer={detailCustomer}
+        loading={loadingDetailCustomer}
+        error={detailCustomerError}
+        onClose={handleCloseDetail}
       />
     </section>
   );

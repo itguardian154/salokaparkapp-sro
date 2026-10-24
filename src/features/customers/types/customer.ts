@@ -4,41 +4,44 @@ export type CreateCustomerPayload = {
   city_name: string;
   email: string;
   phone: string;
-  npwp: string;
   segment_id: number;
   segment_detail_id: number;
   contact_person: string;
-  contact_phone: string | null;
-  contact_email: string | null;
 };
 
 export type UpdateCustomerPayload = {
   name: string;
   province_name: string;
   city_name: string;
-  code: string;
   email: string;
   phone: string;
-  npwp: string;
   segment_id: number;
   segment_detail_id: number;
   contact_person: string;
-  contact_phone: string | null;
-  contact_email: string | null;
-  address: string | null;
   is_active: boolean;
 };
+
+export type CustomerSegment = {
+  id: number;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CustomerRecord = {
   id: number;
   name: string;
-  contact_person: string;
   phone: string;
-  address: string | null;
+  email: string;
   province_name: string | null;
   city_name: string | null;
-  segment: string | null;
-  segment_detail: string | null;
+  segment: CustomerSegment | null;
+  segment_detail: CustomerSegment | null;
   is_active: boolean;
+  segment_id: number;
+  segment_detail_id: number;
+  contact_person: string;
   created_at: string;
   updated_at: string;
 };
@@ -119,7 +122,6 @@ export type CustomerQueryParams = {
   "filter[segment_id]"?: string;
   "filter[segment_detail_id]"?: string;
   "filter[is_active]"?: string;
-  "filter[province_id]"?: string;
-  "filter[city_id]"?: string;
-  "filter[status]"?: string;
+  "filter[province_name]"?: string;
+  "filter[city_name]"?: string;
 };

@@ -22,18 +22,20 @@ export function getCustomerColumns(
       accessorKey: "name",
       header: "Nama Customer",
     },
-   
+
+
     {
       accessorKey: "segment",
       header: "Segment",
-      cell: ({ row }) => row.original.segment || "-",
+      cell: ({ row }) => row.original.segment?.name ?? "-",
     },
     {
       accessorKey: "segment_detail",
       header: "Segment Detail",
-      cell: ({ row }) => row.original.segment_detail || "-",
+      cell: ({ row }) => row.original.segment_detail?.name ?? "-",
     },
-     {
+
+    {
       accessorKey: "phone",
       header: "WhatsApp",
     },

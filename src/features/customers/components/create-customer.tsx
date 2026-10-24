@@ -19,7 +19,7 @@ import { useSegmentDetails } from "@/features/master/master-segment/hooks/use-ma
 import { useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa6";
-import { Building2, UserRound } from "lucide-react";
+
 
 import type { CreateCustomerPayload } from "../types/customer";
 import {
@@ -34,10 +34,7 @@ type ValidationErrors = Partial<
 type CustomerFormData = {
     name: string;
     email: string;
-    npwp: string;
     contact_person: string;
-    contact_phone: string;
-    contact_email: string;
     phone: string;
     segment_id: string;
     segment_detail_id: string;
@@ -83,10 +80,7 @@ type SegmentFieldsProps = {
 const initialFormData: CustomerFormData = {
     name: "",
     email: "",
-    npwp: "",
     contact_person: "",
-    contact_phone: "",
-    contact_email: "",
     phone: "",
     segment_id: "",
     segment_detail_id: "",
@@ -526,10 +520,7 @@ const CreateCustomer = ({
         const validation = createCustomerFormSchema.safeParse({
             name: formData.name,
             email: formData.email,
-            npwp: formData.npwp,
             contact_person: formData.contact_person,
-            contact_phone: formData.contact_phone,
-            contact_email: formData.contact_email,
             phone: formData.phone,
             segment_id: formData.segment_id,
             segment_detail_id: formData.segment_detail_id,
@@ -582,10 +573,7 @@ const CreateCustomer = ({
         const payload = {
             name: validation.data.name,
             email: validation.data.email,
-            npwp: validation.data.npwp,
             contact_person: validation.data.contact_person,
-            contact_phone: validation.data.contact_phone,
-            contact_email: validation.data.contact_email,
             phone: validation.data.phone,
             segment_id: Number(validation.data.segment_id),
             segment_detail_id: Number(validation.data.segment_detail_id),
@@ -642,9 +630,7 @@ const CreateCustomer = ({
                 )}
 
                 {/* INFORMASI CUSTOMER */}
-                <AppModal.Section
-                    title="Informasi Customer"
-                    icon={<Building2 size={18} />}
+                <AppModal.Section title="Customer" showHeader={false}
                 >
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Field>
@@ -696,22 +682,23 @@ const CreateCustomer = ({
                                 </p>
                             )}
                         </Field>
-
                         <Field>
-                            <FieldLabel>NPWP</FieldLabel>
+                            <FieldLabel>Nama PIC</FieldLabel>
                             <Input
-                                value={formData.npwp}
+                                value={formData.contact_person}
                                 onChange={(event) =>
-                                    updateField("npwp", event.target.value)
+                                    updateField("contact_person", event.target.value)
                                 }
-                                placeholder="Masukkan NPWP"
+                                placeholder="Masukkan nama PIC"
                             />
-                            {getError("npwp") && (
+                            {getError("contact_person") && (
                                 <p className="text-sm text-red-500">
-                                    {getError("npwp")}
+                                    {getError("contact_person")}
                                 </p>
                             )}
                         </Field>
+
+
 
                         <SegmentFields
                             segmentId={
@@ -751,64 +738,6 @@ const CreateCustomer = ({
                             provinceValidationError={getError("province_id")}
                             cityValidationError={getError("city_id")}
                         />
-                    </div>
-                </AppModal.Section>
-
-                {/* INFORMASI PIC */}
-                <AppModal.Section
-                    title="Informasi PIC"
-                    icon={<UserRound size={18} />}
-                >
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field>
-                            <FieldLabel>Nama PIC</FieldLabel>
-                            <Input
-                                value={formData.contact_person}
-                                onChange={(event) =>
-                                    updateField("contact_person", event.target.value)
-                                }
-                                placeholder="Masukkan nama PIC"
-                            />
-                            {getError("contact_person") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("contact_person")}
-                                </p>
-                            )}
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>WhatsApp PIC</FieldLabel>
-                            <Input
-                                type="tel"
-                                value={formData.contact_phone}
-                                onChange={(event) =>
-                                    updateField("contact_phone", event.target.value)
-                                }
-                                placeholder="Masukkan nomor telepon PIC"
-                            />
-                            {getError("contact_phone") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("contact_phone")}
-                                </p>
-                            )}
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>Email PIC</FieldLabel>
-                            <Input
-                                type="email"
-                                value={formData.contact_email}
-                                onChange={(event) =>
-                                    updateField("contact_email", event.target.value)
-                                }
-                                placeholder="Masukkan email PIC"
-                            />
-                            {getError("contact_email") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("contact_email")}
-                                </p>
-                            )}
-                        </Field>
                     </div>
                 </AppModal.Section>
             </div>

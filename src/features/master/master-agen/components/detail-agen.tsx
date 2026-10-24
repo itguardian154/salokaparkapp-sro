@@ -283,13 +283,6 @@ const DetailMasterAgen = ({
                         value={branch.city_name}
                       />
                     </div>
-
-                    <div className="border-t border-slate-100 pt-3 dark:border-slate-700">
-                      <StatusItem
-                        active={branch.is_active}
-                        label="Status Cabang"
-                      />
-                    </div>
                   </div>
                 </div>
               ))}
