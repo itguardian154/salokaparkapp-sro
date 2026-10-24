@@ -18,6 +18,7 @@ import {
   FaMapPin,
   FaTicket,
   FaUserGroup,
+  FaUserLock,
 } from "react-icons/fa6";
 import { NavMain } from "./nav-main";
 import { NavLink } from "react-router-dom";
@@ -123,6 +124,11 @@ export const navMainItems: {
     title: "Reports",
     url: "/reports",
     icon: <FaChartPie />,
+  },
+    {
+    title: "Role Akses",
+    url: "/role-akses",
+    icon: <FaUserLock />,
   },
 ];
 
