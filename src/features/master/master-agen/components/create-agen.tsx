@@ -639,7 +639,7 @@ const CreateMasterAgen = ({
               className="shrink-0 whitespace-nowrap"
             >
               <FaPlus size={13} />
-              Tambah Cabang
+              Tambah
             </Button>
           }
         >

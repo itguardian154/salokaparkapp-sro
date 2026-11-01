@@ -2,7 +2,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
-import { FaDatabase, FaShieldHalved, FaPlus } from "react-icons/fa6";
+import { FaUserLock, FaShieldHalved, FaPlus } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -30,6 +30,7 @@ import { getRoleAksesColumns } from "../columns";
 import CreateRoleAkses from "../components/create-role-akses";
 import UpdateRoleAkses from "../components/update-role-akses";
 import DetailRoleAkses from "../components/detail-role-akses";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
 
 export default function RoleAksesPage() {
   const {
@@ -68,11 +69,14 @@ export default function RoleAksesPage() {
     useState<ColumnVisibilityState>({});
 
   const [createOpen, setCreateOpen] = useState(false);
+
   const [selectedRole, setSelectedRole] =
     useState<RoleAksesRecord | null>(null);
+
   const [updateOpen, setUpdateOpen] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
+
   const [selectedDetailRoleId, setSelectedDetailRoleId] =
     useState<number | null>(null);
 
@@ -87,11 +91,13 @@ export default function RoleAksesPage() {
     [dataRoleAkses],
   );
 
+  // Buka modal tambah
   const handleOpenCreate = useCallback(() => {
     clearCreateError();
     setCreateOpen(true);
   }, [clearCreateError]);
 
+  // Buka modal edit
   const handleOpenEdit = useCallback(
     (role: RoleAksesRecord) => {
       clearUpdateError();
@@ -101,16 +107,19 @@ export default function RoleAksesPage() {
     [clearUpdateError],
   );
 
+  // Buka detail
   const handleDetail = useCallback((role: RoleAksesRecord) => {
     setSelectedDetailRoleId(role.id);
     setDetailOpen(true);
   }, []);
 
+  // Tutup detail
   const handleCloseDetail = useCallback(() => {
     setDetailOpen(false);
     setSelectedDetailRoleId(null);
   }, []);
 
+  // Kolom tabel
   const columns = useMemo(
     () => getRoleAksesColumns(handleDetail, handleOpenEdit, true),
     [handleDetail, handleOpenEdit],
@@ -130,6 +139,7 @@ export default function RoleAksesPage() {
     onColumnVisibilityChange: setColumnVisibility,
   });
 
+  // Tambah Role Akses
   const handleCreateRoleAkses = async (
     payload: CreateRoleAksesPayload,
   ) => {
@@ -159,6 +169,7 @@ export default function RoleAksesPage() {
     }
   };
 
+  // Update Role Akses
   const handleUpdateRoleAkses = async (
     id: number,
     payload: UpdateRoleAksesPayload,
@@ -190,6 +201,7 @@ export default function RoleAksesPage() {
     }
   };
 
+  // Tutup modal tambah
   const handleCloseCreate = useCallback(() => {
     if (submittingCreate) return;
 
@@ -197,6 +209,7 @@ export default function RoleAksesPage() {
     setCreateOpen(false);
   }, [submittingCreate, clearCreateError]);
 
+  // Tutup modal edit
   const handleCloseEdit = useCallback(() => {
     if (submittingUpdate) return;
 
@@ -205,6 +218,7 @@ export default function RoleAksesPage() {
     setSelectedRole(null);
   }, [submittingUpdate, clearUpdateError]);
 
+  // Reset pencarian
   const resetFilters = useCallback(() => {
     setSearchData("");
   }, [setSearchData]);
@@ -237,10 +251,11 @@ export default function RoleAksesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          {/* HEADER */}
           <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaDatabase
+                <FaUserLock
                   className="text-emerald-500"
                   aria-hidden="true"
                 />
@@ -269,14 +284,15 @@ export default function RoleAksesPage() {
                 type="button"
                 variant="primer"
                 onClick={handleOpenCreate}
-                className="w-full shrink-0 sm:w-auto"
+                className="hidden gap-2 xl:flex"
               >
                 <FaPlus size={14} />
-                Tambah Role
+                Tambah
               </Button>
             </div>
           </div>
 
+          {/* PAGINATION */}
           <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
             <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
@@ -292,6 +308,7 @@ export default function RoleAksesPage() {
             />
           </div>
 
+          {/* TABLE CONTENT */}
           {error ? (
             <p
               role="alert"
@@ -305,6 +322,7 @@ export default function RoleAksesPage() {
             </p>
           ) : (
             <>
+              {/* DESKTOP TABLE */}
               <div className="hidden md:block">
                 <DataTable
                   table={table}
@@ -312,6 +330,7 @@ export default function RoleAksesPage() {
                 />
               </div>
 
+              {/* MOBILE CARD */}
               <div className="p-3 md:hidden">
                 <MobileDataCard
                   table={table}
@@ -326,7 +345,11 @@ export default function RoleAksesPage() {
                   emptyTitle="Belum ada data role akses"
                   emptyDescription="Data role akses akan ditampilkan di sini."
                 />
-              </div>
+              </div> {/* FLOATING BUTTON TAMBAH ROLE AKSES - MOBILE */}
+              <MobileFloatingActionButton
+                ariaLabel="Tambah Role Akses"
+                onClick={handleOpenCreate}
+              />
             </>
           )}
         </div>

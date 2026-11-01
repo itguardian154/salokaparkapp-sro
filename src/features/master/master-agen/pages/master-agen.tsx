@@ -4,7 +4,7 @@ import type {
   ColumnVisibilityState,
   PaginationState,
 } from "@tanstack/react-table";
-import { FaFileInvoice, FaPlus } from "react-icons/fa6";
+import { FaPlus, FaDatabase } from "react-icons/fa6";
 
 import FilterBar from "@/components/Filter/filter-bar";
 import FilterSearchable from "@/components/Filter/filter-searchable";
@@ -367,7 +367,7 @@ const cityOptions = useMemo<string[]>(
           <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaFileInvoice
+                <FaDatabase
                   className="text-emerald-500"
                   aria-hidden="true"
                 />

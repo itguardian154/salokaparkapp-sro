@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
-import { FaDatabase, FaUsers, FaPlus } from "react-icons/fa6";
+import { FaUserGroup, FaUsers, FaPlus } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -32,6 +32,7 @@ import type {
   CreateCustomerPayload,
   UpdateCustomerPayload,
 } from "../types/customer";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
 
 interface RegionOption {
   id: string;
@@ -367,7 +368,7 @@ export default function CustomerPage() {
         <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <FaDatabase
+              <FaUserGroup
                 className="text-emerald-500"
                 aria-hidden="true"
               />
@@ -498,11 +499,11 @@ export default function CustomerPage() {
               </FilterBar>
             </div>
 
-            <Button
+            <Button 
               type="button"
               variant="primer"
               onClick={handleOpenCreate}
-              className="w-full shrink-0 sm:w-auto"
+              className="hidden gap-2 xl:flex"
             >
               <FaPlus size={14} />
               Tambah
@@ -588,6 +589,11 @@ export default function CustomerPage() {
         error={detailCustomerError}
         onClose={handleCloseDetail}
       />
+       {/* FLOATING BUTTON TAMBAH CUSTOMER - MOBILE */}
+            <MobileFloatingActionButton
+              ariaLabel="Tambah Customer"
+              onClick={handleOpenCreate}
+            />
     </section>
   );
 }
