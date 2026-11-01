@@ -7,10 +7,10 @@ import ActivitySheet from "@/components/activity/activity-sheet";
 import type { ActivityItemData } from "@/components/activity/activity-item";
 import DetailPageLayout from "@/components/detail-page/detail-page-ayout";
 import DetailSection from "@/components/detail-page/detail-section";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 
 import { FaUserShield } from "react-icons/fa";
-import { MdWorkHistory } from "react-icons/md";
+// import { MdWorkHistory } from "react-icons/md";
 import { ShieldCheck, KeyRound } from "lucide-react";
 
 import type { RoleAksesDetail } from "../types/role-akses";
@@ -81,17 +81,17 @@ const DetailRoleAkses = ({
           icon={ShieldCheck}
           title="Informasi Role Akses"
           variant="blue"
-          action={
-            <Button
-              onClick={() => setOpenActivity(true)}
-              variant="amberBorder"
-              size="lg"
-              className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <MdWorkHistory size={16} />
-              Log Aktivitas
-            </Button>
-          }
+          // action={
+          //   <Button
+          //     onClick={() => setOpenActivity(true)}
+          //     variant="amberBorder"
+          //     size="lg"
+          //     className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+          //   >
+          //     <MdWorkHistory size={16} />
+          //     Log Aktivitas
+          //   </Button>
+          // }
         >
           <div className="p-5">
             {loading ? (
@@ -121,93 +121,46 @@ const DetailRoleAkses = ({
                       </Badge>
                     }
                   />
-
-                  <InfoItem
-                    label="Jumlah Permission"
-                    value={
-                      <Badge variant="blue">
-                        {roleAkses.permissions?.length ?? 0} Permission
-                      </Badge>
-                    }
-                  />
-
-                  <InfoItem
-                    label="Tanggal Dibuat"
-                    value={
-                      roleAkses.created_at
-                        ? new Date(roleAkses.created_at).toLocaleString(
-                            "id-ID",
-                            {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )
-                        : "-"
-                    }
-                  />
-
-                  <InfoItem
-                    label="Terakhir Diperbarui"
-                    value={
-                      roleAkses.updated_at
-                        ? new Date(roleAkses.updated_at).toLocaleString(
-                            "id-ID",
-                            {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )
-                        : "-"
-                    }
-                  />
+                  
                 </div>
 
-                <div className="space-y-4 border-t pt-6">
-                  <div className="flex items-center gap-2">
-                    <KeyRound
-                      size={18}
-                      className="text-slate-500"
-                    />
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-100">
-                      Daftar Permission
-                    </h3>
-                  </div>
+               <DetailSection
+  icon={KeyRound}
+  title="Daftar Permission"
+  variant="blue"
+>
+  <div className="p-5">
+    {roleAkses.permissions?.length ? (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {roleAkses.permissions.map((permission) => (
+          <div
+            key={permission.id}
+            className="flex min-w-0 items-start gap-3 rounded-lg border p-3"
+          >
+            <ShieldCheck
+              size={18}
+              className="mt-0.5 shrink-0 text-blue-500"
+            />
 
-                  {roleAkses.permissions?.length ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {roleAkses.permissions.map((permission) => (
-                        <div
-                          key={permission.id}
-                          className="flex min-w-0 items-start gap-3 rounded-lg border p-3"
-                        >
-                          <ShieldCheck
-                            size={18}
-                            className="mt-0.5 shrink-0 text-blue-500"
-                          />
+            <div className="min-w-0">
+              <p className="wrap-break-word text-sm font-medium text-slate-800 dark:text-slate-100">
+                {permission.name}
+              </p>
 
-                          <div className="min-w-0">
-                            <p className="wrap-break-word text-sm font-medium text-slate-800 dark:text-slate-100">
-                              {permission.name}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Guard: {permission.guard_name}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-lg border border-dashed py-8 text-center text-sm text-slate-500">
-                      Belum ada permission yang diberikan untuk role ini.
-                    </p>
-                  )}
-                </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Guard: {permission.guard_name}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="rounded-lg border border-dashed py-8 text-center text-sm text-slate-500">
+        Belum ada permission yang diberikan untuk role ini.
+      </p>
+    )}
+  </div>
+</DetailSection>
               </div>
             ) : null}
           </div>
