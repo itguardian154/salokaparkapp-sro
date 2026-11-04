@@ -21,6 +21,7 @@ import InvoicePage from "./features/invoice/pages/invoice";
 import KonfigurasiTiketPage from "./features/konfigurasi/tiket/pages/konfigurasi-tiket";
 import HolidayPage from "./features/konfigurasi/hari-libur/pages/holiday";
 import PaymentMetodePage from "./features/konfigurasi/metode/pages/holiday";
+import RoleAksesPage from "./features/role-akses/pages/role-akses";
 import DetailInvoice from "./features/invoice/components/detail-invoice";
 
 createRoot(document.getElementById("root")!).render(
@@ -64,10 +65,15 @@ createRoot(document.getElementById("root")!).render(
                   element={<PaymentMetodePage />}
                 />
 
-                {/* Invoice */}
+                 {/* Invoice */}
                 <Route path="/invoice" element={<InvoicePage />} />
 
                 <Route path="/invoice/detail/:id" element={<DetailInvoice />} />
+                  {/* Role Akses */}
+                <Route
+                  path="/role-akses"
+                  element={<RoleAksesPage />}
+                />
               </Route>
             </Routes>
           </AuthBootstrap>
