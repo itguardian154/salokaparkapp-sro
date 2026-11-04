@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { FaGift } from "react-icons/fa6";
 import { FaSave, FaUserEdit } from "react-icons/fa";
 import { useState } from "react";
+import useTicketConfigurations from "../hooks/use-ticket-configurations";
+import { TICKET_CONFIGURATION_KEYS } from "../types/configuration";
+
+const BONUS_CONFIGURATION_KEYS = [TICKET_CONFIGURATION_KEYS.bonusTicketInterval];
 
 export default function BonusCard() {
   const [isEditing, setIsEditing] = useState(false);
-  const [bonusTicketInterval, setBonusTicketInterval] = useState("1000");
+  const { values, update, saving, fieldErrors, save, cancel } = useTicketConfigurations(BONUS_CONFIGURATION_KEYS);
+  const bonusTicketInterval = values[TICKET_CONFIGURATION_KEYS.bonusTicketInterval] ?? "";
 
   return (
     <DetailSection
@@ -39,7 +44,7 @@ export default function BonusCard() {
                   type="number"
                   min={1}
                   value={bonusTicketInterval}
-                  onChange={(event) => setBonusTicketInterval(event.target.value)}
+                  onChange={(event) => update(TICKET_CONFIGURATION_KEYS.bonusTicketInterval, event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white pr-16 text-sm tabular-nums shadow-none transition-colors focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/15 dark:border-slate-700 dark:bg-slate-950"
                 />
               ) : (
@@ -51,16 +56,28 @@ export default function BonusCard() {
                 tiket
               </span>
             </div>
+            {fieldErrors[TICKET_CONFIGURATION_KEYS.bonusTicketInterval] && (
+              <p role="alert" className="text-sm text-red-500">
+                {fieldErrors[TICKET_CONFIGURATION_KEYS.bonusTicketInterval]}
+              </p>
+            )}
           </Field>
         </div>
         <div className="mt-6 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
-          <Button
-            variant={isEditing ? "primer" : "sekunder"}
-            onClick={() => setIsEditing((current) => !current)}
-          >
-            {isEditing ? <FaSave size={14} /> : <FaUserEdit size={14} />}
-            {isEditing ? "Simpan" : "Update"}
-          </Button>
+          <div className="flex gap-2">
+            {isEditing && <Button variant="destructive" disabled={saving} onClick={() => { cancel(); setIsEditing(false); }}>Batal</Button>}
+            <Button
+              variant={isEditing ? "primer" : "sekunder"}
+              disabled={saving}
+              onClick={() => {
+                if (!isEditing) setIsEditing(true);
+                else void save().then((saved) => { if (saved) setIsEditing(false); });
+              }}
+            >
+              {isEditing ? <FaSave size={14} /> : <FaUserEdit size={14} />}
+              {saving ? "Menyimpan..." : isEditing ? "Simpan" : "Update"}
+            </Button>
+          </div>
         </div>
       </div>
     </DetailSection>

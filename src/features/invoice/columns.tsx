@@ -17,7 +17,7 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       header: "Nomor",
       cell: ({ row }) => (
         <NavLink
-          to={`/sro/invoice/detail/${row.original.id}`}
+          to={`/invoice/detail/${row.original.id}`}
           className="font-mono text-md font-semibold tracking-tight text-blue-600 dark:text-blue-500 hover:underline cursor-pointer"
         >
           {row.original.invoice_id}
@@ -38,7 +38,7 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
     },
     {
       accessorKey: "ticket",
-      header: "Ticket",
+      header: "Tiket",
     },
     {
       accessorKey: "revenue",

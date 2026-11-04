@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 import { FaFileInvoice } from "react-icons/fa6";
 import { FaSave, FaUserEdit } from "react-icons/fa";
 import { useState } from "react";
+import useTicketConfigurations from "../hooks/use-ticket-configurations";
+import { TICKET_CONFIGURATION_KEYS } from "../types/configuration";
+
+const BILLING_CONFIGURATION_KEYS = [
+  TICKET_CONFIGURATION_KEYS.billingInformation,
+  TICKET_CONFIGURATION_KEYS.minimumAddendumQty,
+];
 
 export default function TagihanCard() {
   const [isEditing, setIsEditing] = useState(false);
-  const [billingInformation, setBillingInformation] = useState(
-    "No Rekening 0131-2222-88\na/n. PT. Panorama Indah Permai",
-  );
-  const [minimumAddendumQty, setMinimumAddendumQty] = useState("5");
+  const { values, update, saving, fieldErrors, save, cancel } = useTicketConfigurations(BILLING_CONFIGURATION_KEYS);
+  const billingInformation = values[TICKET_CONFIGURATION_KEYS.billingInformation] ?? "";
+  const minimumAddendumQty = values[TICKET_CONFIGURATION_KEYS.minimumAddendumQty] ?? "";
 
   return (
     <DetailSection
@@ -39,7 +45,7 @@ export default function TagihanCard() {
               <Textarea
                 id="billing-information"
                 value={billingInformation}
-                onChange={(event) => setBillingInformation(event.target.value)}
+                onChange={(event) => update(TICKET_CONFIGURATION_KEYS.billingInformation, event.target.value)}
                 rows={3}
                 className="min-h-28 resize-y rounded-xl border-slate-200 bg-white text-sm leading-relaxed shadow-none transition-colors focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/15 dark:border-slate-700 dark:bg-slate-950"
               />
@@ -47,6 +53,11 @@ export default function TagihanCard() {
               <div className="min-h-28 whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                 {billingInformation}
               </div>
+            )}
+            {fieldErrors[TICKET_CONFIGURATION_KEYS.billingInformation] && (
+              <p role="alert" className="text-sm text-red-500">
+                {fieldErrors[TICKET_CONFIGURATION_KEYS.billingInformation]}
+              </p>
             )}
           </Field>
 
@@ -70,7 +81,7 @@ export default function TagihanCard() {
                   type="number"
                   min={1}
                   value={minimumAddendumQty}
-                  onChange={(event) => setMinimumAddendumQty(event.target.value)}
+                  onChange={(event) => update(TICKET_CONFIGURATION_KEYS.minimumAddendumQty, event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white pr-16 text-sm tabular-nums shadow-none transition-colors focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/15 dark:border-slate-700 dark:bg-slate-950"
                 />
               ) : (
@@ -82,16 +93,28 @@ export default function TagihanCard() {
                 tiket
               </span>
             </div>
+            {fieldErrors[TICKET_CONFIGURATION_KEYS.minimumAddendumQty] && (
+              <p role="alert" className="text-sm text-red-500">
+                {fieldErrors[TICKET_CONFIGURATION_KEYS.minimumAddendumQty]}
+              </p>
+            )}
           </Field>
         </div>
         <div className="mt-6 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
-          <Button
-            variant={isEditing ? "primer" : "sekunder"}
-            onClick={() => setIsEditing((current) => !current)}
-          >
-            {isEditing ? <FaSave size={14} /> : <FaUserEdit size={14} />}
-            {isEditing ? "Simpan" : "Update"}
-          </Button>
+          <div className="flex gap-2">
+            {isEditing && <Button variant="destructive" disabled={saving} onClick={() => { cancel(); setIsEditing(false); }}>Batal</Button>}
+            <Button
+              variant={isEditing ? "primer" : "sekunder"}
+              disabled={saving}
+              onClick={() => {
+                if (!isEditing) setIsEditing(true);
+                else void save().then((saved) => { if (saved) setIsEditing(false); });
+              }}
+            >
+              {isEditing ? <FaSave size={14} /> : <FaUserEdit size={14} />}
+              {saving ? "Menyimpan..." : isEditing ? "Simpan" : "Update"}
+            </Button>
+          </div>
         </div>
       </div>
     </DetailSection>

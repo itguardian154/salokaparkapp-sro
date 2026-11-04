@@ -21,6 +21,7 @@ import InvoicePage from "./features/invoice/pages/invoice";
 import KonfigurasiTiketPage from "./features/konfigurasi/tiket/pages/konfigurasi-tiket";
 import HolidayPage from "./features/konfigurasi/hari-libur/pages/holiday";
 import PaymentMetodePage from "./features/konfigurasi/metode/pages/holiday";
+import DetailInvoice from "./features/invoice/components/detail-invoice";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -29,27 +30,15 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <AuthBootstrap>
             <Routes>
-              <Route
-                path="/"
-                element={<Navigate to="/dashboard" replace />}
-              />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
               <Route element={<Layout />}>
-                <Route
-                  path="/dashboard"
-                  element={<DashboardPage />}
-                />
+                <Route path="/dashboard" element={<DashboardPage />} />
 
                 {/* Master */}
-                <Route
-                  path="/master/produk"
-                  element={<MasterProdukPage />}
-                />
+                <Route path="/master/produk" element={<MasterProdukPage />} />
 
-                <Route
-                  path="/master/agen"
-                  element={<MasterAgentPage />}
-                />
+                <Route path="/master/agen" element={<MasterAgentPage />} />
 
                 <Route
                   path="/master/kategori-produk"
@@ -57,10 +46,7 @@ createRoot(document.getElementById("root")!).render(
                 />
                 {/* customer */}
 
-                <Route
-                  path="/customers"
-                  element={<CustomerPage />}
-                />
+                <Route path="/customers" element={<CustomerPage />} />
 
                 {/* Konfigurasi */}
                 <Route
@@ -79,10 +65,9 @@ createRoot(document.getElementById("root")!).render(
                 />
 
                 {/* Invoice */}
-                <Route
-                  path="/invoice"
-                  element={<InvoicePage />}
-                />
+                <Route path="/invoice" element={<InvoicePage />} />
+
+                <Route path="/invoice/detail/:id" element={<DetailInvoice />} />
               </Route>
             </Routes>
           </AuthBootstrap>
