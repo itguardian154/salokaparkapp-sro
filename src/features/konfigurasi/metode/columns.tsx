@@ -21,9 +21,10 @@ export function getMethodColumns(
 >[] {
   return [
     {
-      id: "no",
-      header: "#",
-      cell: ({ row }) => row.index + 1,
+      id: "number",
+      header: () => <div className="text-center">#</div>,
+      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      enableHiding: false,
     },
     {
       accessorKey: "name",
