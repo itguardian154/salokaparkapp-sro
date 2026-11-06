@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import useMasterProduk from "@/features/master/master-produk/hooks/use-master-produk";
 import type { ProdukRecord } from "@/features/master/master-produk/types/master-produk";
+import type { InvoiceOrder } from "../types/invoice-order";
 import { formatRupiah } from "@/lib/utils";
 import { useState } from "react";
 import { FaSave } from "react-icons/fa";
@@ -14,6 +15,7 @@ import { FaPlus } from "react-icons/fa6";
 type CreateDetailInvoiceProps = {
   open: boolean;
   onClose: () => void;
+  onSave: (order: Omit<InvoiceOrder, "id">) => void;
 };
 
 const toAmount = (value: string | number | null | undefined) => {
@@ -26,6 +28,7 @@ const toAmount = (value: string | number | null | undefined) => {
 export default function CreateDetailInvoice({
   open,
   onClose,
+  onSave,
 }: CreateDetailInvoiceProps) {
   const {
     dataMasterProduk,
@@ -84,6 +87,17 @@ export default function CreateDetailInvoice({
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+
+    onSave({
+      productId: selectedProduk!.id,
+      product: selectedProduk!.name,
+      description: selectedProduk!.description ?? "",
+      quantity: quantityAmount,
+      compliment: Number(complimentary),
+      unitPrice,
+      discountPrice: Number(discountPrice) || 0,
+      subtotal,
+    });
 
     handleClose();
   };

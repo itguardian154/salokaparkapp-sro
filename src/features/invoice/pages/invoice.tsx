@@ -7,49 +7,60 @@ import { FaBox, FaFileInvoice, FaPlus } from "react-icons/fa6";
 import { useMemo, useState } from "react";
 import DataTable from "@/components/data-table/data-table";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
+import ColumnVisibility from "@/components/data-table/column-visibility";
+import TablePagination from "@/components/data-table/table-pagination";
 import { getInvoiceColumns } from "../columns";
-import type { InvoiceRecord } from "../types/invoice";
-import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 import FilterSearchable from "@/components/Filter/filter-searchable";
 import type { Departemen } from "@/features/departemen/types/departemen";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
+import useInvoices from "../hooks/use-invoices";
+import { useNavigate } from "react-router-dom";
+
+const invoiceStatusOptions = [
+  { value: "unpaid", label: "Belum Dibayar" },
+  { value: "partially_paid", label: "Dibayar Sebagian" },
+  { value: "paid", label: "Lunas" },
+  { value: "cancelled", label: "Dibatalkan" },
+];
 
 export default function InvoicePage() {
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
-  const [, setIsCreateMasterOpen] = useState(false);
-  const [departemenPickerOpen, setDepartemenPickerOpen] = useState(false);
-  const [selectedDepartemen, setSelectedDepartemen] =
-    useState<Departemen | null>(null);
+  const navigate = useNavigate();
   const columns = useMemo(() => getInvoiceColumns(), []);
+  const {
+    dataInvoices,
+    loadingData,
+    error,
+    searchData,
+    setSearchData,
+    statusFilter,
+    setStatusFilter,
+    itemPerPage,
+    setItemPerPage,
+    currentPage,
+    lastPage,
+    totalData,
+    fromPage,
+    toPage,
+    handleNextPage,
+    handlePrevPage,
+  } = useInvoices();
+  const availableStatusOptions = useMemo(() => {
+    const statuses = new Map(
+      invoiceStatusOptions.map((option) => [option.value, option.label]),
+    );
+    dataInvoices.forEach((invoice) => {
+      if (invoice.status_value) {
+        statuses.set(invoice.status_value, invoice.status);
+      }
+    });
+    return Array.from(statuses, ([value, label]) => ({ value, label }));
+  }, [dataInvoices]);
 
-  const dataMasterProduct = useMemo<InvoiceRecord[]>(
-    () => [
-      {
-        id: 1,
-        invoice_id: "INV/PIP/26/2/0001/2151",
-        sales: "Widi",
-        group_name: "Panorama Indah Tour",
-        kedatangan: "1-1-2026",
-        ticket: 1,
-        revenue: 100000,
-        status: "Draft",
-      },
-      {
-        id: 2,
-        invoice_id: "INV/PIP/26/2/0001/2152",
-        sales: "Mateo",
-        group_name: "Jaya Tour",
-        kedatangan: "3-2-2026",
-        ticket: 10,
-        revenue: 100000,
-        status: "Draft",
-      },
-    ],
-    [],
-  );
   const table = useTable({
     features: dataTableFeatures,
-    data: dataMasterProduct,
+    data: dataInvoices,
     columns,
     state: {
       columnVisibility,
@@ -57,14 +68,6 @@ export default function InvoicePage() {
     },
     onColumnVisibilityChange: setColumnVisibility,
   });
-
-  const {
-    departemen,
-    searchDepartemen,
-    setSearchDepartemen,
-    loading: loadingDepartemen,
-    error: departemenError,
-  } = useDepartemen();
 
   return (
     <>
@@ -89,48 +92,38 @@ export default function InvoicePage() {
             <div className="flex w-full items-center gap-3 lg:w-auto">
               <div className="w-full lg:w-96">
                 <FilterBar
-                  search={""}
-                  onSearchChange={() => {}}
-                  // active={Boolean(
-                  //   filterData.filter.department_id ||
-                  //   filterData.filter.status ||
-                  //   filterData.filter.is_active,
-                  // )}
-                  // onReset={resetFilters}
+                  search={searchData}
+                  onSearchChange={setSearchData}
+                  active={Boolean(searchData || statusFilter)}
+                  onReset={() => {
+                    setSearchData("");
+                    setStatusFilter("");
+                  }}
                 >
                   <div className="grid w-full grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="w-full">
                       <FilterSearchable<Departemen>
                         label="Departemen"
-                        open={departemenPickerOpen}
-                        onOpenChange={setDepartemenPickerOpen}
-                        search={searchDepartemen}
-                        onSearchChange={setSearchDepartemen}
+                        open={false}
+                        onOpenChange={() => {}}
+                        search=""
+                        onSearchChange={() => {}}
                         placeholder="Semua"
-                        selectedLabel={selectedDepartemen?.departemen}
-                        selectedKey={selectedDepartemen?.id_dept}
-                        emptyText={
-                          loadingDepartemen
-                            ? "Memuat departemen..."
-                            : (departemenError ?? "Departemen tidak ditemukan")
-                        }
-                        items={departemen}
+                        emptyText="Filter departemen belum tersedia."
+                        items={[]}
                         getKey={(item) => item.id_dept}
                         renderItem={(item) => item.departemen}
-                        onSelect={(item) => {
-                          setSelectedDepartemen(item);
-                          setSearchDepartemen("");
-                          setDepartemenPickerOpen(false);
-                        }}
+                        onSelect={() => {}}
+                        disabled
                       />
                     </div>
                     <div className="w-full">
                       <FilterSelect
                         label="Status"
-                        value={""}
-                        onChange={() => {}}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
                         placeholder="Semua"
-                        options={[{ value: "draft", label: "Draft" }]}
+                        options={availableStatusOptions}
                       />
                     </div>
                   </div>
@@ -139,7 +132,7 @@ export default function InvoicePage() {
               <div className="hidden gap-2 xl:flex">
                 <Button
                   variant="primer"
-                  onClick={() => setIsCreateMasterOpen(true)}
+                  onClick={() => navigate("/invoice/create")}
                 >
                   <FaPlus className="text-[16px]" />
                   Tambah
@@ -149,7 +142,7 @@ export default function InvoicePage() {
           </div>
 
           <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
-            {/* <TablePagination
+            <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
               itemPerPage={itemPerPage}
               setItemPerPage={setItemPerPage}
@@ -160,36 +153,50 @@ export default function InvoicePage() {
               totalData={totalData}
               onPrev={handlePrevPage}
               onNext={handleNextPage}
-            /> */}
+            />
           </div>
 
-          {/* {error ? (
-            <p role="alert" className="px-4 py-3 text-sm text-red-600">
-              {error}
-            </p>
-          ) : loadingData ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">
-              Memuat data produk...
-            </p>
-          ) : ( */}
           <>
             <div className="hidden md:block">
-              <DataTable table={table} cellClassName="px-3 py-2" />
-            </div>
-            <div className="p-3 md:hidden">
-              <MobileDataCard
+              {error && (
+                <p role="alert" className="px-4 py-3 text-sm text-red-600">
+                  {error}
+                </p>
+              )}
+              <DataTable
                 table={table}
-                titleKey="invoice_id"
-                titleLabel="Invoice"
-                icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
-                emptyTitle="Belum ada data invoice"
-                emptyDescription="Data invoice akan ditampilkan di sini."
+                loading={loadingData}
+                cellClassName="px-3 py-2"
               />
             </div>
+            <div className="p-3 md:hidden">
+              {error ? (
+                <p role="alert" className="px-2 py-4 text-center text-sm text-red-600">
+                  {error}
+                </p>
+              ) : loadingData ? (
+                <p className="px-2 py-8 text-center text-sm text-slate-500">
+                  Memuat data invoice...
+                </p>
+              ) : (
+                <MobileDataCard
+                  table={table}
+                  titleKey="invoice_id"
+                  titleLabel="Invoice"
+                  icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
+                  emptyTitle="Belum ada data invoice"
+                  emptyDescription="Data invoice akan ditampilkan di sini."
+                />
+              )}
+            </div>
           </>
-          {/* )} */}
         </div>
       </section>
+
+      <MobileFloatingActionButton
+        ariaLabel="Tambah Invoice"
+        onClick={() => navigate("/invoice/create")}
+      />
     </>
   );
 }

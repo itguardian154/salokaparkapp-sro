@@ -67,7 +67,8 @@ createRoot(document.getElementById("root")!).render(
                 {/* Invoice */}
                 <Route path="/invoice" element={<InvoicePage />} />
 
-                <Route path="/invoice/detail/:id" element={<DetailInvoice />} />
+                <Route path="/invoice/create" element={<DetailInvoice mode="create" />} />
+                <Route path="/invoice/detail/:id" element={<DetailInvoice mode="detail" />} />
               </Route>
             </Routes>
           </AuthBootstrap>
