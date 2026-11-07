@@ -12,8 +12,10 @@ export function getMasterKategoriProdukColumns(
 ): ColumnDef<typeof dataTableFeatures, KategoriProdukRecord, unknown>[] {
   return [
     {
-      accessorKey: "id",
-      header: "#",
+      id: "number",
+      header: () => <div className="text-center">#</div>,
+      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      enableHiding: false,
     },
     {
       accessorKey: "name",

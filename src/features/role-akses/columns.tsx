@@ -15,8 +15,8 @@ export function getRoleAksesColumns(
   return [
     {
       id: "number",
-      header: "#",
-      cell: ({ row }) => row.index + 1,
+      header: () => <div className="text-center">#</div>,
+      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {
@@ -30,7 +30,11 @@ export function getRoleAksesColumns(
       accessorKey: "guard_name",
       header: "Guard Name",
       cell: ({ row }) => (
-        <Badge variant="muted">{row.original.guard_name}</Badge>
+        <div className="flex justify-center w-full">
+          <Badge variant="muted">
+            {row.original.guard_name}
+          </Badge>
+        </div>
       ),
     },
     {
