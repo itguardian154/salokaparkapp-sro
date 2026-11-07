@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { LoaderCircle, Users } from "lucide-react";
+import { LoaderCircle, Users, X } from "lucide-react";
 import useDebounce from "@/hooks/use-debounce";
 import useCustomer from "../hooks/use-customer";
 import type { CustomerRecord } from "../types/customer";
@@ -17,6 +17,7 @@ export default function CustomerSuggestionField({
   onSelect,
 }: CustomerSuggestionFieldProps) {
   const [open, setOpen] = useState(false);
+  const fieldRef = useRef<HTMLDivElement>(null);
   const { dataCustomer, loadingData, setSearchData } = useCustomer();
   const debouncedSearch = useDebounce(value, 400);
 
@@ -24,16 +25,42 @@ export default function CustomerSuggestionField({
     setSearchData(debouncedSearch);
   }, [debouncedSearch, setSearchData]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (!fieldRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () =>
+      document.removeEventListener("pointerdown", handleOutsidePointer);
+  }, [open]);
+
   const suggestions = dataCustomer.filter((customer) =>
     customer.name.toLowerCase().includes(value.toLowerCase().trim()),
   );
 
   return (
-    <div className="relative w-full">
+    <div ref={fieldRef} className="relative w-full">
       <Input
         placeholder="Masukkan nama group"
         value={value}
         onFocus={() => setOpen(true)}
+        onBlur={(event) => {
+          const nextFocusedElement = event.relatedTarget;
+          if (
+            !(nextFocusedElement instanceof Node) ||
+            !fieldRef.current?.contains(nextFocusedElement)
+          ) {
+            setOpen(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setOpen(false);
+        }}
         onChange={(event) => {
           onChange(event.target.value);
           setOpen(true);
@@ -55,11 +82,21 @@ export default function CustomerSuggestionField({
                 </p>
               </div>
             </div>
-            {!loadingData && suggestions.length > 0 && (
-              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
-                {suggestions.length} hasil
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {!loadingData && suggestions.length > 0 && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
+                  {suggestions.length} hasil
+                </span>
+              )}
+              <button
+                type="button"
+                aria-label="Tutup saran customer"
+                onClick={() => setOpen(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 dark:hover:bg-slate-700 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="max-h-64 overflow-y-auto p-1.5">

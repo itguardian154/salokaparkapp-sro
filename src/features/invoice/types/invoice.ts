@@ -4,7 +4,8 @@ export type InvoiceRecord = {
   id: number;
   invoice_id: string;
   sales: string;
-  group_name: string;
+  segment_name: string;
+  customer_name: string;
   kedatangan: string;
   ticket: number;
   revenue: number;
@@ -22,6 +23,7 @@ export type InvoiceApiRecord = {
   invoice_number: string;
   customer_name: string | null;
   sales_person_name: string | null;
+  segment_name: string | null;
   partner_name: string | null;
   arrival_date: string | null;
   total_amount: string | number;
@@ -63,6 +65,31 @@ export type InvoiceDetailItem = {
   subtotal: string | number;
 };
 
+export type InvoicePayment = {
+  payment_date?: string | null;
+  payment_type?: string | null;
+  payment_method?: string | null;
+  account_holder_name?: string | null;
+  from_bank?: string | null;
+  to_bank?: string | null;
+  amount?: string | number | null;
+  notes?: string | null;
+  proof_of_payment: string | null;
+};
+
+export type InvoicePaymentForm = {
+  paymentDate: Date | undefined;
+  paymentType: string;
+  paymentMethod: string;
+  accountHolderName: string;
+  depositNumber: string;
+  fromBank: string;
+  toBank: string;
+  amount: string;
+  notes: string;
+  proofFiles: File[];
+};
+
 export type InvoiceDetail = {
   id: number;
   invoice_number: string | null;
@@ -81,7 +108,7 @@ export type InvoiceDetail = {
   due_date: string | null;
   notes: string | null;
   total_amount: string | number;
-  payments?: { proof_of_payment: string | null }[];
+  payments?: InvoicePayment[];
   items?: InvoiceDetailItem[];
 };
 

@@ -39,7 +39,9 @@ const useInvoices = () => {
           id: invoice.id,
           invoice_id: invoice.invoice_number,
           sales: invoice.sales_person_name ?? "-",
-          group_name: invoice.partner_name ?? invoice.customer_name ?? "-",
+          segment_name: invoice.segment_name ?? "-",
+          customer_name: invoice.customer_name ?? "-",
+          partner_name: invoice.partner_name ?? "-",
           kedatangan: formatTanggal(invoice.arrival_date),
           ticket: (invoice.items ?? []).reduce(
             (total, item) => total + Number(item.quantity || 0),

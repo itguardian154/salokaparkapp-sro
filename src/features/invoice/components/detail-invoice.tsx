@@ -18,7 +18,6 @@ import {
   educationStatusOptions,
   filterInvoiceOptions,
   groupNumberOptions,
-  STATIC_INVOICE_PARTNER_ID,
   STATIC_INVOICE_SEGMENT_IDS,
   type InvoiceSearchOption,
 } from "./invoice-form-options";
@@ -27,6 +26,8 @@ import CustomerSuggestionField from "@/features/customers/components/customer-su
 import useCreateInvoice from "../hooks/use-create-invoice";
 import useInvoiceDetail from "../hooks/use-invoice-detail";
 import useUpdateInvoice from "../hooks/use-update-invoice";
+import type { InvoicePaymentForm } from "../types/invoice";
+import type { Agent } from "@/features/master/master-agen/types/master-agen";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import { FaSave } from "react-icons/fa";
 import { FaDownload, FaFileInvoice } from "react-icons/fa6";
 import { MdWorkHistory } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
+import useMasterAgent from "@/features/master/master-agen/hooks/use-master-agen";
 
 type InvoiceFormPageProps = { mode: "create" | "detail" };
 
@@ -56,6 +58,7 @@ type InvoiceFormData = {
   provinceId: number | null;
   cityId: number | null;
   selectedKaryawan: Karyawan | null;
+  partnerId: number | null;
   customerSegment: string;
   invoiceSegment: string;
   travelAgent: string;
@@ -89,6 +92,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     provinceId: null,
     cityId: null,
     selectedKaryawan: null,
+    partnerId: null,
     customerSegment: "",
     invoiceSegment: "",
     travelAgent: "",
@@ -112,6 +116,13 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     cityName: string;
     loadingStarted: boolean;
   } | null>(null);
+  const pendingAgentLocation = useRef<{
+    provinceId: number | null;
+    provinceName: string;
+    cityName: string;
+    waitForCities: boolean;
+    loadingStarted: boolean;
+  } | null>(null);
   const {
     provinces,
     loading: provinceLoading,
@@ -127,17 +138,29 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const [searchGroupProvince, setSearchGroupProvince] = useState("");
   const [searchGroupCity, setSearchGroupCity] = useState("");
   const [hasPaymentProof, setHasPaymentProof] = useState(false);
+  const [paymentForm, setPaymentForm] = useState<InvoicePaymentForm>({
+    paymentDate: undefined,
+    paymentType: "dp",
+    paymentMethod: "",
+    accountHolderName: "",
+    depositNumber: "",
+    fromBank: "",
+    toBank: "",
+    amount: "",
+    notes: "",
+    proofFiles: [],
+  });
   const {
     invoice: invoiceData,
     loading: invoiceLoading,
-    error: invoiceError,
+    // error: invoiceError,
   } = useInvoiceDetail(mode === "detail" ? id : undefined);
   const createInvoiceMutation = useCreateInvoice();
   const updateInvoiceMutation = useUpdateInvoice();
   const saving = createInvoiceMutation.loading || updateInvoiceMutation.loading;
-  const saveError =
-    invoiceError || createInvoiceMutation.error || updateInvoiceMutation.error;
+  
 
+  // Set form data when invoice data is loaded
   useEffect(() => {
     if (!invoiceData) return;
     setFormData((current) => ({
@@ -145,6 +168,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       customerName: invoiceData.customer_name ?? "",
       groupName: invoiceData.customer_name ?? "",
       customerId: invoiceData.customer_id,
+      partnerId: invoiceData.partner_id,
       travelAgent: invoiceData.partner_name ?? "",
       arrivalDate: toDate(invoiceData.arrival_date),
       orderItems: (invoiceData.items ?? []).map((item) => ({
@@ -159,88 +183,27 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         subtotal: Number(item.subtotal) || 0,
       })),
     }));
-    setHasPaymentProof((invoiceData.payments ?? []).some((payment) => payment.proof_of_payment));
+    setHasPaymentProof(
+      (invoiceData.payments ?? []).some((payment) => payment.proof_of_payment),
+    );
+    const payment = invoiceData.payments?.[0];
+    setPaymentForm({
+      paymentDate: toDate(payment?.payment_date),
+      paymentType: payment?.payment_type ?? "dp",
+      paymentMethod: payment?.payment_method ?? "",
+      accountHolderName: payment?.account_holder_name ?? "",
+      depositNumber: "",
+      fromBank: payment?.from_bank ?? "",
+      toBank: payment?.to_bank ?? "",
+      amount:
+        payment?.amount !== null && payment?.amount !== undefined
+          ? String(payment.amount)
+          : "",
+      notes: payment?.notes ?? "",
+      proofFiles: [],
+    });
   }, [invoiceData]);
-
-  const handleSave = async () => {
-    if (saving) return;
-    const confirmation = await Swal.fire({
-      title: "Konfirmasi Simpan",
-      text:
-        mode === "create"
-          ? "Yakin ingin menambahkan invoice ini?"
-          : "Yakin ingin menyimpan perubahan invoice ini?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Ya, Simpan",
-      confirmButtonColor: "#107254",
-      cancelButtonText: "Batal",
-      cancelButtonColor: "#64748b",
-      reverseButtons: true,
-    });
-    if (!confirmation.isConfirmed) return;
-
-    createInvoiceMutation.clearError();
-    updateInvoiceMutation.clearError();
-    const payload = new FormData();
-    const customerId = formData.customerId;
-    if (customerId) {
-      payload.append("customer_id", String(customerId));
-    } else {
-      payload.append(
-        "customer",
-        JSON.stringify({ name: formData.groupName, phone: formData.customerContact }),
-      );
-    }
-    payload.append("partner_id", String(STATIC_INVOICE_PARTNER_ID));
-    payload.append("segment_id", String(STATIC_INVOICE_SEGMENT_IDS.segmentId));
-    payload.append("segment_detail_id", String(STATIC_INVOICE_SEGMENT_IDS.segmentDetailId));
-    // payload.append("sub_segment_detail_id", String(STATIC_INVOICE_SEGMENT_IDS.subSegmentDetailId));
-    payload.append("invoice_date", invoiceData?.invoice_date ?? new Date().toISOString());
-    if (formData.arrivalDate) payload.append("arrival_date", formData.arrivalDate.toISOString());
-    formData.orderItems.forEach((order, index) => {
-      const item = `items[${index}]`;
-      payload.append(`${item}[product_id]`, String(order.productId || ""));
-      payload.append(`${item}[product_name]`, order.product);
-      payload.append(`${item}[product_description]`, order.description);
-      payload.append(`${item}[quantity]`, String(order.quantity));
-      payload.append(`${item}[bonus_quantity]`, String(order.compliment ?? 0));
-      payload.append(`${item}[unit_price]`, String(order.unitPrice));
-      payload.append(`${item}[discount_amount]`, String(order.discountPrice));
-      payload.append(`${item}[subtotal]`, String(order.subtotal));
-    });
-
-    try {
-      if (mode === "create") {
-        const created = await createInvoiceMutation.submit(payload);
-        toast.add({
-          title: "Invoice berhasil dibuat",
-          description: "Invoice baru berhasil disimpan.",
-          type: "success",
-          timeout: 4000,
-        });
-        navigate(`/invoice/detail/${created.id}`, { replace: true });
-      } else if (id) {
-        await updateInvoiceMutation.submit(id, payload);
-        toast.add({
-          title: "Invoice berhasil diperbarui",
-          description: "Perubahan invoice berhasil disimpan.",
-          type: "success",
-          timeout: 4000,
-        });
-      }
-    } catch (error) {
-      toast.add({
-        title: "Invoice gagal disimpan",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat menyimpan invoice.",
-        type: "error",
-        timeout: 6000,
-      });
-    }
-  };
+  // Set form data when province data is loaded
 
   // Get nama sales start
   const {
@@ -255,43 +218,28 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       item.id_departemen === "DP008" ||
       (item.id_departemen === "DP009" && item.id_departemen_sub === "DS019"),
   );
+  const defaultSalesName =
+    mode === "create" ? localStorage.getItem("namakaryawan") : null;
   const selectedSales =
     formData.selectedKaryawan ??
-    karyawan.find((employee) => employee.id_absen === invoiceData?.sales_person_id) ??
+    karyawan.find(
+      (employee) => employee.id_absen === invoiceData?.sales_person_id,
+    ) ??
+    eligibleKaryawan.find((employee) => employee.name === defaultSalesName) ??
     null;
 
   // Get nama sales end
 
-  // Handle actions start
-  const actions: DetailAction[] = [{
-    id: "save",
-    label: saving ? "Menyimpan..." : "Save",
-    icon: <FaSave size={15} />,
-    variant: "primer",
-    mobileColor: "bg-primer-60",
-    position: "right",
-    disabled: saving || invoiceLoading,
-    onClick: handleSave,
-  }];
-
-  if (mode === "detail" && hasPaymentProof) actions.push({
-    id: "submit", label: "Submit", icon: <FaSave size={15} />, variant: "primer",
-    mobileColor: "bg-primer-60", position: "right",
-  });
-  if (mode === "detail") actions.push({
-    id: "approve", label: "Approve", icon: <Signature size={15} />, variant: "primer",
-    mobileColor: "bg-primer-60", position: "right",
-  });
-
-  if (mode === "detail") actions.push({
-    id: "download",
-    label: "Download",
-    icon: <FaDownload size={15} />,
-    variant: "blue",
-    mobileColor: "bg-blue-600",
-    position: "left",
-  });
-  // Handle actions end
+  // Get nama travel agent start
+  const {
+    agents,
+    loading: loadingAgents,
+    error: agentsError,
+    search: searchAgent,
+    setSearch: setSearchAgent,
+  } = useMasterAgent({ is_active: "1" });
+  const [openTravelAgent, setOpenTravelAgent] = useState(false);
+  // Get nama travel agent end
 
   // Handle get provinsi dan kota start
   const [openProvince, setOpenProvince] = useState(false);
@@ -300,8 +248,59 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const [searchCity, setSearchCity] = useState("");
 
   const { cities, loading: citiesLoading } = useCities(formData.provinceId);
-  const { cities: groupCities, loading: groupCitiesLoading } =
-    useCities(formData.groupProvinceId);
+  const { cities: groupCities, loading: groupCitiesLoading } = useCities(
+    formData.groupProvinceId,
+  );
+
+  useEffect(() => {
+    const pendingLocation = pendingAgentLocation.current;
+    if (!pendingLocation) return;
+
+    if (pendingLocation.provinceId === null) {
+      const province = provinces.find(
+        (item) =>
+          item.name.toLowerCase().trim() ===
+          pendingLocation.provinceName.toLowerCase().trim(),
+      );
+      if (!province) return;
+
+      pendingLocation.provinceId = province.id;
+      pendingLocation.waitForCities = true;
+      setFormData((current) => ({
+        ...current,
+        provinceId: province.id,
+        cityId: null,
+      }));
+      return;
+    }
+
+    if (formData.provinceId !== pendingLocation.provinceId) return;
+    if (!pendingLocation.cityName) {
+      pendingAgentLocation.current = null;
+      return;
+    }
+
+    if (citiesLoading) {
+      pendingLocation.loadingStarted = true;
+      return;
+    }
+    if (
+      pendingLocation.waitForCities &&
+      !pendingLocation.loadingStarted
+    ) {
+      return;
+    }
+
+    const city = cities.find(
+      (item) =>
+        item.name.toLowerCase().trim() ===
+        pendingLocation.cityName.toLowerCase().trim(),
+    );
+    if (city) {
+      setFormData((current) => ({ ...current, cityId: city.id }));
+    }
+    pendingAgentLocation.current = null;
+  }, [cities, citiesLoading, formData.provinceId, provinces]);
 
   useEffect(() => {
     const pendingLocation = pendingCustomerLocation.current;
@@ -365,7 +364,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const selectedGroupProvince = provinces.find(
     (province) => province.id === formData.groupProvinceId,
   );
-  const selectedGroupCity = groupCities.find((city) => city.id === formData.groupCityId);
+  const selectedGroupCity = groupCities.find(
+    (city) => city.id === formData.groupCityId,
+  );
   const filteredGroupProvinces = provinces.filter((province) =>
     province.name
       .toLowerCase()
@@ -412,16 +413,226 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     setOpenGroupCity(false);
   };
   // Handle get provinsi dan kota end
+
+  // Handle save start
+  const handleSave = async () => {
+    if (saving) return;
+    if (
+      !formData.customerId &&
+      (!formData.groupName.trim() || !selectedGroupProvince || !selectedGroupCity)
+    ) {
+      toast.add({
+        title: "Data customer belum lengkap",
+        description:
+          "Isi nama group, provinsi, dan kota sebelum menyimpan invoice.",
+        type: "error",
+        timeout: 5000,
+      });
+      return;
+    }
+
+    const confirmation = await Swal.fire({
+      title: "Konfirmasi Simpan",
+      text:
+        mode === "create"
+          ? "Yakin ingin menambahkan invoice ini?"
+          : "Yakin ingin menyimpan perubahan invoice ini?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Simpan",
+      confirmButtonColor: "#107254",
+      cancelButtonText: "Batal",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
+
+    createInvoiceMutation.clearError();
+    updateInvoiceMutation.clearError();
+    const payload = new FormData();
+    const customerId = formData.customerId;
+    if (customerId) {
+      payload.append("customer_id", String(customerId));
+    } else {
+      payload.append("customer[name]", formData.groupName.trim());
+      payload.append("customer[phone]", formData.customerContact);
+      payload.append(
+        "customer[province_name]",
+        selectedGroupProvince?.name ?? "",
+      );
+      payload.append("customer[city_name]", selectedGroupCity?.name ?? "");
+      payload.append(
+        "customer[segment_id]",
+        String(STATIC_INVOICE_SEGMENT_IDS.segmentId),
+      );
+      payload.append(
+        "customer[segment_detail_id]",
+        String(STATIC_INVOICE_SEGMENT_IDS.segmentDetailId),
+      );
+    }
+
+    const hasPaymentInput = Boolean(
+      paymentForm.paymentDate ||
+        paymentForm.paymentMethod ||
+        paymentForm.accountHolderName.trim() ||
+        paymentForm.fromBank ||
+        paymentForm.toBank ||
+        paymentForm.amount.trim() ||
+        paymentForm.notes.trim() ||
+        paymentForm.proofFiles.length,
+    );
+    if (hasPaymentInput) {
+      if (
+        !paymentForm.paymentDate ||
+        !paymentForm.paymentMethod ||
+        Number(paymentForm.amount) <= 0
+      ) {
+        toast.add({
+          title: "Informasi pembayaran belum lengkap",
+          description:
+            "Isi tanggal bayar, metode bayar, dan jumlah pembayaran sebelum menyimpan.",
+          type: "error",
+          timeout: 5000,
+        });
+        return;
+      }
+
+      payload.append(
+        "payment[payment_date]",
+        paymentForm.paymentDate.toISOString(),
+      );
+      payload.append("payment[payment_type]", paymentForm.paymentType || "dp");
+      payload.append("payment[payment_method]", paymentForm.paymentMethod);
+      payload.append(
+        "payment[account_holder_name]",
+        paymentForm.accountHolderName,
+      );
+      payload.append("payment[from_bank]", paymentForm.fromBank);
+      payload.append("payment[to_bank]", paymentForm.toBank);
+      payload.append("payment[amount]", paymentForm.amount);
+      payload.append("payment[notes]", paymentForm.notes);
+      paymentForm.proofFiles.forEach((file) => {
+        payload.append("payment[proof_of_payment]", file);
+      });
+    }
+    payload.append(
+      "partner_id",
+      String(formData.partnerId),
+    );
+    payload.append("segment_id", String(STATIC_INVOICE_SEGMENT_IDS.segmentId));
+    payload.append(
+      "segment_detail_id",
+      String(STATIC_INVOICE_SEGMENT_IDS.segmentDetailId),
+    );
+    // payload.append("sub_segment_detail_id", String(STATIC_INVOICE_SEGMENT_IDS.subSegmentDetailId));
+    payload.append(
+      "invoice_date",
+      invoiceData?.invoice_date ?? new Date().toISOString(),
+    );
+    if (formData.arrivalDate)
+      payload.append("arrival_date", formData.arrivalDate.toISOString());
+    formData.orderItems.forEach((order, index) => {
+      const item = `items[${index}]`;
+      payload.append(`${item}[product_id]`, String(order.productId || ""));
+      payload.append(`${item}[product_name]`, order.product);
+      payload.append(`${item}[product_description]`, order.description);
+      payload.append(`${item}[quantity]`, String(order.quantity));
+      payload.append(`${item}[bonus_quantity]`, String(order.compliment ?? 0));
+      payload.append(`${item}[unit_price]`, String(order.unitPrice));
+      payload.append(`${item}[discount_amount]`, String(order.discountPrice));
+      payload.append(`${item}[subtotal]`, String(order.subtotal));
+    });
+
+    try {
+      if (mode === "create") {
+      //  const created = await createInvoiceMutation.submit(payload);
+        toast.add({
+          title: "Invoice berhasil dibuat",
+          description: "Invoice baru berhasil disimpan.",
+          type: "success",
+          timeout: 4000,
+        });
+        navigate(`/invoice`);
+      } else if (id) {
+        await updateInvoiceMutation.submit(id, payload);
+        toast.add({
+          title: "Invoice berhasil diperbarui",
+          description: "Perubahan invoice berhasil disimpan.",
+          type: "success",
+          timeout: 4000,
+        });
+      }
+    } catch (error) {
+      toast.add({
+        title: "Invoice gagal disimpan",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat menyimpan invoice.",
+        type: "error",
+        timeout: 6000,
+      });
+    }
+  };
+  // Handle save end
+
+  // Handle actions start
+  const actions: DetailAction[] = [
+    {
+      id: "save",
+      label: saving ? "Menyimpan..." : "Save",
+      icon: <FaSave size={15} />,
+      variant: "primer",
+      mobileColor: "bg-primer-60",
+      position: "right",
+      disabled: saving || invoiceLoading,
+      onClick: handleSave,
+    },
+  ];
+
+  if (mode === "detail" && hasPaymentProof)
+    actions.push({
+      id: "submit",
+      label: "Submit",
+      icon: <FaSave size={15} />,
+      variant: "primer",
+      mobileColor: "bg-primer-60",
+      position: "right",
+    });
+  if (mode === "detail" && status)
+    actions.push({
+      id: "approve",
+      label: "Approve",
+      icon: <Signature size={15} />,
+      variant: "primer",
+      mobileColor: "bg-primer-60",
+      position: "right",
+    });
+
+  if (mode === "detail")
+    actions.push({
+      id: "download",
+      label: "Download",
+      icon: <FaDownload size={15} />,
+      variant: "blue",
+      mobileColor: "bg-blue-600",
+      position: "left",
+    });
+  // Handle actions end
+
   return (
     <>
       <DetailPageLayout
         icon={FaFileInvoice}
         title={mode === "create" ? "Tambah Invoice" : "Invoice"}
-        subtitle={invoiceData?.invoice_number ?? ""}
+        subtitle={
+          mode === "create"
+            ? "Form menambahkan data invoice"
+            : (invoiceData?.invoice_number ?? "")
+        }
         onClose={() => navigate("/invoice")}
         footer={<DetailActionFooter actions={actions} />}
       >
-        {saveError && <p role="alert" className="px-5 py-3 text-sm text-red-600">{saveError}</p>}
         <DetailSection
           icon={Users}
           title="Informasi Pelanggan"
@@ -440,8 +651,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         >
           <div className="grid grid-cols-1 gap-8 p-5 xl:grid-cols-2 [&_[data-slot=field-label]]:!text-xs max-md:[&_[data-slot=field]]:!grid-cols-1 max-md:[&_[data-slot=field]]:!items-stretch max-md:[&_[data-slot=field]]:!gap-1">
             {/* Informasi Umum Pelanggan */}
-            {mode !== "create" && (
-              <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+            <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+              {mode !== "create" && (
                 <Field orientation="horizontal">
                   <FieldLabel>Nomor Invoice</FieldLabel>
                   <Input
@@ -449,18 +660,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     disabled
                   />
                 </Field>
-
-                <Field orientation="horizontal">
-                  <FieldLabel>Input Date</FieldLabel>
-                  <Input
-                    placeholder={invoiceData?.invoice_date ?? "Input Date"}
-                    disabled
-                  />
-                </Field>
-              </div>
-            )}
-
-            <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+              )}
               <Field orientation="horizontal">
                 <FieldLabel>Sales</FieldLabel>
                 <SearchablePopover<Karyawan>
@@ -471,8 +671,16 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                   placeholder={
                     karyawanLoading ? "Memuat karyawan..." : "Pilih nama sales"
                   }
-                  selectedLabel={selectedSales?.name ?? invoiceData?.sales_person_name ?? null}
-                  selectedKey={selectedSales?.id_absen ?? invoiceData?.sales_person_id ?? null}
+                  selectedLabel={
+                    selectedSales?.name ??
+                    invoiceData?.sales_person_name ??
+                    defaultSalesName
+                  }
+                  selectedKey={
+                    selectedSales?.id_absen ??
+                    invoiceData?.sales_person_id ??
+                    null
+                  }
                   items={eligibleKaryawan}
                   getKey={(item) => item.id_absen}
                   renderItem={(item) => `${item.name}`}
@@ -491,6 +699,18 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                   }
                 />
               </Field>
+            </div>
+
+            <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+              {mode !== "create" && (
+                <Field orientation="horizontal">
+                  <FieldLabel>Input Date</FieldLabel>
+                  <Input
+                    placeholder={invoiceData?.invoice_date ?? "Input Date"}
+                    disabled
+                  />
+                </Field>
+              )}
 
               <Field orientation="horizontal">
                 <FieldLabel>
@@ -513,6 +733,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       nomorGroup: "",
                       travelAgent:
                         nextValue !== "travel" ? "" : current.travelAgent,
+                      partnerId:
+                        nextValue !== "travel" ? null : current.partnerId,
                     }));
                   }}
                 >
@@ -539,15 +761,79 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
 
-                    <Input
-                      placeholder="Masukkan nama travel/agent"
-                      value={formData.travelAgent}
-                      onChange={(event) =>
+                    <SearchablePopover<Agent>
+                      open={openTravelAgent}
+                      onOpenChange={setOpenTravelAgent}
+                      search={searchAgent}
+                      onSearchChange={setSearchAgent}
+                      placeholder={
+                        loadingAgents
+                          ? "Memuat agen..."
+                          : "Pilih nama travel/agent"
+                      }
+                      selectedLabel={
+                        formData.travelAgent ||
+                        invoiceData?.partner_name ||
+                        null
+                      }
+                      selectedKey={
+                        formData.partnerId !== null
+                          ? String(formData.partnerId)
+                          : invoiceData?.partner_id
+                            ? String(invoiceData.partner_id)
+                            : null
+                      }
+                      items={agents}
+                      getKey={(agent) => String(agent.id)}
+                      renderItem={(agent) => agent.name}
+                      onSelect={(agent) => {
+                        const provinceName =
+                          (typeof agent.province === "string"
+                            ? agent.province
+                            : agent.province?.name) || agent.province_name;
+                        const cityName =
+                          (typeof agent.city === "string"
+                            ? agent.city
+                            : agent.city?.name) || agent.city_name;
+                        const province = provinces.find(
+                          (item) =>
+                            item.name.toLowerCase().trim() ===
+                            provinceName.toLowerCase().trim(),
+                        );
+
+                        pendingAgentLocation.current = provinceName
+                          ? {
+                              provinceId: province?.id ?? null,
+                              provinceName,
+                              cityName,
+                              waitForCities:
+                                !province ||
+                                province.id !== formData.provinceId,
+                              loadingStarted: false,
+                            }
+                          : null;
                         setFormData((current) => ({
                           ...current,
-                          travelAgent: event.target.value,
-                        }))
+                          travelAgent: agent.name,
+                          partnerId: agent.id,
+                          ...(provinceName && {
+                            provinceId: province?.id ?? null,
+                            cityId: null,
+                          }),
+                        }));
+                        setSearchProvince("");
+                        setSearchCity("");
+                        setOpenProvince(false);
+                        setOpenCity(false);
+                        setSearchAgent("");
+                        setOpenTravelAgent(false);
+                      }}
+                      emptyText={
+                        loadingAgents
+                          ? "Memuat data agen..."
+                          : (agentsError ?? "Agen tidak ditemukan.")
                       }
+                      debounceDelay={500}
                     />
                   </Field>
 
@@ -602,7 +888,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         }
                         selectedLabel={selectedProvince?.name ?? null}
                         selectedKey={
-                          formData.provinceId !== null ? String(formData.provinceId) : null
+                          formData.provinceId !== null
+                            ? String(formData.provinceId)
+                            : null
                         }
                         items={filteredProvinces}
                         getKey={(province) => String(province.id)}
@@ -644,13 +932,19 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             : "Pilih kota/kabupaten"
                       }
                       selectedLabel={selectedCity?.name ?? null}
-                      selectedKey={formData.cityId !== null ? String(formData.cityId) : null}
+                      selectedKey={
+                        formData.cityId !== null
+                          ? String(formData.cityId)
+                          : null
+                      }
                       items={filteredCities}
                       getKey={(city) => String(city.id)}
                       renderItem={(city) => city.name}
                       onSelect={(city) => handleCityChange(city.id)}
                       disabled={
-                        formData.provinceId === null || citiesLoading || provinceLoading
+                        formData.provinceId === null ||
+                        citiesLoading ||
+                        provinceLoading
                       }
                       emptyText="Kota/kabupaten tidak ditemukan."
                       debounceDelay={500}
@@ -942,18 +1236,17 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                               )
                             : undefined;
 
-                        pendingCustomerLocation.current =
-                          customer.province_name
-                            ? {
-                                provinceId: customerProvince?.id ?? null,
-                                provinceName: customer.province_name,
-                                cityName: customer.city_name ?? "",
-                                loadingStarted:
-                                  customerProvince?.id ===
-                                    formData.groupProvinceId ||
-                                  groupCitiesLoading,
-                              }
-                            : null;
+                        pendingCustomerLocation.current = customer.province_name
+                          ? {
+                              provinceId: customerProvince?.id ?? null,
+                              provinceName: customer.province_name,
+                              cityName: customer.city_name ?? "",
+                              loadingStarted:
+                                customerProvince?.id ===
+                                  formData.groupProvinceId ||
+                                groupCitiesLoading,
+                            }
+                          : null;
                         setFormData((current) => ({
                           ...current,
                           groupName: customer.name,
@@ -1026,7 +1319,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       }
                       selectedLabel={selectedGroupCity?.name ?? null}
                       selectedKey={
-                        formData.groupCityId !== null ? String(formData.groupCityId) : null
+                        formData.groupCityId !== null
+                          ? String(formData.groupCityId)
+                          : null
                       }
                       items={filteredGroupCities}
                       getKey={(city) => String(city.id)}
@@ -1129,19 +1424,23 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           </div>
         </DetailSection>
 
-        {mode === "detail" && <DetailSection
-          icon={HandCoins}
-          title="Informasi Pembayaran"
-          variant="green"
-        >
-          <PaymentInformation
-            totalInvoice={formData.orderItems.reduce(
-              (total, order) => total + order.subtotal,
-              0,
-            )}
-            onProofChange={setHasPaymentProof}
-          />
-        </DetailSection>}
+        {mode === "detail" && (
+          <DetailSection
+            icon={HandCoins}
+            title="Informasi Pembayaran"
+            variant="green"
+          >
+            <PaymentInformation
+              totalInvoice={formData.orderItems.reduce(
+                (total, order) => total + order.subtotal,
+                0,
+              )}
+              value={paymentForm}
+              onChange={setPaymentForm}
+              onProofChange={setHasPaymentProof}
+            />
+          </DetailSection>
+        )}
 
         <CreateDetailInvoice
           open={openCreateDetailInvoice}
@@ -1149,10 +1448,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           onSave={(order) =>
             setFormData((current) => ({
               ...current,
-              orderItems: [
-                ...current.orderItems,
-              { ...order, id: Date.now() },
-              ],
+              orderItems: [...current.orderItems, { ...order, id: Date.now() }],
             }))
           }
         />

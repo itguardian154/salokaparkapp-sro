@@ -10,11 +10,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRupiah } from "@/lib/utils";
+import type { InvoicePaymentForm } from "../types/invoice";
 import { useState, type ChangeEvent } from "react";
 import { FaUpload } from "react-icons/fa6";
 
 type PaymentInformationProps = {
   totalInvoice: number;
+  value: InvoicePaymentForm;
+  onChange: (value: InvoicePaymentForm) => void;
   onProofChange?: (hasProof: boolean) => void;
 };
 
@@ -22,7 +25,7 @@ type UploadFieldProps = {
   label: string;
   description: string;
   multiple?: boolean;
-  onFilesChange?: (hasFiles: boolean) => void;
+  onFilesChange?: (files: File[]) => void;
 };
 
 function UploadField({
@@ -46,7 +49,7 @@ function UploadField({
         : "Ukuran setiap file maksimal 5 MB.",
     );
     setFiles(validFiles);
-    onFilesChange?.(validFiles.length > 0);
+    onFilesChange?.(validFiles);
   };
 
   return (
@@ -78,16 +81,13 @@ function UploadField({
 
 export default function PaymentInformation({
   totalInvoice,
+  value,
+  onChange,
   onProofChange,
 }: PaymentInformationProps) {
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [accountHolder, setAccountHolder] = useState("");
-  const [depositNumber, setDepositNumber] = useState("");
-  const [sourceAccount, setSourceAccount] = useState("");
-  const [destinationAccount, setDestinationAccount] = useState("");
-  const [paymentDate, setPaymentDate] = useState<Date>();
-  const [notes, setNotes] = useState("");
-  const [paymentAmount, setPaymentAmount] = useState(0);
+  const updateValue = (updates: Partial<InvoicePaymentForm>) =>
+    onChange({ ...value, ...updates });
+  const paymentAmount = Number(value.amount) || 0;
 
   const outstanding = Math.max(totalInvoice - paymentAmount, 0);
 
@@ -104,7 +104,10 @@ export default function PaymentInformation({
             label="Bukti Bayar"
             description="Format: PDF, JPG, PNG (Maks. 5 MB)"
             multiple
-            onFilesChange={onProofChange}
+            onFilesChange={(files) => {
+              updateValue({ proofFiles: files });
+              onProofChange?.(files.length > 0);
+            }}
           />
         </div>
 
@@ -113,8 +116,10 @@ export default function PaymentInformation({
             <FieldLabel className="text-xs">Atas Nama Rekening</FieldLabel>
             <Input
               className="h-10"
-              value={accountHolder}
-              onChange={(event) => setAccountHolder(event.target.value)}
+              value={value.accountHolderName}
+              onChange={(event) =>
+                updateValue({ accountHolderName: event.target.value })
+              }
               placeholder="Nama pemilik rekening"
             />
           </Field>
@@ -122,29 +127,33 @@ export default function PaymentInformation({
           <Field>
             <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
             <Select
-              value={paymentMethod}
+              value={value.paymentMethod}
               onValueChange={(value: string | null) => {
-                if (value !== null) setPaymentMethod(value);
+                if (value !== null) updateValue({ paymentMethod: value });
               }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pilih metode bayar" />
               </SelectTrigger>
               <SelectContent align="start" alignItemWithTrigger={false}>
-                <SelectItem value="Tunai">Tunai</SelectItem>
-                <SelectItem value="Transfer">Transfer</SelectItem>
-                <SelectItem value="Deposit">Deposit</SelectItem>
-                <SelectItem value="Lainnya">Lainnya</SelectItem>
+                <SelectItem value="cash">Tunai</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
+                <SelectItem value="deposit">Deposit</SelectItem>
+                <SelectItem value="other">Lainnya</SelectItem>
               </SelectContent>
             </Select>
           </Field>
 
           <Field>
-            <FieldLabel className="text-xs">Nomor SO / Group Deposit</FieldLabel>
+            <FieldLabel className="text-xs">
+              Nomor SO / Group Deposit
+            </FieldLabel>
             <Input
               className="h-10"
-              value={depositNumber}
-              onChange={(event) => setDepositNumber(event.target.value)}
+              value={value.depositNumber}
+              onChange={(event) =>
+                updateValue({ depositNumber: event.target.value })
+              }
               placeholder="Isi jika menggunakan deposit"
             />
           </Field>
@@ -152,15 +161,15 @@ export default function PaymentInformation({
           <Field>
             <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
             <Select
-              value={sourceAccount}
+              value={value.fromBank}
               onValueChange={(value: string | null) => {
-                if (value !== null) setSourceAccount(value);
+                if (value !== null) updateValue({ fromBank: value });
               }}
             >
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Pilih rekening asal" />
               </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
+              <SelectContent align="start" alignItemWithTrigger={false}>
                 <SelectItem value="BCA">BCA</SelectItem>
                 <SelectItem value="Mandiri">Mandiri</SelectItem>
                 <SelectItem value="BRI">BRI</SelectItem>
@@ -173,15 +182,15 @@ export default function PaymentInformation({
           <Field>
             <FieldLabel className="text-xs">Ke Rekening</FieldLabel>
             <Select
-              value={destinationAccount}
+              value={value.toBank}
               onValueChange={(value: string | null) => {
-                if (value !== null) setDestinationAccount(value);
+                if (value !== null) updateValue({ toBank: value });
               }}
             >
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Pilih rekening tujuan" />
               </SelectTrigger>
-             <SelectContent align="start" alignItemWithTrigger={false}>
+              <SelectContent align="start" alignItemWithTrigger={false}>
                 <SelectItem value="BCA">BCA</SelectItem>
                 <SelectItem value="Mandiri">Mandiri</SelectItem>
                 <SelectItem value="BRI">BRI</SelectItem>
@@ -194,8 +203,8 @@ export default function PaymentInformation({
             <FieldLabel className="text-xs">Tanggal Bayar</FieldLabel>
             <DateRangePicker
               mode="single"
-              value={paymentDate}
-              onChange={setPaymentDate}
+              value={value.paymentDate}
+              onChange={(paymentDate) => updateValue({ paymentDate })}
             />
           </Field>
         </div>
@@ -205,8 +214,8 @@ export default function PaymentInformation({
           <Textarea
             className="min-h-20 resize-y"
             placeholder="Keterangan jika ada tambahan informasi"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
+            value={value.notes}
+            onChange={(event) => updateValue({ notes: event.target.value })}
           />
         </Field>
       </div>
@@ -228,13 +237,16 @@ export default function PaymentInformation({
             </FieldLabel>
             <Input
               className="h-10 border-emerald-200 bg-white text-right font-semibold dark:border-emerald-900 dark:bg-slate-900"
-              type="number"
-              min={0}
-              max={totalInvoice}
-              value={paymentAmount || ""}
-              onChange={(event) =>
-                setPaymentAmount(Math.max(Number(event.target.value) || 0, 0))
-              }
+              type="text"
+              inputMode="numeric"
+              value={formatRupiah(value.amount)}
+              onChange={(event) => {
+                const rawValue = event.target.value.replace(/\D/g, "");
+
+                updateValue({
+                  amount: String(Math.max(Number(rawValue) || 0, 0)),
+                });
+              }}
               placeholder="0"
             />
           </Field>
