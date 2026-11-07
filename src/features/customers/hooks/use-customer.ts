@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getCustomer } from "../services/customer-service";
 import type {
@@ -120,10 +120,10 @@ const [filterData, setFilterData] = useState<CustomerFilters>({
     }
   };
 
-  const changeSearch = (value: string) => {
+  const changeSearch = useCallback((value: string) => {
     setSearchData(value);
     setCurrentPage(1);
-  };
+  }, []);
 
   const changeItemPerPage = (value: number) => {
     setItemPerPage(value);

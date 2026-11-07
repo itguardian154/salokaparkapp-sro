@@ -28,8 +28,16 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       accessorKey: "sales",
       header: "Sales",
     },
+      {
+      accessorKey: "segment_name",
+      header: "Segmen",
+    },
     {
-      accessorKey: "group_name",
+      accessorKey: "partner_name",
+      header: "Travel",
+    },
+    {
+      accessorKey: "customer_name",
       header: "Group",
     },
     {
@@ -50,7 +58,7 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       header: "Status",
       cell: ({ row }) => {
         return (
-          <div className="flex justify-center">
+          <div className="flex justify-end lg:justify-center">
             <Badge variant="muted">{row.original.status}</Badge>
           </div>
         );

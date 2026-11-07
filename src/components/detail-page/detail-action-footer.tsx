@@ -37,12 +37,12 @@ const MobileAction = ({
       onClick={onClick}
       className={`
         flex
-        h-58px
-        w-58px
+        h-[58px]
+        w-[58px]
         flex-col
         items-center
         justify-center
-        gap-2px
+        gap-[2px]
         rounded-full
         text-white
         shadow-[0_3px_10px_rgba(0,0,0,0.22)]
@@ -56,7 +56,7 @@ const MobileAction = ({
       <span
         className="
           flex
-          h-19px
+          h-[19px]
           items-center
           justify-center
         "
@@ -66,11 +66,11 @@ const MobileAction = ({
 
       <span
         className="
-          max-w-48px
+          max-w-[48px]
           text-center
           text-[8px]
           font-bold
-          leading-9px
+          leading-[9px]
           text-white
         "
       >
@@ -156,14 +156,14 @@ export default function DetailActionFooter({
 
       {/* MOBILE */}
       <div className="md:hidden">
-        <div className="pointer-events-none fixed inset-0 z-9999">
+        <div className="pointer-events-none fixed inset-0 z-[9999]">
           {/* FAN MENU */}
           <div
             className="
               fixed
               bottom-0
               left-1/2
-              h-180px
+              h-[180px]
               w-[320px]
               -translate-x-1/2
             "
@@ -180,7 +180,7 @@ export default function DetailActionFooter({
                 ${
                   open
                     ? "translate-y-0 scale-100 opacity-100"
-                    : "translate-y-30px scale-[0.75] opacity-0"
+                    : "translate-y-[30px] scale-[0.75] opacity-0"
                 }
               `}
             >
@@ -274,7 +274,7 @@ export default function DetailActionFooter({
                         ${
                           open
                             ? "translate-y-0 scale-100 opacity-100"
-                            : "translate-y-25px scale-50 opacity-0"
+                            : "translate-y-[25px] scale-50 opacity-0"
                         }
                       `}
                       style={{
@@ -311,12 +311,12 @@ export default function DetailActionFooter({
               className="
                 pointer-events-auto
                 fixed
-                bottom-5px
+                bottom-[5px]
                 left-1/2
-                z-10000
+                z-[10000]
                 flex
-                h-58px
-                w-58px
+                h-[58px]
+                w-[58px]
                 -translate-x-1/2
                 items-center
                 justify-center

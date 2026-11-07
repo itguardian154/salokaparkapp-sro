@@ -61,6 +61,11 @@ const MobileDataCard = <TData extends RowData,>({
         <div className="grid grid-cols-1 gap-4">
             {rows.map((row) => {
                 const title = titleKey ? row.original[titleKey] : undefined;
+                const titleCell = titleKey
+                    ? row.getVisibleCells().find(
+                          (cell) => cell.column.id === String(titleKey),
+                      )
+                    : undefined;
 
                 // Ambil kolom aksi
                 const actionCell = row
@@ -114,9 +119,15 @@ const MobileDataCard = <TData extends RowData,>({
                                 </p>
 
                                 <h3 className="wrap-break-word text-sm font-bold leading-5 text-slate-800 dark:text-slate-100">
-                                    {title != null && String(title).trim() !== ""
-                                        ? String(title)
-                                        : `Data ${titleLabel} ${row.index + 1}`}
+                                    {title != null && String(title).trim() !== "" ? (
+                                        titleCell ? (
+                                            <table.FlexRender cell={titleCell} />
+                                        ) : (
+                                            String(title)
+                                        )
+                                    ) : (
+                                        `Data ${titleLabel} ${row.index + 1}`
+                                    )}
                                 </h3>
                             </div>
 

@@ -16,6 +16,7 @@ export type FilterDateValue = {
 type FilterDateProps = {
   label: string;
   useRange?: boolean;
+  hideLabel?: boolean;
   value: FilterDateValue;
   onChange: (value: FilterDateValue) => void;
 };
@@ -62,6 +63,7 @@ export default function FilterDate({
   value,
   onChange,
   useRange = false,
+  hideLabel = false,
 }: FilterDateProps) {
   const [open, setOpen] = useState(false);
   const startDate = value?.startDate ?? null;
@@ -77,9 +79,11 @@ export default function FilterDate({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-slate-500 dark:text-slate-200">
-        {label}
-      </label>
+      {!hideLabel && (
+        <label className="text-xs font-medium text-slate-500 dark:text-slate-200">
+          {label}
+        </label>
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           type="button"
