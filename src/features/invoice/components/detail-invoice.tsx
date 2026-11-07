@@ -545,14 +545,14 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
 
     try {
       if (mode === "create") {
-      //  const created = await createInvoiceMutation.submit(payload);
+        const created = await createInvoiceMutation.submit(payload);
         toast.add({
           title: "Invoice berhasil dibuat",
           description: "Invoice baru berhasil disimpan.",
           type: "success",
           timeout: 4000,
         });
-        navigate(`/invoice`);
+        navigate(`/invoice/detail/${created.id}`, { replace: true });
       } else if (id) {
         await updateInvoiceMutation.submit(id, payload);
         toast.add({
@@ -561,6 +561,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           type: "success",
           timeout: 4000,
         });
+      } else {
+        throw new Error("ID invoice tidak ditemukan untuk memperbarui data.");
       }
     } catch (error) {
       toast.add({
