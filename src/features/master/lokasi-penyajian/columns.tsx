@@ -23,7 +23,7 @@ export function getMasterLokasiPenyajianColumns(
     },
        {
       accessorKey: "quota",
-      header: "Quota Lokasi Penyajian",
+      header: "Kuota Lokasi Penyajian",
     },
     {
       accessorKey: "is_active",
