@@ -24,6 +24,7 @@ import PaymentMetodePage from "./features/konfigurasi/metode/pages/holiday";
 import RoleAksesPage from "./features/role-akses/pages/role-akses";
 import DetailInvoice from "./features/invoice/components/detail-invoice";
 import MasterSegmentPage from "./features/master/master-segment/pages/master-segment";
+import MasterLokasiPenyajianPage from "./features/master/lokasi-penyajian/pages/lokasi-penyajian"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -49,6 +50,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route
                   path="/master/segmen"
                   element={<MasterSegmentPage />}
+                />
+                 <Route
+                  path="/master/lokasi-penyajian"
+                  element={<MasterLokasiPenyajianPage />}
                 />
                 {/* customer */}
 

@@ -60,6 +60,10 @@ export const navMainItems: {
         title: "Segmen",
         url: "/master/segmen",
       },
+      {
+        title: "Lokasi Penyajian",
+        url: "master/lokasi-penyajian"
+      }
     ],
   },
 
