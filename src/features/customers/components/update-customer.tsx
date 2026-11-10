@@ -150,7 +150,7 @@ const SegmentFields = ({
     );
 
     const filteredSegmentDetails = activeSegmentDetails.filter((item) =>
-        item.name
+        (item.name ?? "")
             .toLowerCase()
             .includes(searchSegmentDetail.toLowerCase().trim()),
     );

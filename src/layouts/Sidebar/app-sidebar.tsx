@@ -56,6 +56,14 @@ export const navMainItems: {
         title: "Kategori Produk",
         url: "/master/kategori-produk",
       },
+      {
+        title: "Segmen",
+        url: "/master/segmen",
+      },
+      {
+        title: "Lokasi Penyajian",
+        url: "master/lokasi-penyajian"
+      }
     ],
   },
 
@@ -66,8 +74,8 @@ export const navMainItems: {
     isActive: true,
     items: [
       {
-        title: "Tiket",
-        url: "/konfigurasi-tiket",
+        title: "Invoice",
+        url: "/konfigurasi-invoice",
       },
       {
         title: "Hari Libur",

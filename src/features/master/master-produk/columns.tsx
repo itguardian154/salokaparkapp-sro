@@ -15,8 +15,8 @@ export function getMasterProdukColumns(
   return [
     {
       id: "number",
-      header: "#",
-      cell: ({ row }) => row.index + 1,
+      header: () => <div className="text-center">#</div>,
+      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {

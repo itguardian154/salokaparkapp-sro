@@ -1,5 +1,5 @@
 import { FaTicket } from "react-icons/fa6";
-import BonusCard from "../components/bonus";
+import BonusCard from "../components/pembayaran";
 import TagihanCard from "../components/tagihan";
 
 export default function KonfigurasiTiketPage() {
@@ -12,10 +12,10 @@ export default function KonfigurasiTiketPage() {
           </div>
           <div className="min-w-0">
             <h1 className="truncate text-base font-bold text-slate-800 dark:text-white">
-              Konfigurasi Tiket
+              Konfigurasi Invoice
             </h1>
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-              Pengaturan informasi tagihan dan bonus tiket
+              Pengaturan informasi tagihan dan invoice
             </p>
           </div>
         </div>

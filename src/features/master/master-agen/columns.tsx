@@ -12,8 +12,8 @@ export function getMasterAgentColumns(
   return [
     {
       id: "number",
-      header: "#",
-      cell: ({ row }) => row.index + 1,
+      header: () => <div className="text-center">#</div>,
+      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {
@@ -42,23 +42,23 @@ export function getMasterAgentColumns(
       ),
     },
     {
-          accessorKey: "is_active",
-          header: "Status Agen",
-          cell: ({ getValue }) => {
-            const status = getValue<Agent["is_active"]>();
-    
-            const variant = status ? "success" : "warning";
-    
-            return (
-              <div className="flex justify-center">
-                {" "}
-                <Badge variant={variant}>
-                  {status ? "Aktif" : "Nonaktif"}
-                </Badge>{" "}
-              </div>
-            );
-          },
-        },
+      accessorKey: "is_active",
+      header: "Status Agen",
+      cell: ({ getValue }) => {
+        const status = getValue<Agent["is_active"]>();
+
+        const variant = status ? "success" : "warning";
+
+        return (
+          <div className="flex justify-center">
+            {" "}
+            <Badge variant={variant}>
+              {status ? "Aktif" : "Nonaktif"}
+            </Badge>{" "}
+          </div>
+        );
+      },
+    },
     {
       id: "aksi",
       header: "Aksi",

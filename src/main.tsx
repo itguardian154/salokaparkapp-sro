@@ -18,10 +18,13 @@ import CustomerPage from "./features/customers/pages/customers";
 
 import InvoicePage from "./features/invoice/pages/invoice";
 
-import KonfigurasiTiketPage from "./features/konfigurasi/tiket/pages/konfigurasi-tiket";
+import KonfigurasiInvoicePage from "./features/konfigurasi/invoice/pages/konfigurasi-invoice";
 import HolidayPage from "./features/konfigurasi/hari-libur/pages/holiday";
 import PaymentMetodePage from "./features/konfigurasi/metode/pages/holiday";
+import RoleAksesPage from "./features/role-akses/pages/role-akses";
 import DetailInvoice from "./features/invoice/components/detail-invoice";
+import MasterSegmentPage from "./features/master/master-segment/pages/master-segment";
+import MasterLokasiPenyajianPage from "./features/master/lokasi-penyajian/pages/lokasi-penyajian"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -44,14 +47,22 @@ createRoot(document.getElementById("root")!).render(
                   path="/master/kategori-produk"
                   element={<MasterKategoriProdukPage />}
                 />
+                <Route
+                  path="/master/segmen"
+                  element={<MasterSegmentPage />}
+                />
+                 <Route
+                  path="/master/lokasi-penyajian"
+                  element={<MasterLokasiPenyajianPage />}
+                />
                 {/* customer */}
 
                 <Route path="/customers" element={<CustomerPage />} />
 
                 {/* Konfigurasi */}
                 <Route
-                  path="/konfigurasi-tiket"
-                  element={<KonfigurasiTiketPage />}
+                  path="/konfigurasi-invoice"
+                  element={<KonfigurasiInvoicePage />}
                 />
 
                 <Route
@@ -69,6 +80,11 @@ createRoot(document.getElementById("root")!).render(
 
                 <Route path="/invoice/create" element={<DetailInvoice mode="create" />} />
                 <Route path="/invoice/detail/:id" element={<DetailInvoice mode="detail" />} />
+                  {/* Role Akses */}
+                <Route
+                  path="/role-akses"
+                  element={<RoleAksesPage />}
+                />
               </Route>
             </Routes>
           </AuthBootstrap>

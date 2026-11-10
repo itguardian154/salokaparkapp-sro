@@ -27,6 +27,7 @@ import {
 
 import { FaSave, FaPlus, FaTrash } from "react-icons/fa";
 import { Building2, GitBranch } from "lucide-react";
+import {FaPen} from "react-icons/fa6";
 
 import { createMasterAgentSchema } from "../schemas/master-agen-schema";
 
@@ -633,7 +634,7 @@ const EditMasterAgen = ({
       open={open}
       onClose={onClose}
       title="Edit Master Agen"
-      icon={<Building2 size={18} />}
+      icon={<FaPen size={18} />}
       footer={
         <div className="flex justify-end gap-3">
           <Button
@@ -773,7 +774,7 @@ const EditMasterAgen = ({
               className="shrink-0 whitespace-nowrap"
             >
               <FaPlus size={13} />
-              Tambah Cabang
+              Tambah
             </Button>
           }
         >

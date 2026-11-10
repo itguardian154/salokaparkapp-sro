@@ -1,15 +1,16 @@
+
 import { useEffect, useState } from "react";
-import { getSegmentDetails } from "../service/master-segment-service";
+import { getSegmentById } from "../service/master-segment-service";
 import type { SegmentDetail } from "../types/master-segment";
 
 export const useSegmentDetails = (segmentId: number | null) => {
-  const [allDetails, setAllDetails] = useState<SegmentDetail[]>([]);
+  const [segmentDetails, setSegmentDetails] = useState<SegmentDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (segmentId === null) {
-      setAllDetails([]);
+      setSegmentDetails([]);
       setError(null);
       setLoading(false);
       return;
@@ -22,10 +23,12 @@ export const useSegmentDetails = (segmentId: number | null) => {
       setError(null);
 
       try {
-        const data = await getSegmentDetails();
+        const data = await getSegmentById(segmentId);
 
         if (mounted) {
-          setAllDetails(data.filter((item) => item.is_active));
+          setSegmentDetails(
+            (data.details ?? []).filter((item) => item.is_active),
+          );
         }
       } catch (err) {
         if (mounted) {
@@ -46,10 +49,6 @@ export const useSegmentDetails = (segmentId: number | null) => {
       mounted = false;
     };
   }, [segmentId]);
-
-  const segmentDetails = allDetails.filter(
-    (item) => Number(item.segment_id) === segmentId,
-  );
 
   return { segmentDetails, loading, error };
 };
