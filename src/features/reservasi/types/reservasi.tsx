@@ -235,3 +235,87 @@ export type ReservasiSalesPerson = {
     whatsapp_number: string | null;
     position: string | null;
 };
+
+export type ReservasiListParams = {
+  page: number;
+  per_page: number;
+  "filter[search]"?: string;
+  "filter[status]"?: string;
+};
+
+export type ReservasiDetailResponse ={
+    data: ReservasiDetail
+};
+
+// ==============================
+// API SHAPES - RESERVASI
+// ==============================
+
+export type ReservasiApiRecord = {
+    id: number;
+    invoice_id: number;
+    invoice_number: string;
+    sales_order_number: string;
+    customer_id: number;
+    customer_name: string | null;
+    customer_address: string | null;
+    sales_person_id: number;
+    sales_person_name: string | null;
+    partner_id: number;
+    partner_name: string | null;
+    partner_branch_id: number | null;
+    partner_branch_name: string | null;
+    segment_id: number;
+    segment_name: string | null;
+    segment_detail_id: number;
+    segment_detail_name: string | null;
+    sub_segment_detail_id: number;
+    sub_segment_detail_name: string | null;
+    sales_order_date: string | null;
+    arrival_date: string | null;
+    access_tour_leader: number;
+    arrival_type: string;
+    arrival_time: string;
+    subtotal: string | number;
+    discount_amount: string | number;
+    total_amount: string | number;
+    ticket_created_count: number;
+    ticket_printed_count: number;
+    status: string;
+    status_label: string;
+    notes: string | null;
+    created_by: number;
+    created_by_name: string | null;
+};
+
+export type ReservasiPaginationMeta = {
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    per_page: number;
+    to: number | null;
+    total: number;
+};
+
+export type ReservasiListResponse = {
+    data: ReservasiApiRecord[];
+    meta: ReservasiPaginationMeta;
+};
+
+// ==============================
+// RESERVASI TABLE
+// ==============================
+
+export type ReservasiTableRecord = {
+    id: number;
+    invoice_id: string;
+    sales: string;
+    segment_name: string;
+    customer_name: string;
+    partner_name: string;
+    kedatangan: string;
+    ticket: number;
+    revenue: number;
+    status: string;
+    status_value: string;
+};
