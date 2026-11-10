@@ -38,6 +38,17 @@ export type CustomerRecord = {
   city_name: string | null;
   segment: CustomerSegment | null;
   segment_detail: CustomerSegment | null;
+  sub_segment_detail?: {
+    id: number;
+    segment_detail_id?: number;
+    name: string;
+  } | null;
+  segment_option_id?: number | null;
+  segment_option?: {
+    id: number;
+    sub_segment_detail_id?: number;
+    name: string;
+  } | null;
   is_active: boolean;
   segment_id: number;
   segment_detail_id: number;

@@ -3,9 +3,17 @@ export type SegmentSubDetail = {
   id: number;
   detail_id?: number;
   name: string | null;
+  options?: SegmentOption[];
   is_active: boolean | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type SegmentOption = {
+  id: number;
+  sub_segment_detail_id?: number;
+  name: string | null;
+  is_active: boolean | null;
 };
 
 export type SegmentDetail = {
