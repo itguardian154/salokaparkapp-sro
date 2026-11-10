@@ -592,7 +592,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     },
   ];
 
-  if (mode === "detail" && hasPaymentProof)
+  if (mode === "detail" && invoiceData?.status == "partially_paid")
     actions.push({
       id: "submit",
       label: "Submit",

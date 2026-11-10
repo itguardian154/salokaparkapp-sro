@@ -106,6 +106,7 @@ export type InvoiceDetail = {
   invoice_date: string | null;
   arrival_date: string | null;
   due_date: string | null;
+  status?: string | null;
   notes: string | null;
   total_amount: string | number;
   payments?: InvoicePayment[];
