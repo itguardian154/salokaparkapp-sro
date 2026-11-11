@@ -73,6 +73,16 @@ export type Agent = {
   is_active: boolean;
 };
 
+export type OptionAgent = {
+  label: string;
+  name: string;
+  city_name: string;
+  province_name: string;
+  partner_id: string;
+  partner_branch_id: string | null;
+  type: string;
+};
+
 export type AgentDetail = {
   id: number;
   code?: string | null;
@@ -107,6 +117,10 @@ export type GetAgentParams = {
   "filter[association_name]"?: string;
   "filter[is_active]"?: string;
   "filter[type]"?: string;
+};
+
+export type GetOptionAgentParams = {
+  "filter[search]"?: string;
 };
 
 export type AgentResponse = {

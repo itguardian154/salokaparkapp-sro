@@ -14,6 +14,7 @@ type CustomerSuggestionFieldProps = {
   plainText?: boolean;
   onPlainTextChange?: (value: string) => void;
   onClearPlainText?: () => void;
+  segmentId?: number | null;
 };
 
 export default function CustomerSuggestionField({
@@ -60,10 +61,6 @@ export default function CustomerSuggestionField({
     return () =>
       document.removeEventListener("pointerdown", handleOutsidePointer);
   }, [open]);
-
-  const suggestions = dataCustomer.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   return (
     <div ref={fieldRef} className="relative w-full">
@@ -174,9 +171,9 @@ export default function CustomerSuggestionField({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {!loadingData && suggestions.length > 0 && (
+              {!loadingData && dataCustomer.length > 0 && (
                 <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
-                  {suggestions.length} hasil
+                  {dataCustomer.length} hasil
                 </span>
               )}
               <button
@@ -196,7 +193,7 @@ export default function CustomerSuggestionField({
                 <LoaderCircle className="h-4 w-4 animate-spin text-emerald-600" />
                 Mencari customer...
               </div>
-            ) : suggestions.length === 0 ? (
+            ) : dataCustomer.length === 0 ? (
               <div className="px-3 py-5 text-center">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Belum ada customer yang cocok
@@ -206,7 +203,7 @@ export default function CustomerSuggestionField({
                 </p>
               </div>
             ) : (
-              suggestions.map((customer) => (
+              dataCustomer.map((customer) => (
                 <button
                   key={customer.id}
                   type="button"

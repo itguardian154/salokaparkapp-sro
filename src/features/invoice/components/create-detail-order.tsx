@@ -51,7 +51,8 @@ export default function CreateDetailInvoice({
     complimentary?: string;
   }>({});
 
-  const unitPrice = toAmount(selectedProduk?.price);
+  const defaultUnitPrice = toAmount(selectedProduk?.price);
+  const unitPrice = defaultUnitPrice;
   const quantityAmount = Number(quantity) || 0;
   const discountAmount = Number(discountPrice) || 0;
   const subtotal = quantityAmount * unitPrice - discountAmount;
@@ -95,6 +96,7 @@ export default function CreateDetailInvoice({
       quantity: quantityAmount,
       compliment: Number(complimentary),
       unitPrice,
+      isTicket: selectedProduk!.is_ticket,
       discountPrice: Number(discountPrice) || 0,
       subtotal,
     });
@@ -216,10 +218,10 @@ export default function CreateDetailInvoice({
           <Field>
             <FieldLabel>Harga Satuan</FieldLabel>
             <Input
-              value={selectedProduk ? formatRupiah(unitPrice, false) : ""}
+              value={selectedProduk ? formatRupiah(defaultUnitPrice, false) : ""}
               placeholder="Otomatis dari produk"
               readOnly
-              disabled
+              disabled={!selectedProduk}
             />
           </Field>
 

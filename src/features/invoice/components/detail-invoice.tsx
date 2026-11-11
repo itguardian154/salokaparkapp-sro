@@ -21,7 +21,7 @@ import useCreateInvoice from "../hooks/use-create-invoice";
 import useInvoiceDetail from "../hooks/use-invoice-detail";
 import useUpdateInvoice from "../hooks/use-update-invoice";
 import type { InvoicePaymentForm } from "../types/invoice";
-import type { Agent } from "@/features/master/master-agen/types/master-agen";
+import type { OptionAgent } from "@/features/master/master-agen/types/master-agen";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,6 @@ import { FaSave } from "react-icons/fa";
 import { FaDownload, FaFileInvoice } from "react-icons/fa6";
 import { MdWorkHistory } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
-import useMasterAgent from "@/features/master/master-agen/hooks/use-master-agen";
 import { useSegments } from "@/features/master/master-segment/hooks/use-master-segment";
 import { useSegmentDetails } from "@/features/master/master-segment/hooks/use-master-segment-detail";
 import type {
@@ -52,6 +51,7 @@ import type {
   SegmentSubDetail,
   SegmentOption,
 } from "@/features/master/master-segment/types/master-segment";
+import useOptionAgent from "@/features/master/master-agen/hooks/use-option-agen";
 
 type InvoiceFormPageProps = { mode: "create" | "detail" };
 
@@ -61,6 +61,7 @@ type InvoiceFormData = {
   cityId: number | null;
   selectedKaryawan: Karyawan | null;
   partnerId: number | null;
+  partnerBranchId: string | null;
   customerSegment: string;
   tipeOrder: string;
   invoiceSegment: string;
@@ -80,6 +81,10 @@ type InvoiceFormData = {
   arrivalDate: Date | undefined;
   customerName: string;
   customerContact: string;
+  customerEmail: string;
+  customerContactPerson: string;
+  customerProvinceName: string;
+  customerCityName: string;
 };
 
 const toDate = (value: string | null | undefined) => {
@@ -99,6 +104,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     cityId: null,
     selectedKaryawan: null,
     partnerId: null,
+    partnerBranchId: null,
     tipeOrder: "",
     customerSegment: "",
     invoiceSegment: "",
@@ -118,6 +124,10 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     arrivalDate: undefined,
     customerName: "",
     customerContact: "",
+    customerEmail: "",
+    customerContactPerson: "",
+    customerProvinceName: "",
+    customerCityName: "",
   });
   const pendingCustomerLocation = useRef<{
     provinceId: number | null;
@@ -132,6 +142,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     waitForCities: boolean;
     loadingStarted: boolean;
   } | null>(null);
+
+  // Get Provinsi & Kota
   const {
     provinces,
     loading: provinceLoading,
@@ -147,15 +159,16 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     loading: segmentsLoading,
     error: segmentsError,
   } = useSegments();
-  const selectedSegment = segments.find(
+  const selectedInvoiceSegment = segments.find(
     (item) => String(item.id) === formData.invoiceSegment,
   );
   const { segmentDetails, loading: segmentDetailsLoading } = useSegmentDetails(
-    selectedSegment?.id ?? null,
+    selectedInvoiceSegment?.id ?? null,
   );
-  const selectedSegmentName = selectedSegment?.name.toLowerCase() ?? "";
-  const isCorporateSegment = selectedSegmentName.includes("corporate");
-  const isEducationSegment = selectedSegmentName.includes("edukasi");
+  const selectedInvoiceSegmentName =
+    selectedInvoiceSegment?.name.toLowerCase() ?? "";
+  const isCorporateSegment = selectedInvoiceSegmentName.includes("corporate");
+  const isEducationSegment = selectedInvoiceSegmentName.includes("edukasi");
   const segmentDetailOptions = segmentDetails.filter(
     (item) => item.is_active && item.name,
   );
@@ -434,6 +447,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       groupName: invoiceData.customer_name ?? "",
       customerId: invoiceData.customer_id,
       partnerId: invoiceData.partner_id,
+      partnerBranchId: invoiceData.partner_branch_id
+        ? String(invoiceData.partner_branch_id)
+        : null,
       travelAgent: invoiceData.partner_name ?? "",
       arrivalDate: toDate(invoiceData.arrival_date),
       orderItems: (invoiceData.items ?? []).map((item) => ({
@@ -444,6 +460,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         quantity: Number(item.quantity) || 0,
         compliment: Number(item.bonus_quantity) || 0,
         unitPrice: Number(item.unit_price) || 0,
+        isTicket: item.is_ticket ?? false,
         discountPrice: Number(item.discount_amount) || 0,
         subtotal: Number(item.subtotal) || 0,
       })),
@@ -490,19 +507,19 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     karyawan.find(
       (employee) => employee.id_absen === invoiceData?.sales_person_id,
     ) ??
-    eligibleKaryawan.find((employee) => employee.name === defaultSalesName) ??
+    karyawan.find((employee) => employee.name === defaultSalesName) ??
     null;
 
   // Get nama sales end
 
   // Get nama travel agent start
   const {
-    agents,
+    optionAgents,
     loading: loadingAgents,
     error: agentsError,
     search: searchAgent,
     setSearch: setSearchAgent,
-  } = useMasterAgent({ is_active: "1" });
+  } = useOptionAgent();
   const [openTravelAgent, setOpenTravelAgent] = useState(false);
   // Get nama travel agent end
 
@@ -666,6 +683,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         ...current,
         groupProvinceId: id,
         groupCityId: null,
+        customerProvinceName:
+          provinces.find((province) => province.id === id)?.name ?? "",
+        customerCityName: "",
       }));
     }
 
@@ -679,6 +699,15 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   // Handle save start
   const handleSave = async () => {
     if (saving) return;
+    if (!selectedSales?.id_absen && !invoiceData?.sales_person_id) {
+      toast.add({
+        title: "Sales belum dipilih",
+        description: "Pilih nama sales yang memiliki ID sebelum menyimpan invoice.",
+        type: "error",
+        timeout: 5000,
+      });
+      return;
+    }
     if (
       !formData.customerId &&
       (!formData.groupName.trim() ||
@@ -713,25 +742,56 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
 
     createInvoiceMutation.clearError();
     updateInvoiceMutation.clearError();
+    const bookingType =
+      formData.tipeOrder === "travel" ? "travel" : "non_travel";
+    const segmentId = selectedInvoiceSegment?.id
+      ? String(selectedInvoiceSegment.id)
+      : "";
+    const segmentDetailId = isCorporateSegment
+      ? formData.businessField
+      : formData.jenisGroup;
+    const subSegmentDetailId = isCorporateSegment
+      ? formData.businessType
+      : formData.jenjang;
+    const segmentOptionId = isEducationSegment ? formData.statusGroup : "";
+    const salesPersonId =
+      selectedSales?.id_absen || invoiceData?.sales_person_id || "";
+    const partnerId = formData.partnerId ? String(formData.partnerId) : "";
+    const partnerBranchId =
+      formData.tipeOrder === "travel"
+        ? formData.partnerBranchId ?? ""
+        : "";
+    const invoiceDate =
+      invoiceData?.invoice_date ?? new Date().toISOString();
+    const arrivalDate =
+      formData.tipeOrder === "travel"
+        ? formData.arrivalDate?.toISOString() ?? ""
+        : "";
     const payload = new FormData();
     const customerId = formData.customerId;
     if (customerId) {
       payload.append("customer_id", String(customerId));
     } else {
       payload.append("customer[name]", formData.groupName.trim());
+      payload.append("customer[email]", formData.customerEmail);
       payload.append("customer[phone]", formData.customerContact);
       payload.append(
-        "customer[province_name]",
-        selectedGroupProvince?.name ?? "",
+        "customer[contact_person]",
+        formData.customerContactPerson,
       );
-      payload.append("customer[city_name]", selectedGroupCity?.name ?? "");
-      payload.append("customer[segment_id]", String(selectedSegment?.id ?? ""));
       payload.append(
-        "customer[segment_detail_id]",
-        String(
-          isCorporateSegment ? formData.businessField : formData.jenisGroup,
-        ),
+        "customer[province_name]",
+        selectedGroupProvince?.name ?? formData.customerProvinceName,
       );
+      payload.append(
+        "customer[city_name]",
+        selectedGroupCity?.name ?? formData.customerCityName,
+      );
+      payload.append("customer[segment_id]", segmentId);
+      payload.append("customer[segment_detail_id]", segmentDetailId);
+      payload.append("customer[sub_segment_detail_id]", subSegmentDetailId);
+      payload.append("customer[segment_option_id]", segmentOptionId);
+      payload.append("customer[is_active]", "1");
     }
 
     const hasPaymentInput = Boolean(
@@ -777,38 +837,35 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       paymentForm.proofFiles.forEach((file) => {
         payload.append("payment[proof_of_payment]", file);
       });
+      if (paymentForm.proofFiles.length === 0) {
+        payload.append("payment[proof_of_payment]", "");
+      }
     }
-    payload.append("partner_id", String(formData.partnerId));
-    payload.append("segment_id", String(selectedSegment?.id ?? ""));
-    payload.append(
-      "segment_detail_id",
-      String(isCorporateSegment ? formData.businessField : formData.jenisGroup),
-    );
-    const selectedSubSegmentId = isCorporateSegment
-      ? formData.businessType
-      : formData.jenjang;
-    if (selectedSubSegmentId) {
-      payload.append("sub_segment_detail_id", selectedSubSegmentId);
-    }
-    if (isEducationSegment && formData.statusGroup) {
-      payload.append("sub_segment_detail_option_id", formData.statusGroup);
-    }
-    payload.append(
-      "invoice_date",
-      invoiceData?.invoice_date ?? new Date().toISOString(),
-    );
-    if (formData.arrivalDate)
-      payload.append("arrival_date", formData.arrivalDate.toISOString());
+    payload.append("sales_person_id", salesPersonId);
+    payload.append("partner_id", partnerId);
+    payload.append("partner_branch_id", partnerBranchId);
+    payload.append("booking_type", bookingType);
+    payload.append("segment_id", segmentId);
+    payload.append("segment_detail_id", segmentDetailId);
+    payload.append("sub_segment_detail_id", subSegmentDetailId);
+    payload.append("segment_option_id", segmentOptionId);
+    payload.append("invoice_date", invoiceDate);
+    payload.append("arrival_date", arrivalDate);
+    payload.append("notes", invoiceData?.notes ?? "");
+    payload.append("supporting_document", "");
     formData.orderItems.forEach((order, index) => {
       const item = `items[${index}]`;
       payload.append(`${item}[product_id]`, String(order.productId || ""));
+      payload.append(`${item}[product_code]`, "");
       payload.append(`${item}[product_name]`, order.product);
       payload.append(`${item}[product_description]`, order.description);
       payload.append(`${item}[quantity]`, String(order.quantity));
       payload.append(`${item}[bonus_quantity]`, String(order.compliment ?? 0));
-      payload.append(`${item}[unit_price]`, String(order.unitPrice));
+      if (!order.isTicket) {
+        payload.append(`${item}[is_price_override]`, String(order.unitPrice));
+      }
       payload.append(`${item}[discount_amount]`, String(order.discountPrice));
-      payload.append(`${item}[subtotal]`, String(order.subtotal));
+      payload.append(`${item}[notes]`, "");
     });
 
     try {
@@ -1006,7 +1063,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       // Reset data travel
                       travelAgent: "",
                       partnerId: null,
-                      partnerName: "",
+                      partnerBranchId: null,
 
                       // Reset lokasi
                       provinceId: null,
@@ -1030,7 +1087,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     <SelectValue placeholder="Pilih tipe order">
                       {formData.tipeOrder === "travel"
                         ? "Travel"
-                        : formData.tipeOrder === "non-travel"
+                        : formData.tipeOrder === "non_travel"
                           ? "Non Travel"
                           : undefined}
                     </SelectValue>
@@ -1038,7 +1095,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
 
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     <SelectItem value="travel">Travel</SelectItem>
-                    <SelectItem value="non-travel">Non Travel</SelectItem>
+                    <SelectItem value="non_travel">Non Travel</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -1055,7 +1112,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                   placeholder={
                     segmentsLoading ? "Memuat segmen..." : "Pilih segmen"
                   }
-                  selectedLabel={selectedSegment?.name ?? null}
+                  selectedLabel={selectedInvoiceSegment?.name ?? null}
                   selectedKey={formData.invoiceSegment || null}
                   items={segments.filter(
                     (item) =>
@@ -1093,7 +1150,11 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     setOpenSegment(false);
                   }}
                   emptyText={segmentsError ?? "Segmen tidak ditemukan."}
-                  disabled={segmentsLoading || formData.tipeOrder === "travel"}
+                  disabled={
+                    !formData.tipeOrder ||
+                    segmentsLoading ||
+                    formData.tipeOrder === "travel"
+                  }
                   debounceDelay={0}
                 />
               </Field>
@@ -1118,7 +1179,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
 
-                    <SearchablePopover<Agent>
+                    <SearchablePopover<OptionAgent>
                       open={openTravelAgent}
                       onOpenChange={setOpenTravelAgent}
                       search={searchAgent}
@@ -1135,23 +1196,17 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       }
                       selectedKey={
                         formData.partnerId !== null
-                          ? String(formData.partnerId)
-                          : invoiceData?.partner_id
-                            ? String(invoiceData.partner_id)
-                            : null
+                          ? `${formData.partnerId}:${formData.partnerBranchId ?? ""}`
+                          : null
                       }
-                      items={agents}
-                      getKey={(agent) => String(agent.id)}
-                      renderItem={(agent) => agent.name}
+                      items={optionAgents}
+                      getKey={(agent) =>
+                        `${agent.partner_id}:${agent.partner_branch_id ?? ""}`
+                      }
+                      renderItem={(agent) => agent.label}
                       onSelect={(agent) => {
-                        const provinceName =
-                          (typeof agent.province === "string"
-                            ? agent.province
-                            : agent.province?.name) || agent.province_name;
-                        const cityName =
-                          (typeof agent.city === "string"
-                            ? agent.city
-                            : agent.city?.name) || agent.city_name;
+                        const provinceName = agent.province_name;
+                        const cityName = agent.city_name;
                         const province = provinces.find(
                           (item) =>
                             item.name.toLowerCase().trim() ===
@@ -1172,7 +1227,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           travelAgent: agent.name,
-                          partnerId: agent.id,
+                          partnerId: Number(agent.partner_id) || null,
+                          partnerBranchId: agent.partner_branch_id,
                           ...(provinceName && {
                             provinceId: province?.id ?? null,
                             cityId: null,
@@ -1222,13 +1278,13 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         onSelect={(province) =>
                           handleProvinceChange(province.id)
                         }
-                        disabled={provinceLoading}
                         emptyText={
                           provinceError
                             ? "Provinsi gagal dimuat."
                             : "Provinsi tidak ditemukan."
                         }
                         debounceDelay={500}
+                        disabled
                       />
 
                       {provinceError && (
@@ -1265,11 +1321,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       getKey={(city) => String(city.id)}
                       renderItem={(city) => city.name}
                       onSelect={(city) => handleCityChange(city.id)}
-                      disabled={
-                        formData.provinceId === null ||
-                        citiesLoading ||
-                        provinceLoading
-                      }
+                      disabled
                       emptyText="Kota/kabupaten tidak ditemukan."
                       debounceDelay={500}
                     />
@@ -1452,7 +1504,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Jenjang tidak ditemukan."
-                      disabled={Boolean(formData.customerId)}
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1493,7 +1545,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Status tidak ditemukan."
-                      disabled={Boolean(formData.customerId)}
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === "" || formData.jenjang === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1537,7 +1589,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Nomor tidak ditemukan."
-                      disabled={Boolean(formData.customerId)}
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === "" || formData.jenjang === "" || formData.statusGroup === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1554,6 +1606,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     </FieldLabel>
                     <CustomerSuggestionField
                       value={formData.groupName}
+                      segmentId={selectedInvoiceSegment?.id ?? null}
                       tags={customerFieldTags}
                       plainText={Boolean(formData.customerId)}
                       onClearPlainText={() =>
@@ -1654,6 +1707,10 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                           groupName: customer.name,
                           customGroupTag: "",
                           groupTagOrder: [],
+                          customerEmail: customer.email ?? "",
+                          customerContactPerson: customer.contact_person ?? "",
+                          customerProvinceName: customer.province_name ?? "",
+                          customerCityName: customer.city_name ?? "",
                           invoiceSegment: String(segmentId),
                           businessField: isCustomerCorporate
                             ? String(detailId)
@@ -1754,6 +1811,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           groupCityId: city.id,
+                          customerCityName: city.name,
                         }));
                         setSearchGroupCity("");
                         setOpenGroupCity(false);

@@ -61,6 +61,7 @@ export type InvoiceDetailItem = {
   quantity: string | number;
   bonus_quantity: string | number;
   unit_price: string | number;
+  is_ticket?: boolean | null;
   discount_amount: string | number;
   subtotal: string | number;
 };
@@ -100,6 +101,7 @@ export type InvoiceDetail = {
   sales_person_name: string | null;
   partner_id: number | null;
   partner_name: string | null;
+  partner_branch_id?: number | string | null;
   segment_id: number | null;
   segment_detail_id: number | null;
   sub_segment_detail_id: number | null;

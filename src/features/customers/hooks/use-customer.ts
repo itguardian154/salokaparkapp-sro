@@ -9,7 +9,7 @@ import type {
 
 const DEFAULT_ITEM_PER_PAGE = 25;
 
-const useCustomer = () => {
+const useCustomer = (segmentId?: number | null) => {
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +18,7 @@ const useCustomer = () => {
 
 const [filterData, setFilterData] = useState<CustomerFilters>({
   filter: {
-    segment_id: "",
+    segment_id: segmentId ? String(segmentId) : "",
     segment_detail_id: "",
     province_name: "",
     city_name: "",
@@ -34,6 +34,19 @@ const [filterData, setFilterData] = useState<CustomerFilters>({
   const [fromPage, setFromPage] = useState<number | null>(null);
   const [toPage, setToPage] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const nextSegmentId = segmentId ? String(segmentId) : "";
+    setFilterData((current) =>
+      current.filter.segment_id === nextSegmentId
+        ? current
+        : {
+            ...current,
+            filter: { ...current.filter, segment_id: nextSegmentId },
+          },
+    );
+    setCurrentPage(1);
+  }, [segmentId]);
 
   useEffect(() => {
     const controller = new AbortController();
