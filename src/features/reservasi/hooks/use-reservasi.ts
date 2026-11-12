@@ -5,7 +5,7 @@ import { getReservasi } from "../service/reservasi-service";
 
 const DEFAULT_ITEM_PER_PAGE = 25;
 
-const useInvoices = () => {
+const useReservasi = () => {
   const [dataReservasi, setDataReservasi] = useState<ReservasiTableRecord[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ const useInvoices = () => {
 
         const reservasi = response.data.map((item) => ({
           id: item.id,
-          invoice_id: item.invoice_number,
+          sales_order_number: item.sales_order_number,
           sales: item.sales_person_name ?? "-",
           segment_name: item.segment_name ?? "-",
           customer_name: item.customer_name ?? "-",
@@ -125,4 +125,4 @@ const useInvoices = () => {
   };
 };
 
-export default useInvoices;
+export default useReservasi;

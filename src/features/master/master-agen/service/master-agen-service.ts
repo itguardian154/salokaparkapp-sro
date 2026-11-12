@@ -7,6 +7,8 @@ import type {
   GetAgentParams,
   CreateMasterAgentPayload,
   AgentDetailResponse,
+  GetOptionAgentParams,
+  OptionAgent,
 } from "../types/master-agen";
 
 interface AgentResponse {
@@ -19,6 +21,10 @@ interface AgentResponse {
     from?: number | null;
     to?: number | null;
   };
+}
+
+interface OptionAgentResponse {
+  data: OptionAgent[];
 }
 
 const getAuthHeaders = () => {
@@ -160,6 +166,24 @@ export const getMasterAgentDetail = async (
     `${API_URLS.sro}partners/${id}`,
     {
       headers: getAuthHeaders(),
+    },
+  );
+
+  return response.data;
+};
+
+
+// GET Option AGEN
+export const getOptionMasterAgent = async (
+  params: GetOptionAgentParams,
+  signal?: AbortSignal,
+): Promise<OptionAgentResponse> => {
+  const response = await axios.get<OptionAgentResponse>(
+    `${API_URLS.sro}partners/options`,
+    {
+      params,
+      headers: getAuthHeaders(),
+      signal,
     },
   );
 

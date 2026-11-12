@@ -58,6 +58,7 @@ export type ReservasiDetail = ReservasiRecord & {
 
     created_at: string;
     updated_at: string;
+      is_ticket?: boolean | null;
 };
 
 // ==============================
@@ -143,6 +144,7 @@ export type ReservasiItem = {
     notes: string | null;
     status: string;
     status_label: string;
+    is_ticket?: boolean | null;
 };
 
 // ==============================
@@ -308,7 +310,7 @@ export type ReservasiListResponse = {
 
 export type ReservasiTableRecord = {
     id: number;
-    invoice_id: string;
+    sales_order_number: string;
     sales: string;
     segment_name: string;
     customer_name: string;
@@ -319,3 +321,4 @@ export type ReservasiTableRecord = {
     status: string;
     status_value: string;
 };
+

@@ -33,7 +33,7 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       header: "Segmen",
     },
     {
-      accessorKey: "partner_name",
+      accessorKey: "partner_branch_name",
       header: "Travel",
     },
     {
@@ -57,9 +57,16 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
+        const variant =
+          row.original.status_value === "partially_paid"
+            ? "amber"
+            : row.original.status_value === "paid"
+              ? "success"
+              : "muted";
+
         return (
           <div className="flex justify-end lg:justify-center">
-            <Badge variant="muted">{row.original.status}</Badge>
+            <Badge variant={variant}>{row.original.status}</Badge>
           </div>
         );
       },

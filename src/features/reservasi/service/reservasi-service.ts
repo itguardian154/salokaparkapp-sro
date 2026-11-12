@@ -4,9 +4,11 @@ import type {
   ReservasiDetailResponse,
   ReservasiListResponse,
   ReservasiListParams,
+  GenerateReservasiEventOrderResponse,
+  CreateReservasi,
 } from "../types/reservasi";
 
-const reservasiUrl = `${API_URLS.sro}sales-order`;
+const reservasiUrl = `${API_URLS.sro}sales-orders`;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -49,7 +51,8 @@ export const getReservasiDetail = async (id: string, signal?: AbortSignal) => {
 };
 
 // CREATE RESERVASI
-export const createReservasi = async (payload: FormData) => {
+
+export const createReservasi = async (payload: CreateReservasi) => {
   const response = await axios.post<ReservasiDetailResponse>(
     reservasiUrl,
     payload,
@@ -61,6 +64,22 @@ export const createReservasi = async (payload: FormData) => {
   return response.data.data;
 };
 
+// GENERATE EVENT ORDER
+export const generateEventOrders = async (
+  invoiceId: number,
+): Promise<GenerateReservasiEventOrderResponse> => {
+  const response = await axios.get<GenerateReservasiEventOrderResponse>(
+    `${reservasiUrl}/event-orders/generate`,
+    {
+      params: {
+        invoice_id: invoiceId,
+      },
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return response.data;
+};
 // UPDATE RESERVASI
 export const updateReservasi = async (id: string, payload: FormData) => {
   const response = await axios.put<ReservasiDetailResponse>(

@@ -8,26 +8,23 @@ import { toast } from "@/components/ui/toast";
 import SearchablePopover from "@/components/searchable-popover";
 import DateRangePicker from "@/components/date-range-picker";
 import DetailOrderTable from "./detail-order-table";
+import DetailPaymentTable, {
+  type InvoicePaymentRow,
+} from "./detail-payment-table";
+import CreatePaymentModal from "./create-payment-modal";
 import PaymentInformation from "./payment-information";
 import CreateDetailInvoice from "./create-detail-order";
 import {
-  businessFieldOptions,
-  businessTypeOptions,
-  buildEducationGroupName,
-  educationLevelOptions,
-  educationStatusOptions,
   filterInvoiceOptions,
   groupNumberOptions,
-  STATIC_INVOICE_SEGMENT_IDS,
   type InvoiceSearchOption,
 } from "./invoice-form-options";
-import type { InvoiceOrder } from "../types/invoice-order";
-import CustomerSuggestionField from "@/features/customers/components/customer-suggestion-field";
+import CustomerSuggestionField from "@/features/invoice/components/customer-suggestion-field";
 import useCreateInvoice from "../hooks/use-create-invoice";
 import useInvoiceDetail from "../hooks/use-invoice-detail";
 import useUpdateInvoice from "../hooks/use-update-invoice";
-import type { InvoicePaymentForm } from "../types/invoice";
-import type { Agent } from "@/features/master/master-agen/types/master-agen";
+import type { InvoicePayment, InvoicePaymentForm } from "../types/invoice";
+import type { OptionAgent } from "@/features/master/master-agen/types/master-agen";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -43,73 +40,59 @@ import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import type { City, Province } from "@/features/wilayah/types/wilayah";
 import { useKaryawan } from "@/features/karyawan/hooks/use-karyawan";
 import type { Karyawan } from "@/features/karyawan/types/karyawan";
-import { HandCoins, Plus, Signature, Users } from "lucide-react";
+import {
+  HandCoins,
+  Pencil,
+  Plus,
+  Signature,
+  Users,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaDownload, FaFileInvoice } from "react-icons/fa6";
 import { MdWorkHistory } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
-import useMasterAgent from "@/features/master/master-agen/hooks/use-master-agen";
+import { useSegments } from "@/features/master/master-segment/hooks/use-master-segment";
+import { useSegmentDetails } from "@/features/master/master-segment/hooks/use-master-segment-detail";
+import type {
+  Segment,
+  SegmentDetail,
+  SegmentSubDetail,
+  SegmentOption,
+} from "@/features/master/master-segment/types/master-segment";
+import useOptionAgent from "@/features/master/master-agen/hooks/use-option-agen";
+import {
+  createInitialInvoiceFormData,
+  toDate,
+  type InvoiceFormData,
+} from "../utils/invoice-form-utils";
+import { formatTanggal } from "@/lib/utils";
 
 type InvoiceFormPageProps = { mode: "create" | "detail" };
 
-type InvoiceFormData = {
-  orderItems: InvoiceOrder[];
-  provinceId: number | null;
-  cityId: number | null;
-  selectedKaryawan: Karyawan | null;
-  partnerId: number | null;
-  customerSegment: string;
-  invoiceSegment: string;
-  travelAgent: string;
-  businessField: string;
-  businessType: string;
-  jenisGroup: string;
-  jenjang: string;
-  statusGroup: string;
-  nomorGroup: string;
-  groupName: string;
-  customerId: number | null;
-  groupProvinceId: number | null;
-  groupCityId: number | null;
-  arrivalDate: Date | undefined;
-  customerName: string;
-  customerContact: string;
-};
-
-const toDate = (value: string | null | undefined) => {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-};
+const createEmptyPaymentForm = (): InvoicePaymentForm => ({
+  paymentDate: undefined,
+  paymentType: "dp",
+  paymentMethod: "",
+  accountHolderName: "",
+  depositNumber: "",
+  fromBank: "",
+  toBank: "",
+  amount: "",
+  notes: "",
+  proofFiles: [],
+});
 
 export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const navigate = useNavigate();
   const { id } = useParams();
+
+  // State formulir dan status popover/modal
   const [openCreateDetailInvoice, setOpenCreateDetailInvoice] = useState(false);
-  const [formData, setFormData] = useState<InvoiceFormData>({
-    orderItems: [],
-    provinceId: null,
-    cityId: null,
-    selectedKaryawan: null,
-    partnerId: null,
-    customerSegment: "",
-    invoiceSegment: "",
-    travelAgent: "",
-    businessField: "",
-    businessType: "",
-    jenisGroup: "",
-    jenjang: "",
-    statusGroup: "",
-    nomorGroup: "",
-    groupName: "",
-    customerId: null,
-    groupProvinceId: null,
-    groupCityId: null,
-    arrivalDate: undefined,
-    customerName: "",
-    customerContact: "",
-  });
+  const [openSegment, setOpenSegment] = useState(false);
+  const [formData, setFormData] = useState<InvoiceFormData>(
+    createInitialInvoiceFormData,
+  );
   const pendingCustomerLocation = useRef<{
     provinceId: number | null;
     provinceName: string;
@@ -123,6 +106,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     waitForCities: boolean;
     loadingStarted: boolean;
   } | null>(null);
+
+  // Data referensi wilayah dan segmen invoice
   const {
     provinces,
     loading: provinceLoading,
@@ -133,23 +118,285 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     null,
   );
   const [searchInvoiceOption, setSearchInvoiceOption] = useState("");
+  const {
+    segments,
+    loading: segmentsLoading,
+    error: segmentsError,
+  } = useSegments();
+
+  // Turunan segmen untuk pilihan grup dan informasi pelanggan
+  const selectedInvoiceSegment = segments.find(
+    (item) => String(item.id) === formData.invoiceSegment,
+  );
+  const { segmentDetails, loading: segmentDetailsLoading } = useSegmentDetails(
+    selectedInvoiceSegment?.id ?? null,
+  );
+  const selectedInvoiceSegmentName =
+    (selectedInvoiceSegment?.name ?? formData.invoiceSegmentName).toLowerCase();
+  const isCorporateSegment = selectedInvoiceSegmentName.includes("corporate");
+  const isEducationSegment = selectedInvoiceSegmentName.includes("edukasi");
+  const segmentDetailOptions = segmentDetails.filter(
+    (item) => item.is_active && item.name,
+  );
+  const selectedSegmentDetail = segmentDetailOptions.find(
+    (item) => String(item.id) === formData.jenisGroup,
+  );
+  const subDetailOptions = (selectedSegmentDetail?.sub_details ?? []).filter(
+    (item) => item.is_active && item.name,
+  );
+  const selectedSubDetail = subDetailOptions.find(
+    (item) => String(item.id) === formData.jenjang,
+  );
+  const segmentStatusOptions = (selectedSubDetail?.options ?? []).filter(
+    (item) => item.is_active && item.name,
+  );
+  const selectedStatusOption = segmentStatusOptions.find(
+    (item) => String(item.id) === formData.statusGroup,
+  );
+  const statusIsSwasta =
+    selectedStatusOption?.name?.trim().toLowerCase().startsWith("swast") ??
+    false;
+  const selectedBusinessDetail = segmentDetailOptions.find(
+    (item) => String(item.id) === formData.businessField,
+  );
+  const businessSubDetailOptions = (
+    selectedBusinessDetail?.sub_details ?? []
+  ).filter((item) => item.is_active && item.name);
+  const formatEducationGroupName = (
+    jenjangId: string,
+    statusId: string,
+    number: string,
+    customTag = formData.customGroupTag,
+    tagOrder = formData.groupTagOrder,
+  ) => {
+    const statusName = segmentStatusOptions.find(
+      (item) => String(item.id) === statusId,
+    )?.name;
+    const parts = [
+      {
+        id: "jenjang",
+        label: subDetailOptions.find((item) => String(item.id) === jenjangId)
+          ?.name,
+      },
+      {
+        id: "status",
+        label: statusName?.trim().toLowerCase().startsWith("swast")
+          ? undefined
+          : statusName,
+      },
+      {
+        id: "nomor",
+        label: groupNumberOptions.find((item) => item.value === number)?.label,
+      },
+      { id: "custom", label: customTag },
+    ].filter((item): item is { id: string; label: string } =>
+      Boolean(item.label),
+    );
+    const defaultOrder = ["jenjang", "status", "nomor", "custom"];
+    return parts
+      .sort((left, right) => {
+        const leftIndex = tagOrder.indexOf(left.id);
+        const rightIndex = tagOrder.indexOf(right.id);
+        const leftRank =
+          leftIndex < 0 ? defaultOrder.indexOf(left.id) : leftIndex;
+        const rightRank =
+          rightIndex < 0 ? defaultOrder.indexOf(right.id) : rightIndex;
+        return leftRank - rightRank;
+      })
+      .map((item) => item.label)
+      .join(" ");
+  };
+  const resetCustomerLocationIfGroupEmpty = (groupName: string) =>
+    groupName.trim()
+      ? {}
+      : {
+          groupProvinceId: null,
+          groupCityId: null,
+          customerContact: "",
+        };
+  const educationGroupTags: {
+    id: string;
+    label: string;
+    onRemove: () => void;
+  }[] = isEducationSegment
+    ? [
+        selectedSubDetail?.name
+          ? {
+              id: "jenjang",
+              label: selectedSubDetail.name,
+              onRemove: () =>
+                setFormData((current) => ({
+                  ...current,
+                  jenjang: "",
+                  statusGroup: "",
+                  groupName: formatEducationGroupName(
+                    "",
+                    "",
+                    current.nomorGroup,
+                  ),
+                  ...resetCustomerLocationIfGroupEmpty(
+                    formatEducationGroupName(
+                      "",
+                      "",
+                      current.nomorGroup,
+                      current.customGroupTag,
+                    ),
+                  ),
+                })),
+            }
+          : null,
+        selectedStatusOption?.name && !statusIsSwasta
+          ? {
+              id: "status",
+              label: selectedStatusOption.name,
+              onRemove: () =>
+                setFormData((current) => ({
+                  ...current,
+                  statusGroup: "",
+                  groupName: formatEducationGroupName(
+                    current.jenjang,
+                    "",
+                    current.nomorGroup,
+                  ),
+                  ...resetCustomerLocationIfGroupEmpty(
+                    formatEducationGroupName(
+                      current.jenjang,
+                      "",
+                      current.nomorGroup,
+                      current.customGroupTag,
+                    ),
+                  ),
+                })),
+            }
+          : null,
+        formData.nomorGroup
+          ? {
+              id: "nomor",
+              label:
+                groupNumberOptions.find(
+                  (item) => item.value === formData.nomorGroup,
+                )?.label ?? formData.nomorGroup,
+              onRemove: () =>
+                setFormData((current) => ({
+                  ...current,
+                  nomorGroup: "",
+                  groupName: formatEducationGroupName(
+                    current.jenjang,
+                    current.statusGroup,
+                    "",
+                  ),
+                  ...resetCustomerLocationIfGroupEmpty(
+                    formatEducationGroupName(
+                      current.jenjang,
+                      current.statusGroup,
+                      "",
+                      current.customGroupTag,
+                    ),
+                  ),
+                })),
+            }
+          : null,
+        formData.customGroupTag
+          ? {
+              id: "custom",
+              label: formData.customGroupTag,
+              onRemove: () =>
+                setFormData((current) => ({
+                  ...current,
+                  customGroupTag: "",
+                  groupName: formatEducationGroupName(
+                    current.jenjang,
+                    current.statusGroup,
+                    current.nomorGroup,
+                    "",
+                  ),
+                  ...resetCustomerLocationIfGroupEmpty(
+                    formatEducationGroupName(
+                      current.jenjang,
+                      current.statusGroup,
+                      current.nomorGroup,
+                      "",
+                    ),
+                  ),
+                })),
+            }
+          : null,
+      ]
+        .filter((tag) => tag !== null)
+        .sort((left, right) => {
+          const order = formData.groupTagOrder;
+          const defaultOrder = ["jenjang", "status", "nomor", "custom"];
+          const leftIndex = order.indexOf(left.id);
+          const rightIndex = order.indexOf(right.id);
+          return (
+            (leftIndex < 0 ? defaultOrder.indexOf(left.id) : leftIndex) -
+            (rightIndex < 0 ? defaultOrder.indexOf(right.id) : rightIndex)
+          );
+        })
+    : [];
+  const customerFieldTags = formData.customerId
+    ? []
+    : isEducationSegment
+      ? educationGroupTags
+      : formData.customGroupTag
+        ? [
+            {
+              id: "custom",
+              label: formData.customGroupTag,
+              onRemove: () =>
+                setFormData((current) => ({
+                  ...current,
+                  customGroupTag: "",
+                  groupName: "",
+                  groupProvinceId: null,
+                  groupCityId: null,
+                  customerContact: "",
+                })),
+            },
+          ]
+        : [];
+
+  // Sesuaikan segmen otomatis untuk tipe order perjalanan
+  useEffect(() => {
+    const travelSegment = segments.find(
+      (segment) => segment.name.trim().toLowerCase() === "travel",
+    );
+    if (!travelSegment) return;
+
+    const travelSegmentId = String(travelSegment.id);
+    if (formData.tipeOrder === "travel") {
+      if (formData.invoiceSegment !== travelSegmentId) {
+        setFormData((current) => ({
+          ...current,
+          invoiceSegment: travelSegmentId,
+          invoiceSegmentName: travelSegment.name,
+          businessField: "",
+          businessType: "",
+          jenisGroup: "",
+          jenjang: "",
+          statusGroup: "",
+          nomorGroup: "",
+        }));
+      }
+    }
+  }, [formData.invoiceSegment, formData.tipeOrder, segments]);
   const [openGroupProvince, setOpenGroupProvince] = useState(false);
   const [openGroupCity, setOpenGroupCity] = useState(false);
   const [searchGroupProvince, setSearchGroupProvince] = useState("");
   const [searchGroupCity, setSearchGroupCity] = useState("");
-  const [hasPaymentProof, setHasPaymentProof] = useState(false);
-  const [paymentForm, setPaymentForm] = useState<InvoicePaymentForm>({
-    paymentDate: undefined,
-    paymentType: "dp",
-    paymentMethod: "",
-    accountHolderName: "",
-    depositNumber: "",
-    fromBank: "",
-    toBank: "",
-    amount: "",
-    notes: "",
-    proofFiles: [],
-  });
+  const [openPaymentModal, setOpenPaymentModal] = useState(false);
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [paymentForm, setPaymentForm] = useState<InvoicePaymentForm>(
+    createEmptyPaymentForm,
+  );
+  const [savedPaymentsOverride, setSavedPaymentsOverride] = useState<
+    InvoicePayment[] | null
+  >(null);
+  const [paymentAmountsOverride, setPaymentAmountsOverride] = useState<{
+    totalAmount: string | number;
+    paidAmount: string | number;
+    remainingAmount: string | number;
+  } | null>(null);
   const {
     invoice: invoiceData,
     loading: invoiceLoading,
@@ -158,18 +405,97 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const createInvoiceMutation = useCreateInvoice();
   const updateInvoiceMutation = useUpdateInvoice();
   const saving = createInvoiceMutation.loading || updateInvoiceMutation.loading;
-  
+  const openPaymentEditor = () => {
+    setOpenPaymentModal(true);
+  };
+  const savePaymentDraft = (payment: InvoicePaymentForm) => {
+    setPaymentForm(payment);
+    setHasPendingPayment(true);
+  };
 
-  // Set form data when invoice data is loaded
+  // Isi formulir dari invoice yang sedang dibuka
   useEffect(() => {
     if (!invoiceData) return;
+    setSavedPaymentsOverride(null);
+    setPaymentAmountsOverride(null);
+    const bookingType =
+      invoiceData.booking_type ??
+      invoiceData.type_order ??
+      invoiceData.items?.find((item) => item.booking_type)?.booking_type ??
+      "";
+    const normalizedBookingType = bookingType
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    const segmentName = invoiceData.segment_name ?? "";
+    const isCorporate = segmentName.toLowerCase().includes("corporate");
+
+    const partnerProvince =
+      invoiceData.partner_branch_province ?? invoiceData.partner_province;
+    const partnerCity = invoiceData.partner_branch_city ?? invoiceData.partner_city;
+    pendingAgentLocation.current = partnerProvince
+      ? {
+          provinceId: null,
+          provinceName: partnerProvince,
+          cityName: partnerCity ?? "",
+          waitForCities: true,
+          loadingStarted: false,
+        }
+      : null;
+    pendingCustomerLocation.current = invoiceData.customer_province
+      ? {
+          provinceId: null,
+          provinceName: invoiceData.customer_province,
+          cityName: invoiceData.customer_city ?? "",
+          loadingStarted: false,
+        }
+      : null;
+
     setFormData((current) => ({
       ...current,
-      customerName: invoiceData.customer_name ?? "",
+      tipeOrder: normalizedBookingType || current.tipeOrder,
+      bookingType: normalizedBookingType || current.bookingType,
+      invoiceSegment:
+        invoiceData.segment_id !== null
+          ? String(invoiceData.segment_id)
+          : current.invoiceSegment,
+      invoiceSegmentName: segmentName || current.invoiceSegmentName,
+      businessField:
+        isCorporate && invoiceData.segment_detail_id !== null
+          ? String(invoiceData.segment_detail_id)
+          : current.businessField,
+      businessType:
+        isCorporate && invoiceData.sub_segment_detail_id !== null
+          ? String(invoiceData.sub_segment_detail_id)
+          : current.businessType,
+      jenisGroup:
+        !isCorporate && invoiceData.segment_detail_id !== null
+          ? String(invoiceData.segment_detail_id)
+          : current.jenisGroup,
+      jenjang:
+        !isCorporate && invoiceData.sub_segment_detail_id !== null
+          ? String(invoiceData.sub_segment_detail_id)
+          : current.jenjang,
+      statusGroup:
+        invoiceData.segment_option_id !== null &&
+        invoiceData.segment_option_id !== undefined
+          ? String(invoiceData.segment_option_id)
+          : current.statusGroup,
+      customerName: invoiceData.customer_contact_person ?? "",
       groupName: invoiceData.customer_name ?? "",
+      customerContact: invoiceData.customer_phone ?? "",
+      customerProvinceName: invoiceData.customer_province ?? "",
+      customerCityName: invoiceData.customer_city ?? "",
+      provinceId: null,
+      cityId: null,
+      groupProvinceId: null,
+      groupCityId: null,
       customerId: invoiceData.customer_id,
       partnerId: invoiceData.partner_id,
-      travelAgent: invoiceData.partner_name ?? "",
+      partnerBranchId: invoiceData.partner_branch_id
+        ? String(invoiceData.partner_branch_id)
+        : null,
+      travelAgent: invoiceData.partner_branch_name ?? "",
       arrivalDate: toDate(invoiceData.arrival_date),
       orderItems: (invoiceData.items ?? []).map((item) => ({
         id: item.id,
@@ -179,33 +505,15 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         quantity: Number(item.quantity) || 0,
         compliment: Number(item.bonus_quantity) || 0,
         unitPrice: Number(item.unit_price) || 0,
+        isTicket: item.is_ticket ?? false,
         discountPrice: Number(item.discount_amount) || 0,
         subtotal: Number(item.subtotal) || 0,
       })),
     }));
-    setHasPaymentProof(
-      (invoiceData.payments ?? []).some((payment) => payment.proof_of_payment),
-    );
-    const payment = invoiceData.payments?.[0];
-    setPaymentForm({
-      paymentDate: toDate(payment?.payment_date),
-      paymentType: payment?.payment_type ?? "dp",
-      paymentMethod: payment?.payment_method ?? "",
-      accountHolderName: payment?.account_holder_name ?? "",
-      depositNumber: "",
-      fromBank: payment?.from_bank ?? "",
-      toBank: payment?.to_bank ?? "",
-      amount:
-        payment?.amount !== null && payment?.amount !== undefined
-          ? String(payment.amount)
-          : "",
-      notes: payment?.notes ?? "",
-      proofFiles: [],
-    });
+    setPaymentForm(createEmptyPaymentForm());
+    setHasPendingPayment(false);
   }, [invoiceData]);
-  // Set form data when province data is loaded
-
-  // Get nama sales start
+  // Data sales dan agen perjalanan
   const {
     karyawan,
     searchKaryawan,
@@ -225,23 +533,18 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     karyawan.find(
       (employee) => employee.id_absen === invoiceData?.sales_person_id,
     ) ??
-    eligibleKaryawan.find((employee) => employee.name === defaultSalesName) ??
+    karyawan.find((employee) => employee.name === defaultSalesName) ??
     null;
 
-  // Get nama sales end
-
-  // Get nama travel agent start
   const {
-    agents,
+    optionAgents,
     loading: loadingAgents,
     error: agentsError,
     search: searchAgent,
     setSearch: setSearchAgent,
-  } = useMasterAgent({ is_active: "1" });
+  } = useOptionAgent();
   const [openTravelAgent, setOpenTravelAgent] = useState(false);
-  // Get nama travel agent end
-
-  // Handle get provinsi dan kota start
+  // Pencarian wilayah dan sinkronisasi provinsi/kota tertunda
   const [openProvince, setOpenProvince] = useState(false);
   const [openCity, setOpenCity] = useState(false);
   const [searchProvince, setSearchProvince] = useState("");
@@ -284,10 +587,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       pendingLocation.loadingStarted = true;
       return;
     }
-    if (
-      pendingLocation.waitForCities &&
-      !pendingLocation.loadingStarted
-    ) {
+    if (pendingLocation.waitForCities && !pendingLocation.loadingStarted) {
       return;
     }
 
@@ -404,6 +704,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         ...current,
         groupProvinceId: id,
         groupCityId: null,
+        customerProvinceName:
+          provinces.find((province) => province.id === id)?.name ?? "",
+        customerCityName: "",
       }));
     }
 
@@ -412,14 +715,23 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     setOpenGroupProvince(false);
     setOpenGroupCity(false);
   };
-  // Handle get provinsi dan kota end
-
-  // Handle save start
+  // Validasi dan penyimpanan invoice
   const handleSave = async () => {
     if (saving) return;
+    if (!selectedSales?.id_absen && !invoiceData?.sales_person_id) {
+      toast.add({
+        title: "Sales belum dipilih",
+        description: "Pilih nama sales yang memiliki ID sebelum menyimpan invoice.",
+        type: "error",
+        timeout: 5000,
+      });
+      return;
+    }
     if (
       !formData.customerId &&
-      (!formData.groupName.trim() || !selectedGroupProvince || !selectedGroupCity)
+      (!formData.groupName.trim() ||
+        !selectedGroupProvince ||
+        !selectedGroupCity)
     ) {
       toast.add({
         title: "Data customer belum lengkap",
@@ -449,38 +761,76 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
 
     createInvoiceMutation.clearError();
     updateInvoiceMutation.clearError();
+    const bookingType =
+      formData.tipeOrder === "travel" ? "travel" : "non_travel";
+    const segmentId = selectedInvoiceSegment?.id
+      ? String(selectedInvoiceSegment.id)
+      : mode === "detail" && invoiceData?.segment_id != null
+        ? String(invoiceData.segment_id)
+        : "";
+    const selectedSegmentDetailId = isCorporateSegment
+      ? formData.businessField
+      : formData.jenisGroup;
+    const segmentDetailId =
+      selectedSegmentDetailId ||
+      (mode === "detail" && invoiceData?.segment_detail_id != null
+        ? String(invoiceData.segment_detail_id)
+        : "");
+    const selectedSubSegmentDetailId = isCorporateSegment
+      ? formData.businessType
+      : formData.jenjang;
+    const subSegmentDetailId =
+      selectedSubSegmentDetailId ||
+      (mode === "detail" && invoiceData?.sub_segment_detail_id != null
+        ? String(invoiceData.sub_segment_detail_id)
+        : "");
+    const segmentOptionId = isEducationSegment
+      ? formData.statusGroup ||
+        (mode === "detail" && invoiceData?.segment_option_id != null
+          ? String(invoiceData.segment_option_id)
+          : "")
+      : "";
+    const salesPersonId =
+      selectedSales?.id_absen || invoiceData?.sales_person_id || "";
+    const partnerId = formData.partnerId ? String(formData.partnerId) : "";
+    const partnerBranchId =
+      formData.tipeOrder === "travel"
+        ? formData.partnerBranchId ?? ""
+        : "";
+    const invoiceDate =
+      invoiceData?.invoice_date ?? new Date().toISOString();
+    const arrivalDate =
+      formData.tipeOrder === "travel"
+        ? formData.arrivalDate?.toISOString() ?? ""
+        : "";
     const payload = new FormData();
     const customerId = formData.customerId;
     if (customerId) {
       payload.append("customer_id", String(customerId));
     } else {
       payload.append("customer[name]", formData.groupName.trim());
+      payload.append("customer[email]", formData.customerEmail);
       payload.append("customer[phone]", formData.customerContact);
       payload.append(
+        "customer[contact_person]",
+        formData.customerContactPerson,
+      );
+      payload.append(
         "customer[province_name]",
-        selectedGroupProvince?.name ?? "",
-      );
-      payload.append("customer[city_name]", selectedGroupCity?.name ?? "");
-      payload.append(
-        "customer[segment_id]",
-        String(STATIC_INVOICE_SEGMENT_IDS.segmentId),
+        selectedGroupProvince?.name ?? formData.customerProvinceName,
       );
       payload.append(
-        "customer[segment_detail_id]",
-        String(STATIC_INVOICE_SEGMENT_IDS.segmentDetailId),
+        "customer[city_name]",
+        selectedGroupCity?.name ?? formData.customerCityName,
       );
+      payload.append("customer[segment_id]", segmentId);
+      payload.append("customer[segment_detail_id]", segmentDetailId);
+      payload.append("customer[sub_segment_detail_id]", subSegmentDetailId);
+      payload.append("customer[segment_option_id]", segmentOptionId);
+      payload.append("customer[is_active]", "1");
     }
 
-    const hasPaymentInput = Boolean(
-      paymentForm.paymentDate ||
-        paymentForm.paymentMethod ||
-        paymentForm.accountHolderName.trim() ||
-        paymentForm.fromBank ||
-        paymentForm.toBank ||
-        paymentForm.amount.trim() ||
-        paymentForm.notes.trim() ||
-        paymentForm.proofFiles.length,
-    );
+    const hasPaymentInput = hasPendingPayment;
     if (hasPaymentInput) {
       if (
         !paymentForm.paymentDate ||
@@ -514,33 +864,35 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       paymentForm.proofFiles.forEach((file) => {
         payload.append("payment[proof_of_payment]", file);
       });
+      if (paymentForm.proofFiles.length === 0) {
+        payload.append("payment[proof_of_payment]", "");
+      }
     }
-    payload.append(
-      "partner_id",
-      String(formData.partnerId),
-    );
-    payload.append("segment_id", String(STATIC_INVOICE_SEGMENT_IDS.segmentId));
-    payload.append(
-      "segment_detail_id",
-      String(STATIC_INVOICE_SEGMENT_IDS.segmentDetailId),
-    );
-    // payload.append("sub_segment_detail_id", String(STATIC_INVOICE_SEGMENT_IDS.subSegmentDetailId));
-    payload.append(
-      "invoice_date",
-      invoiceData?.invoice_date ?? new Date().toISOString(),
-    );
-    if (formData.arrivalDate)
-      payload.append("arrival_date", formData.arrivalDate.toISOString());
+    payload.append("sales_person_id", salesPersonId);
+    payload.append("partner_id", partnerId);
+    payload.append("partner_branch_id", partnerBranchId);
+    payload.append("booking_type", bookingType);
+    payload.append("segment_id", segmentId);
+    payload.append("segment_detail_id", segmentDetailId);
+    payload.append("sub_segment_detail_id", subSegmentDetailId);
+    payload.append("segment_option_id", segmentOptionId);
+    payload.append("invoice_date", invoiceDate);
+    payload.append("arrival_date", arrivalDate);
+    payload.append("notes", invoiceData?.notes ?? "");
+    payload.append("supporting_document", "");
     formData.orderItems.forEach((order, index) => {
       const item = `items[${index}]`;
       payload.append(`${item}[product_id]`, String(order.productId || ""));
+      payload.append(`${item}[product_code]`, "");
       payload.append(`${item}[product_name]`, order.product);
       payload.append(`${item}[product_description]`, order.description);
       payload.append(`${item}[quantity]`, String(order.quantity));
       payload.append(`${item}[bonus_quantity]`, String(order.compliment ?? 0));
-      payload.append(`${item}[unit_price]`, String(order.unitPrice));
+      if (!order.isTicket) {
+        payload.append(`${item}[unit_price]`, String(order.unitPrice));
+      }
       payload.append(`${item}[discount_amount]`, String(order.discountPrice));
-      payload.append(`${item}[subtotal]`, String(order.subtotal));
+      payload.append(`${item}[notes]`, "");
     });
 
     try {
@@ -554,7 +906,36 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         });
         navigate(`/invoice/detail/${created.id}`, { replace: true });
       } else if (id) {
-        await updateInvoiceMutation.submit(id, payload);
+        const updatedInvoice = await updateInvoiceMutation.submit(id, payload);
+        if (hasPendingPayment) {
+          setPaymentAmountsOverride({
+            totalAmount: updatedInvoice.total_amount,
+            paidAmount:
+              updatedInvoice.paid_amount ?? invoiceData?.paid_amount ?? 0,
+            remainingAmount:
+              updatedInvoice.remaining_amount ??
+              invoiceData?.remaining_amount ??
+              0,
+          });
+          setSavedPaymentsOverride(
+            updatedInvoice.payments ?? [
+              ...(invoiceData?.payments ?? []),
+              {
+                payment_date: paymentForm.paymentDate?.toISOString() ?? null,
+                payment_type: paymentForm.paymentType,
+                payment_method: paymentForm.paymentMethod,
+                account_holder_name: paymentForm.accountHolderName,
+                from_bank: paymentForm.fromBank,
+                to_bank: paymentForm.toBank,
+                amount: paymentForm.amount,
+                notes: paymentForm.notes,
+                proof_of_payment: null,
+              },
+            ],
+          );
+          setHasPendingPayment(false);
+          setPaymentForm(createEmptyPaymentForm());
+        }
         toast.add({
           title: "Invoice berhasil diperbarui",
           description: "Perubahan invoice berhasil disimpan.",
@@ -576,9 +957,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       });
     }
   };
-  // Handle save end
-
-  // Handle actions start
+  // Aksi yang tersedia pada footer halaman
   const actions: DetailAction[] = [
     {
       id: "save",
@@ -592,7 +971,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     },
   ];
 
-  if (mode === "detail" && hasPaymentProof)
+  if (mode === "detail" && invoiceData?.status == "partially_paid")
     actions.push({
       id: "submit",
       label: "Submit",
@@ -620,8 +999,47 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       mobileColor: "bg-blue-600",
       position: "left",
     });
-  // Handle actions end
 
+  const paymentRows: InvoicePaymentRow[] = [
+    ...(savedPaymentsOverride ?? invoiceData?.payments ?? []).map(
+      (payment, index) => ({
+      id: `saved-payment-${index}`,
+      paymentDate: payment.payment_date ?? null,
+      paymentMethod: payment.payment_method ?? "",
+      accountHolderName: payment.account_holder_name ?? "",
+      fromBank: payment.from_bank ?? "",
+      toBank: payment.to_bank ?? "",
+      amount: payment.amount ?? null,
+      notes: payment.notes ?? "",
+      proof: payment.proof_of_payment?.split(/[\\/]/).pop() ?? "",
+      status: "Tersimpan",
+      }),
+    ),
+    ...(hasPendingPayment
+      ? [
+          {
+            id: "pending-payment",
+            paymentDate: paymentForm.paymentDate ?? null,
+            paymentMethod: paymentForm.paymentMethod,
+            accountHolderName: paymentForm.accountHolderName,
+            fromBank: paymentForm.fromBank,
+            toBank: paymentForm.toBank,
+            amount: paymentForm.amount,
+            notes: paymentForm.notes,
+            proof: paymentForm.proofFiles.map((file) => file.name).join(", "),
+            status: "Menunggu disimpan",
+            pending: true,
+            onEdit: openPaymentEditor,
+            onRemove: () => {
+              setPaymentForm(createEmptyPaymentForm());
+              setHasPendingPayment(false);
+            },
+          },
+        ]
+      : []),
+  ];
+
+  // Susunan halaman detail invoice
   return (
     <>
       <DetailPageLayout
@@ -651,9 +1069,13 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
             </Button>
           }
         >
-          <div className="grid grid-cols-1 gap-8 p-5 xl:grid-cols-2 [&_[data-slot=field-label]]:!text-xs max-md:[&_[data-slot=field]]:!grid-cols-1 max-md:[&_[data-slot=field]]:!items-stretch max-md:[&_[data-slot=field]]:!gap-1">
+          <div
+            className={`grid grid-cols-1 gap-8 p-5 [&_[data-slot=field-label]]:!text-xs max-md:[&_[data-slot=field]]:!grid-cols-1 max-md:[&_[data-slot=field]]:!items-stretch max-md:[&_[data-slot=field]]:!gap-1 ${formData.tipeOrder === "travel" ? "xl:grid-cols-2" : formData.tipeOrder === "non_travel" && mode === "detail" ? "xl:grid-cols-2" : "xl:grid-cols-1"}`}
+          >
             {/* Informasi Umum Pelanggan */}
-            <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+            <div
+              className={`space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10 ${formData.tipeOrder === "travel" ? "" : "max-w-4xl"}`}
+            >
               {mode !== "create" && (
                 <Field orientation="horizontal">
                   <FieldLabel>Nomor Invoice</FieldLabel>
@@ -701,6 +1123,141 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                   }
                 />
               </Field>
+              <Field orientation="horizontal">
+                <FieldLabel>
+                  Tipe Order <span className="text-xs text-red-500">*</span>
+                </FieldLabel>
+
+                <Select
+                  value={formData.tipeOrder}
+                  onValueChange={(value) => {
+                    pendingCustomerLocation.current = null;
+                    pendingAgentLocation.current = null;
+
+                    setFormData((current) => ({
+                      ...current,
+                      tipeOrder: (value ?? "").toLowerCase(),
+
+                      invoiceSegment: "",
+                      invoiceSegmentName: "",
+                      businessField: "",
+                      businessType: "",
+                      jenisGroup: "",
+                      jenjang: "",
+                      statusGroup: "",
+                      nomorGroup: "",
+                      customGroupTag: "",
+                      groupTagOrder: [],
+                      groupName: "",
+
+                      customerId: null,
+                      customerContact: "",
+                      customerSegment: "",
+
+                      // Reset data travel
+                      travelAgent: "",
+                      partnerId: null,
+                      partnerBranchId: null,
+
+                      // Reset lokasi
+                      provinceId: null,
+                      cityId: null,
+                      groupProvinceId: null,
+                      groupCityId: null,
+                    }));
+
+                    // Reset pencarian
+                    setSearchAgent("");
+                    setSearchProvince("");
+                    setSearchCity("");
+
+                    // Tutup popover
+                    setOpenTravelAgent(false);
+                    setOpenProvince(false);
+                    setOpenCity(false);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih tipe order">
+                      {formData.tipeOrder === "travel"
+                        ? "Travel"
+                        : formData.tipeOrder === "non_travel"
+                          ? "Non Travel"
+                          : undefined}
+                    </SelectValue>
+                  </SelectTrigger>
+
+                  <SelectContent align="start" alignItemWithTrigger={false}>
+                    <SelectItem value="travel">Travel</SelectItem>
+                    <SelectItem value="non_travel">Non Travel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field orientation="horizontal">
+                <FieldLabel>
+                  Segmen <span className="text-xs text-red-500">*</span>
+                </FieldLabel>
+
+                <SearchablePopover<Segment>
+                  open={openSegment}
+                  onOpenChange={setOpenSegment}
+                  search={searchInvoiceOption}
+                  onSearchChange={setSearchInvoiceOption}
+                  placeholder={
+                    segmentsLoading ? "Memuat segmen..." : "Pilih segmen"
+                  }
+                  selectedLabel={
+                    selectedInvoiceSegment?.name ??
+                    invoiceData?.segment_name ??
+                    null
+                  }
+                  selectedKey={formData.invoiceSegment || null}
+                  items={segments.filter(
+                    (item) =>
+                      item.name.trim().toLowerCase() !== "travel" &&
+                      item.name
+                        .toLowerCase()
+                        .includes(searchInvoiceOption.toLowerCase().trim()),
+                  )}
+                  getKey={(item) => String(item.id)}
+                  renderItem={(item) => item.name}
+                  onSelect={(item) => {
+                    pendingCustomerLocation.current = null;
+                    const nextValue = String(item.id);
+                    setFormData((current) => ({
+                      ...current,
+                      invoiceSegment: nextValue,
+                      invoiceSegmentName: item.name,
+                      customerSegment: "",
+                      
+                      businessField: "",
+                      businessType: "",
+                      jenisGroup: "",
+                      jenjang: "",
+                      statusGroup: "",
+                      nomorGroup: "",
+                      customGroupTag: "",
+                      groupTagOrder: [],
+                      groupName: "",
+                      customerId: null,
+                      groupProvinceId: null,
+                      groupCityId: null,
+                      customerContact: "",
+                      provinceId: null,
+                      cityId: null,
+                    }));
+                    setSearchInvoiceOption("");
+                    setOpenSegment(false);
+                  }}
+                  emptyText={segmentsError ?? "Segmen tidak ditemukan."}
+                  disabled={
+                    !formData.tipeOrder ||
+                    segmentsLoading ||
+                    formData.tipeOrder === "travel"
+                  }
+                  debounceDelay={0}
+                />
+              </Field>
             </div>
 
             <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
@@ -708,62 +1265,21 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                 <Field orientation="horizontal">
                   <FieldLabel>Input Date</FieldLabel>
                   <Input
-                    placeholder={invoiceData?.invoice_date ?? "Input Date"}
+                    placeholder={formatTanggal(invoiceData?.invoice_date ?? "Input Date")}
                     disabled
                   />
                 </Field>
               )}
 
-              <Field orientation="horizontal">
-                <FieldLabel>
-                  Segmen <span className="text-xs text-red-500">*</span>
-                </FieldLabel>
-
-                <Select
-                  value={formData.invoiceSegment}
-                  onValueChange={(value) => {
-                    const nextValue = value ?? "";
-                    setFormData((current) => ({
-                      ...current,
-                      invoiceSegment: nextValue,
-                      customerSegment: "",
-                      businessField: "",
-                      businessType: "",
-                      jenisGroup: "",
-                      jenjang: "",
-                      statusGroup: "",
-                      nomorGroup: "",
-                      travelAgent:
-                        nextValue !== "travel" ? "" : current.travelAgent,
-                      partnerId:
-                        nextValue !== "travel" ? null : current.partnerId,
-                    }));
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih segmen"></SelectValue>
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    <SelectItem value="individu">Individu</SelectItem>
-                    <SelectItem value="travel">Travel</SelectItem>
-                    <SelectItem value="corporate">Corporate</SelectItem>
-                    <SelectItem value="edukasi">Edukasi</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-
-            {/* Informasi Segmen Travel */}
-            {formData.invoiceSegment === "travel" && (
-              <>
-                <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
+              {formData.tipeOrder === "travel" && (
+                <>
                   <Field orientation="horizontal">
                     <FieldLabel>
                       Nama Travel/Agent{" "}
                       <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
 
-                    <SearchablePopover<Agent>
+                    <SearchablePopover<OptionAgent>
                       open={openTravelAgent}
                       onOpenChange={setOpenTravelAgent}
                       search={searchAgent}
@@ -775,28 +1291,22 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       }
                       selectedLabel={
                         formData.travelAgent ||
-                        invoiceData?.partner_name ||
+                        invoiceData?.partner_branch_name ||
                         null
                       }
                       selectedKey={
                         formData.partnerId !== null
-                          ? String(formData.partnerId)
-                          : invoiceData?.partner_id
-                            ? String(invoiceData.partner_id)
-                            : null
+                          ? `${formData.partnerId}:${formData.partnerBranchId ?? ""}`
+                          : null
                       }
-                      items={agents}
-                      getKey={(agent) => String(agent.id)}
-                      renderItem={(agent) => agent.name}
+                      items={optionAgents}
+                      getKey={(agent) =>
+                        `${agent.partner_id}:${agent.partner_branch_id ?? ""}`
+                      }
+                      renderItem={(agent) => agent.label}
                       onSelect={(agent) => {
-                        const provinceName =
-                          (typeof agent.province === "string"
-                            ? agent.province
-                            : agent.province?.name) || agent.province_name;
-                        const cityName =
-                          (typeof agent.city === "string"
-                            ? agent.city
-                            : agent.city?.name) || agent.city_name;
+                        const provinceName = agent.province_name;
+                        const cityName = agent.city_name;
                         const province = provinces.find(
                           (item) =>
                             item.name.toLowerCase().trim() ===
@@ -817,7 +1327,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           travelAgent: agent.name,
-                          partnerId: agent.id,
+                          partnerId: Number(agent.partner_id) || null,
+                          partnerBranchId: agent.partner_branch_id,
                           ...(provinceName && {
                             provinceId: province?.id ?? null,
                             cityId: null,
@@ -841,39 +1352,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
 
                   <Field orientation="horizontal">
                     <FieldLabel>
-                      Cust Segmen{" "}
-                      <span className="text-xs text-red-500">*</span>
-                    </FieldLabel>
-
-                    <Select
-                      value={formData.customerSegment}
-                      onValueChange={(value: string | null) => {
-                        if (value !== null) {
-                          setFormData((current) => ({
-                            ...current,
-                            customerSegment: value,
-                            ...(value !== "Corporate" && {
-                              businessField: "",
-                              businessType: "",
-                            }),
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Pilih customer segmen"></SelectValue>
-                      </SelectTrigger>
-                      <SelectContent align="start" alignItemWithTrigger={false}>
-                        <SelectItem value="Corporate">Corporate</SelectItem>
-                        <SelectItem value="Edukasi">Edukasi</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-
-                <div className="space-y-4 [&_[data-slot=field]]:!grid [&_[data-slot=field]]:!grid-cols-[140px_minmax(0,1fr)] [&_[data-slot=field]]:!items-center [&_[data-slot=field]]:!gap-3 [&_[data-slot=field]_button]:!h-10 [&_[data-slot=field]_[data-slot=input]]:!h-10">
-                  <Field orientation="horizontal">
-                    <FieldLabel>
                       Provinsi <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
 
@@ -888,7 +1366,12 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             ? "Memuat provinsi..."
                             : "Pilih provinsi"
                         }
-                        selectedLabel={selectedProvince?.name ?? null}
+                        selectedLabel={
+                          selectedProvince?.name ??
+                          invoiceData?.partner_branch_province ??
+                          invoiceData?.partner_province ??
+                          null
+                        }
                         selectedKey={
                           formData.provinceId !== null
                             ? String(formData.provinceId)
@@ -900,13 +1383,13 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         onSelect={(province) =>
                           handleProvinceChange(province.id)
                         }
-                        disabled={provinceLoading}
                         emptyText={
                           provinceError
                             ? "Provinsi gagal dimuat."
                             : "Provinsi tidak ditemukan."
                         }
                         debounceDelay={500}
+                        disabled
                       />
 
                       {provinceError && (
@@ -933,7 +1416,12 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             ? "Memuat kota..."
                             : "Pilih kota/kabupaten"
                       }
-                      selectedLabel={selectedCity?.name ?? null}
+                      selectedLabel={
+                        selectedCity?.name ??
+                        invoiceData?.partner_branch_city ??
+                        invoiceData?.partner_city ??
+                        null
+                      }
                       selectedKey={
                         formData.cityId !== null
                           ? String(formData.cityId)
@@ -943,21 +1431,16 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       getKey={(city) => String(city.id)}
                       renderItem={(city) => city.name}
                       onSelect={(city) => handleCityChange(city.id)}
-                      disabled={
-                        formData.provinceId === null ||
-                        citiesLoading ||
-                        provinceLoading
-                      }
+                      disabled
                       emptyText="Kota/kabupaten tidak ditemukan."
                       debounceDelay={500}
                     />
                   </Field>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
 
-            {(formData.customerSegment === "Corporate" ||
-              formData.invoiceSegment === "corporate") && (
+            {isCorporateSegment && (
               <div className="xl:col-span-2 rounded-xl border border-slate-200 bg-slate-100 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/60">
                 <div className="grid grid-cols-1 items-center gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(240px,0.9fr)] xl:gap-6">
                   <div className="grid min-w-0 grid-cols-1 items-start gap-1 md:grid-cols-[110px_minmax(0,1fr)] md:items-center md:gap-3">
@@ -965,7 +1448,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       Bidang Usaha{" "}
                       <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
-                    <SearchablePopover<InvoiceSearchOption>
+                    <SearchablePopover<SegmentDetail>
                       open={openInvoiceOption === "businessField"}
                       onOpenChange={(open) =>
                         setOpenInvoiceOption(open ? "businessField" : null)
@@ -974,21 +1457,23 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       onSearchChange={setSearchInvoiceOption}
                       placeholder="Pilih bidang usaha"
                       selectedLabel={
-                        businessFieldOptions.find(
-                          (option) => option.value === formData.businessField,
-                        )?.label ?? null
+                        selectedBusinessDetail?.name ??
+                        invoiceData?.segment_detail_name ??
+                        null
                       }
                       selectedKey={formData.businessField || null}
-                      items={filterInvoiceOptions(
-                        businessFieldOptions,
-                        searchInvoiceOption,
+                      items={segmentDetailOptions.filter((option) =>
+                        option.name
+                          ?.toLowerCase()
+                          .includes(searchInvoiceOption.toLowerCase().trim()),
                       )}
-                      getKey={(option) => option.value}
-                      renderItem={(option) => option.label}
+                      getKey={(option) => String(option.id)}
+                      renderItem={(option) => option.name ?? ""}
                       onSelect={(option) => {
                         setFormData((current) => ({
                           ...current,
-                          businessField: option.value,
+                          businessField: String(option.id),
+                          businessType: "",
                         }));
                         setSearchInvoiceOption("");
                         setOpenInvoiceOption(null);
@@ -1003,7 +1488,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       Jenis Usaha{" "}
                       <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
-                    <SearchablePopover<InvoiceSearchOption>
+                    <SearchablePopover<SegmentSubDetail>
                       open={openInvoiceOption === "businessType"}
                       onOpenChange={(open) =>
                         setOpenInvoiceOption(open ? "businessType" : null)
@@ -1012,21 +1497,23 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       onSearchChange={setSearchInvoiceOption}
                       placeholder="Pilih jenis usaha"
                       selectedLabel={
-                        businessTypeOptions.find(
-                          (option) => option.value === formData.businessType,
-                        )?.label ?? null
+                        businessSubDetailOptions.find(
+                          (option) =>
+                            String(option.id) === formData.businessType,
+                        )?.name ?? null
                       }
                       selectedKey={formData.businessType || null}
-                      items={filterInvoiceOptions(
-                        businessTypeOptions,
-                        searchInvoiceOption,
+                      items={businessSubDetailOptions.filter((option) =>
+                        option.name
+                          ?.toLowerCase()
+                          .includes(searchInvoiceOption.toLowerCase().trim()),
                       )}
-                      getKey={(option) => option.value}
-                      renderItem={(option) => option.label}
+                      getKey={(option) => String(option.id)}
+                      renderItem={(option) => option.name ?? ""}
                       onSelect={(option) => {
                         setFormData((current) => ({
                           ...current,
-                          businessType: option.value,
+                          businessType: String(option.id),
                         }));
                         setSearchInvoiceOption("");
                         setOpenInvoiceOption(null);
@@ -1039,38 +1526,70 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
               </div>
             )}
 
-            {(formData.customerSegment === "Edukasi" ||
-              formData.invoiceSegment === "edukasi") && (
+            {isEducationSegment && (
               <div className="xl:col-span-2 rounded-xl border border-slate-200 bg-slate-100 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/60">
                 <div className="grid grid-cols-1 items-center gap-4 xl:grid-cols-[repeat(4,minmax(0,1fr))] xl:gap-6">
                   <div className="grid min-w-0 grid-cols-1 items-start gap-1 md:grid-cols-[110px_minmax(0,1fr)] md:items-center md:gap-3">
                     <FieldLabel>
                       Jenis <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
-                    <Select
-                      value={formData.jenisGroup}
-                      onValueChange={(value) =>
+                    <SearchablePopover<SegmentDetail>
+                      open={openInvoiceOption === "educationType"}
+                      onOpenChange={(open) =>
+                        setOpenInvoiceOption(open ? "educationType" : null)
+                      }
+                      search={searchInvoiceOption}
+                      onSearchChange={setSearchInvoiceOption}
+                      placeholder={
+                        segmentDetailsLoading
+                          ? "Memuat jenis..."
+                          : "Pilih jenis"
+                      }
+                      selectedLabel={
+                        selectedSegmentDetail?.name ??
+                        invoiceData?.segment_detail_name ??
+                        null
+                      }
+                      selectedKey={formData.jenisGroup || null}
+                      items={segmentDetailOptions.filter((item) =>
+                        item.name
+                          ?.toLowerCase()
+                          .includes(searchInvoiceOption.toLowerCase().trim()),
+                      )}
+                      getKey={(item) => String(item.id)}
+                      renderItem={(item) => item.name ?? ""}
+                      onSelect={(item) => {
+                        pendingCustomerLocation.current = null;
                         setFormData((current) => ({
                           ...current,
-                          jenisGroup: value ?? "",
-                        }))
+                          jenisGroup: String(item.id),
+                          jenjang: "",
+                          statusGroup: "",
+                          nomorGroup: "",
+                          customGroupTag: "",
+                          groupTagOrder: [],
+                          groupName: "",
+                          customerId: null,
+                          groupProvinceId: null,
+                          groupCityId: null,
+                          customerContact: "",
+                        }));
+                        setSearchInvoiceOption("");
+                        setOpenInvoiceOption(null);
+                      }}
+                      emptyText="Jenis tidak ditemukan."
+                      disabled={
+                        segmentDetailsLoading || Boolean(formData.customerId)
                       }
-                    >
-                      <SelectTrigger className="h-10 w-full">
-                        <SelectValue placeholder="Pilih jenis" />
-                      </SelectTrigger>
-                      <SelectContent align="start" alignItemWithTrigger={false}>
-                        <SelectItem value="formal">Formal</SelectItem>
-                        <SelectItem value="nonformal">Non-Formal</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      debounceDelay={0}
+                    />
                   </div>
 
                   <div className="grid min-w-0 grid-cols-1 items-start gap-1 md:grid-cols-[110px_minmax(0,1fr)] md:items-center md:gap-3">
                     <FieldLabel>
                       Jenjang <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
-                    <SearchablePopover<InvoiceSearchOption>
+                    <SearchablePopover<SegmentSubDetail>
                       open={openInvoiceOption === "educationLevel"}
                       onOpenChange={(open) =>
                         setOpenInvoiceOption(open ? "educationLevel" : null)
@@ -1079,34 +1598,35 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       onSearchChange={setSearchInvoiceOption}
                       placeholder="Pilih jenjang"
                       selectedLabel={
-                        educationLevelOptions.find(
-                          (option) => option.value === formData.jenjang,
-                        )?.label ?? null
+                        selectedSubDetail?.name ??
+                        invoiceData?.sub_segment_detail_name ??
+                        null
                       }
                       selectedKey={formData.jenjang || null}
-                      items={filterInvoiceOptions(
-                        educationLevelOptions,
-                        searchInvoiceOption,
+                      items={subDetailOptions.filter((option) =>
+                        option.name
+                          ?.toLowerCase()
+                          .includes(searchInvoiceOption.toLowerCase().trim()),
                       )}
-                      getKey={(option) => option.value}
-                      renderItem={(option) => option.label}
+                      getKey={(option) => String(option.id)}
+                      renderItem={(option) => option.name ?? ""}
                       onSelect={(option) => {
                         setFormData((current) => ({
                           ...current,
-                          jenjang: option.value,
-                          groupName:
-                            current.statusGroup !== "swasta"
-                              ? buildEducationGroupName(
-                                  option.value,
-                                  current.statusGroup,
-                                  current.nomorGroup,
-                                )
-                              : current.groupName,
+                          jenjang: String(option.id),
+                          statusGroup: "",
+                          customerId: null,
+                          groupName: formatEducationGroupName(
+                            String(option.id),
+                            "",
+                            current.nomorGroup,
+                          ),
                         }));
                         setSearchInvoiceOption("");
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Jenjang tidak ditemukan."
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1115,7 +1635,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     <FieldLabel>
                       Status <span className="text-xs text-red-500">*</span>
                     </FieldLabel>
-                    <SearchablePopover<InvoiceSearchOption>
+                    <SearchablePopover<SegmentOption>
                       open={openInvoiceOption === "educationStatus"}
                       onOpenChange={(open) =>
                         setOpenInvoiceOption(open ? "educationStatus" : null)
@@ -1124,34 +1644,34 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       onSearchChange={setSearchInvoiceOption}
                       placeholder="Pilih status"
                       selectedLabel={
-                        educationStatusOptions.find(
-                          (option) => option.value === formData.statusGroup,
-                        )?.label ?? null
+                        selectedStatusOption?.name ??
+                        invoiceData?.segment_option_name ??
+                        null
                       }
                       selectedKey={formData.statusGroup || null}
-                      items={filterInvoiceOptions(
-                        educationStatusOptions,
-                        searchInvoiceOption,
+                      items={segmentStatusOptions.filter((option) =>
+                        option.name
+                          ?.toLowerCase()
+                          .includes(searchInvoiceOption.toLowerCase().trim()),
                       )}
-                      getKey={(option) => option.value}
-                      renderItem={(option) => option.label}
+                      getKey={(option) => String(option.id)}
+                      renderItem={(option) => option.name ?? ""}
                       onSelect={(option) => {
                         setFormData((current) => ({
                           ...current,
-                          statusGroup: option.value,
-                          groupName:
-                            option.value === "swasta"
-                              ? ""
-                              : buildEducationGroupName(
-                                  current.jenjang,
-                                  option.value,
-                                  current.nomorGroup,
-                                ),
+                          statusGroup: String(option.id),
+                          customerId: null,
+                          groupName: formatEducationGroupName(
+                            current.jenjang,
+                            String(option.id),
+                            current.nomorGroup,
+                          ),
                         }));
                         setSearchInvoiceOption("");
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Status tidak ditemukan."
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === "" || formData.jenjang === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1184,19 +1704,18 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           nomorGroup: option.value,
-                          groupName:
-                            current.statusGroup !== "swasta"
-                              ? buildEducationGroupName(
-                                  current.jenjang,
-                                  current.statusGroup,
-                                  option.value,
-                                )
-                              : current.groupName,
+                          customerId: null,
+                          groupName: formatEducationGroupName(
+                            current.jenjang,
+                            current.statusGroup,
+                            option.value,
+                          ),
                         }));
                         setSearchInvoiceOption("");
                         setOpenInvoiceOption(null);
                       }}
                       emptyText="Nomor tidak ditemukan."
+                      disabled={Boolean(formData.customerId) || formData.jenisGroup === "" || formData.jenjang === "" || formData.statusGroup === ""}
                       debounceDelay={0}
                     />
                   </div>
@@ -1213,14 +1732,74 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     </FieldLabel>
                     <CustomerSuggestionField
                       value={formData.groupName}
-                      onChange={(value) =>
+                      segmentId={selectedInvoiceSegment?.id ?? null}
+                      tags={customerFieldTags}
+                      plainText={Boolean(formData.customerId)}
+                      onClearPlainText={() =>
                         setFormData((current) => ({
                           ...current,
-                          groupName: value,
+                          customerId: null,
+                          groupName: "",
+                          groupProvinceId: null,
+                          groupCityId: null,
+                          customerContact: "",
+                          jenisGroup: "",
+                          jenjang: "",
+                          statusGroup: "",
+                          businessField: "",
+                          businessType: "",
+                        }))
+                      }
+                      onReorderTags={(ids) =>
+                        setFormData((current) => ({
+                          ...current,
+                          groupTagOrder: ids,
+                          groupName: formatEducationGroupName(
+                            current.jenjang,
+                            current.statusGroup,
+                            current.nomorGroup,
+                            current.customGroupTag,
+                            ids,
+                          ),
+                        }))
+                      }
+                      onAddTextTag={(text) =>
+                        setFormData((current) => ({
+                          ...current,
+                          customGroupTag: [current.customGroupTag, text]
+                            .filter(Boolean)
+                            .join(" "),
+                          groupName: isEducationSegment
+                            ? formatEducationGroupName(
+                                current.jenjang,
+                                current.statusGroup,
+                                current.nomorGroup,
+                                [current.customGroupTag, text]
+                                  .filter(Boolean)
+                                  .join(" "),
+                              )
+                            : [current.groupName, text]
+                                .filter(Boolean)
+                                .join(" "),
                           customerId: null,
                         }))
                       }
                       onSelect={(customer) => {
+                        const segmentId =
+                          customer.segment?.id ?? customer.segment_id;
+                        const segmentName =
+                          customer.segment?.name.toLowerCase() ?? "";
+                        const isCustomerCorporate =
+                          segmentName.includes("corporate");
+                        const detailId =
+                          customer.segment_detail?.id ??
+                          customer.segment_detail_id;
+                        const subDetailId =
+                          customer.sub_segment_detail?.id ?? null;
+                        const segmentOptionId =
+                          customer.segment_option_id ??
+                          customer.segment_option?.id ??
+                          null;
                         const customerProvince = provinces.find(
                           (province) =>
                             province.name.toLowerCase().trim() ===
@@ -1252,6 +1831,33 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           groupName: customer.name,
+                          customGroupTag: "",
+                          groupTagOrder: [],
+                          customerEmail: customer.email ?? "",
+                          customerContactPerson: customer.contact_person ?? "",
+                          customerProvinceName: customer.province_name ?? "",
+                          customerCityName: customer.city_name ?? "",
+                          invoiceSegment: String(segmentId),
+                          invoiceSegmentName: customer.segment?.name ?? "",
+                          businessField: isCustomerCorporate
+                            ? String(detailId)
+                            : "",
+                          businessType:
+                            isCustomerCorporate && subDetailId !== null
+                              ? String(subDetailId)
+                              : "",
+                          jenisGroup: isCustomerCorporate
+                            ? ""
+                            : String(detailId),
+                          jenjang:
+                            !isCustomerCorporate && subDetailId !== null
+                              ? String(subDetailId)
+                              : "",
+                          statusGroup:
+                            segmentOptionId !== null
+                              ? String(segmentOptionId)
+                              : "",
+                          nomorGroup: "",
                           customerContact: customer.phone ?? "",
                           customerId: customer.id,
                           groupProvinceId: customerProvince?.id ?? null,
@@ -1276,7 +1882,11 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             ? "Memuat provinsi..."
                             : "Pilih provinsi"
                         }
-                        selectedLabel={selectedGroupProvince?.name ?? null}
+                        selectedLabel={
+                          selectedGroupProvince?.name ??
+                          formData.customerProvinceName ??
+                          null
+                        }
                         selectedKey={
                           formData.groupProvinceId !== null
                             ? String(formData.groupProvinceId)
@@ -1319,7 +1929,11 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             ? "Memuat kota..."
                             : "Pilih kota"
                       }
-                      selectedLabel={selectedGroupCity?.name ?? null}
+                      selectedLabel={
+                        selectedGroupCity?.name ??
+                        formData.customerCityName ??
+                        null
+                      }
                       selectedKey={
                         formData.groupCityId !== null
                           ? String(formData.groupCityId)
@@ -1332,6 +1946,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                         setFormData((current) => ({
                           ...current,
                           groupCityId: city.id,
+                          customerCityName: city.name,
                         }));
                         setSearchGroupCity("");
                         setOpenGroupCity(false);
@@ -1431,18 +2046,56 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
             icon={HandCoins}
             title="Informasi Pembayaran"
             variant="green"
+            action={
+              <Button variant="primer" size="lg" onClick={openPaymentEditor}>
+                {hasPendingPayment ? <Pencil size={16} /> : <Plus size={16} />}
+                {hasPendingPayment ? "Ubah Pembayaran" : "Tambah Pembayaran"}
+              </Button>
+            }
           >
-            <PaymentInformation
-              totalInvoice={formData.orderItems.reduce(
-                (total, order) => total + order.subtotal,
-                0,
-              )}
-              value={paymentForm}
-              onChange={setPaymentForm}
-              onProofChange={setHasPaymentProof}
-            />
+            <div className="p-5">
+              <PaymentInformation
+                totalAmount={
+                  paymentAmountsOverride?.totalAmount ??
+                  invoiceData?.total_amount ??
+                  0
+                }
+                paidAmount={
+                  paymentAmountsOverride?.paidAmount ??
+                  invoiceData?.paid_amount ??
+                  0
+                }
+                remainingAmount={
+                  paymentAmountsOverride?.remainingAmount ??
+                  invoiceData?.remaining_amount ??
+                  0
+                }
+              />
+            </div>
+            <div className="px-5 pb-5">
+              <DetailPaymentTable data={paymentRows} />
+            </div>
           </DetailSection>
         )}
+
+        <CreatePaymentModal
+          open={openPaymentModal}
+          onClose={() => setOpenPaymentModal(false)}
+          onSave={savePaymentDraft}
+          initialValue={paymentForm}
+          hasPendingPayment={hasPendingPayment}
+          totalAmount={
+            paymentAmountsOverride?.totalAmount ?? invoiceData?.total_amount ?? 0
+          }
+          paidAmount={
+            paymentAmountsOverride?.paidAmount ?? invoiceData?.paid_amount ?? 0
+          }
+          remainingAmount={
+            paymentAmountsOverride?.remainingAmount ??
+            invoiceData?.remaining_amount ??
+            0
+          }
+        />
 
         <CreateDetailInvoice
           open={openCreateDetailInvoice}
