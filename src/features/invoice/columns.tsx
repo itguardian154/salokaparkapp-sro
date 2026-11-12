@@ -33,7 +33,7 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
       header: "Segmen",
     },
     {
-      accessorKey: "partner_name",
+      accessorKey: "partner_branch_name",
       header: "Travel",
     },
     {

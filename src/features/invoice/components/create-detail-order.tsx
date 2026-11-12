@@ -18,13 +18,6 @@ type CreateDetailInvoiceProps = {
   onSave: (order: Omit<InvoiceOrder, "id">) => void;
 };
 
-const toAmount = (value: string | number | null | undefined) => {
-  const rawValue = String(value ?? "");
-  const numericValue = Number(rawValue);
-  if (Number.isFinite(numericValue)) return numericValue;
-  return Number(rawValue.replace(/[^\d]/g, "")) || 0;
-};
-
 export default function CreateDetailInvoice({
   open,
   onClose,
@@ -50,18 +43,22 @@ export default function CreateDetailInvoice({
     quantity?: string;
     complimentary?: string;
   }>({});
-
-  const defaultUnitPrice = toAmount(selectedProduk?.price);
-  const unitPrice = defaultUnitPrice;
+  const [unitPrice, setUnitPrice] = useState("");
+  const unitPriceAmount = Number(unitPrice);
   const quantityAmount = Number(quantity) || 0;
   const discountAmount = Number(discountPrice) || 0;
-  const subtotal = quantityAmount * unitPrice - discountAmount;
+
+  const subtotal = Math.max(
+    0,
+    quantityAmount * (unitPriceAmount - discountAmount),
+  );
 
   const resetForm = () => {
     setOpenProduk(false);
     setSelectedProduk(null);
     setQuantity("");
     setComplimentary("0");
+    setUnitPrice("");
     setDiscountPrice("");
     setSearchProduk("");
     setErrors({});
@@ -78,10 +75,7 @@ export default function CreateDetailInvoice({
     if (!Number.isInteger(Number(quantity)) || Number(quantity) <= 0) {
       nextErrors.quantity = "Quantity harus berupa bilangan bulat positif.";
     }
-    if (
-      !Number.isInteger(Number(complimentary)) ||
-      Number(complimentary) < 0
-    ) {
+    if (!Number.isInteger(Number(complimentary)) || Number(complimentary) < 0) {
       nextErrors.complimentary =
         "Complimentary harus berupa bilangan bulat nol atau lebih.";
     }
@@ -95,9 +89,9 @@ export default function CreateDetailInvoice({
       description: selectedProduk!.description ?? "",
       quantity: quantityAmount,
       compliment: Number(complimentary),
-      unitPrice,
+      unitPrice: unitPriceAmount,
       isTicket: selectedProduk!.is_ticket,
-      discountPrice: Number(discountPrice) || 0,
+      discountPrice: discountAmount,
       subtotal,
     });
 
@@ -141,10 +135,14 @@ export default function CreateDetailInvoice({
               renderItem={(produk) => produk.name}
               onSelect={(produk) => {
                 setSelectedProduk(produk);
+                setUnitPrice(String(Number(produk.price)));
                 setDiscountPrice("");
                 setOpenProduk(false);
                 setSearchProduk("");
-                setErrors((current) => ({ ...current, product: undefined }));
+                setErrors((current) => ({
+                  ...current,
+                  product: undefined,
+                }));
               }}
               emptyText={
                 loadingProduk
@@ -218,10 +216,14 @@ export default function CreateDetailInvoice({
           <Field>
             <FieldLabel>Harga Satuan</FieldLabel>
             <Input
-              value={selectedProduk ? formatRupiah(defaultUnitPrice, false) : ""}
+              type="number"
+              min={0}
+              step={1}
+              value={unitPrice ? formatRupiah(Number(unitPrice), false) : ""}
+              onChange={(event) => setUnitPrice(event.target.value)}
               placeholder="Otomatis dari produk"
-              readOnly
-              disabled={!selectedProduk}
+              readOnly={selectedProduk?.is_ticket === true}
+              disabled={!selectedProduk || selectedProduk?.is_ticket === true}
             />
           </Field>
 

@@ -24,7 +24,7 @@ export type InvoiceApiRecord = {
   customer_name: string | null;
   sales_person_name: string | null;
   segment_name: string | null;
-  partner_name: string | null;
+  partner_branch_name: string | null;
   arrival_date: string | null;
   total_amount: string | number;
   status: string;
@@ -64,6 +64,7 @@ export type InvoiceDetailItem = {
   is_ticket?: boolean | null;
   discount_amount: string | number;
   subtotal: string | number;
+  booking_type: string | null;
 };
 
 export type InvoicePayment = {
@@ -96,21 +97,38 @@ export type InvoiceDetail = {
   invoice_number: string | null;
   customer_id: number | null;
   customer_name: string | null;
+  customer_contact_person: string | null;
   customer_address: string | null;
   sales_person_id: string | null;
   sales_person_name: string | null;
   partner_id: number | null;
-  partner_name: string | null;
+  partner_branch_name: string | null;
+  partner_branch_city?: string | null;
+  partner_branch_province?: string | null;
+  partner_province?: string | null;
+  partner_city?: string | null;
   partner_branch_id?: number | string | null;
   segment_id: number | null;
+  segment_name?: string | null;
   segment_detail_id: number | null;
+  segment_detail_name?: string | null;
   sub_segment_detail_id: number | null;
+  sub_segment_detail_name?: string | null;
+  segment_option_id?: number | null;
+  segment_option_name?: string | null;
+  booking_type?: string | null;
+  type_order?: string | null;
+  customer_phone?: string | null;
+  customer_province?: string | null;
+  customer_city?: string | null;
   invoice_date: string | null;
   arrival_date: string | null;
   due_date: string | null;
   status?: string | null;
   notes: string | null;
   total_amount: string | number;
+  paid_amount?: string | number | null;
+  remaining_amount?: string | number | null;
   payments?: InvoicePayment[];
   items?: InvoiceDetailItem[];
 };
