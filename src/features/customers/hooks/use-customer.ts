@@ -9,23 +9,40 @@ import type {
 
 const DEFAULT_ITEM_PER_PAGE = 25;
 
-const useCustomer = (segmentId?: number | null) => {
+type UseCustomerOptions = {
+  segmentId?: number | null;
+  is_active?: boolean;
+};
+
+const useCustomer = (
+  options?: number | null | UseCustomerOptions,
+) => {
+  const segmentId =
+    typeof options === "number"
+      ? options
+      : options && typeof options === "object"
+        ? options.segmentId
+        : null;
+  const activeFilter =
+    options && typeof options === "object" && options.is_active
+      ? "1"
+      : "";
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [dataCustomer, setDataCustomer] = useState<CustomerRecord[]>([]);
   const [searchData, setSearchData] = useState("");
 
-const [filterData, setFilterData] = useState<CustomerFilters>({
-  filter: {
-    segment_id: segmentId ? String(segmentId) : "",
-    segment_detail_id: "",
-    province_name: "",
-    city_name: "",
-    status: "",
-    is_active: "",
-  },
-});
+  const [filterData, setFilterData] = useState<CustomerFilters>({
+    filter: {
+      segment_id: segmentId ? String(segmentId) : "",
+      segment_detail_id: "",
+      province_name: "",
+      city_name: "",
+      status: "",
+      is_active: activeFilter,
+    },
+  });
 
   const [itemPerPage, setItemPerPage] = useState(DEFAULT_ITEM_PER_PAGE);
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,6 +97,10 @@ const [filterData, setFilterData] = useState<CustomerFilters>({
 
           ...(filterData.filter.city_name && {
             "filter[city_name]": filterData.filter.city_name,
+          }),
+
+          ...(filterData.filter.is_active && {
+            "filter[is_active]": filterData.filter.is_active,
           }),
         };
 

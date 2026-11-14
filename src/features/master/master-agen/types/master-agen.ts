@@ -81,6 +81,7 @@ export type OptionAgent = {
   partner_id: string;
   partner_branch_id: string | null;
   type: string;
+  is_active?: boolean;
 };
 
 export type AgentDetail = {
@@ -121,6 +122,7 @@ export type GetAgentParams = {
 
 export type GetOptionAgentParams = {
   "filter[search]"?: string;
+  "filter[is_active]"?: string;
 };
 
 export type AgentResponse = {

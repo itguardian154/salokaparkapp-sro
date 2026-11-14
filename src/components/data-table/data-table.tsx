@@ -9,6 +9,7 @@ interface DataTableProps<TData extends RowData> {
   loading?: boolean;
   header?: React.ReactNode;
   cellClassName?: string;
+  containerClassName?: string;
 }
 
 const DataTable = <TData extends RowData,>({
@@ -16,12 +17,15 @@ const DataTable = <TData extends RowData,>({
   loading = false,
   header,
   cellClassName = "",
+  containerClassName = "",
 }: DataTableProps<TData>) => {
   const rows = table.getRowModel().rows;
   const columnCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div className="w-full bg-white dark:bg-slate-800 overflow-x-auto">
+    <div
+      className={`w-full overflow-x-auto bg-white dark:bg-slate-800 ${containerClassName}`}
+    >
       <table className="w-full border-collapse border-gray-300 dark:border-gray-600">
         {header ? (
           header

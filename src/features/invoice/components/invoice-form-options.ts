@@ -44,7 +44,7 @@ export const educationStatusOptions: InvoiceSearchOption[] = [
   { value: "swasta", label: "Swasta" },
 ];
 
-export const groupNumberOptions: InvoiceSearchOption[] = Array.from(
+export const customerGroupNumberOptions: InvoiceSearchOption[] = Array.from(
   { length: 999 },
   (_, index) => {
     const value = String(index + 1);
@@ -68,7 +68,7 @@ export const buildEducationGroupName = (
   [
     educationLevelOptions.find((option) => option.value === level)?.label,
     educationStatusOptions.find((option) => option.value === status)?.label,
-    groupNumberOptions.find((option) => option.value === number)?.label,
+    customerGroupNumberOptions.find((option) => option.value === number)?.label,
   ]
     .filter(Boolean)
     .join(" ");

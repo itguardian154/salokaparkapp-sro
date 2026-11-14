@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getInvoice } from "../service/invoice-service";
 import type { InvoiceDetail } from "../types/invoice";
 import { getInvoiceErrorMessage } from "../utils/invoice-error";
@@ -7,6 +7,11 @@ const useInvoiceDetail = (id?: string) => {
   const [data, setData] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(Boolean(id));
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -32,11 +37,11 @@ const useInvoiceDetail = (id?: string) => {
       });
 
     return () => controller.abort();
-  }, [id]);
+  }, [id, refreshKey]);
 
   const invoice = data?.id === Number(id) ? data : null;
 
-  return { invoice, loading, error };
+  return { invoice, loading, error, refetch };
 };
 
 export default useInvoiceDetail;

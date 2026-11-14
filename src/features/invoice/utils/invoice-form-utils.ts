@@ -13,18 +13,18 @@ export type InvoiceFormData = {
   invoiceSegment: string;
   invoiceSegmentName: string;
   travelAgent: string;
-  businessField: string;
-  businessType: string;
-  jenisGroup: string;
-  jenjang: string;
-  statusGroup: string;
-  nomorGroup: string;
-  customGroupTag: string;
-  groupTagOrder: string[];
-  groupName: string;
+  customerBusinessFieldId: string;
+  customerBusinessTypeId: string;
+  customerGroupTypeId: string;
+  customerEducationLevelId: string;
+  customerGroupStatusId: string;
+  customerGroupNumber: string;
+  customCustomerGroupTag: string;
+  customerGroupTagOrder: string[];
+  customerGroupName: string;
   customerId: number | null;
-  groupProvinceId: number | null;
-  groupCityId: number | null;
+  customerProvinceId: number | null;
+  customerCityId: number | null;
   arrivalDate: Date | undefined;
   customerName: string;
   customerContact: string;
@@ -47,18 +47,18 @@ export const createInitialInvoiceFormData = (): InvoiceFormData => ({
   invoiceSegment: "",
   invoiceSegmentName: "",
   travelAgent: "",
-  businessField: "",
-  businessType: "",
-  jenisGroup: "",
-  jenjang: "",
-  statusGroup: "",
-  nomorGroup: "",
-  customGroupTag: "",
-  groupTagOrder: [],
-  groupName: "",
+  customerBusinessFieldId: "",
+  customerBusinessTypeId: "",
+  customerGroupTypeId: "",
+  customerEducationLevelId: "",
+  customerGroupStatusId: "",
+  customerGroupNumber: "",
+  customCustomerGroupTag: "",
+  customerGroupTagOrder: [],
+  customerGroupName: "",
   customerId: null,
-  groupProvinceId: null,
-  groupCityId: null,
+  customerProvinceId: null,
+  customerCityId: null,
   arrivalDate: undefined,
   customerName: "",
   customerContact: "",

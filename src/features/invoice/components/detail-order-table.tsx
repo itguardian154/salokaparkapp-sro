@@ -9,10 +9,26 @@ import type { InvoiceOrder } from "../types/invoice-order";
 
 type DetailOrderTableProps = {
   data: InvoiceOrder[];
+  onEdit: (order: InvoiceOrder) => void;
+  onDelete: (order: InvoiceOrder) => void;
+  actionsDisabled?: boolean;
 };
 
-export default function DetailOrderTable({ data }: DetailOrderTableProps) {
-  const columns = useMemo(() => getInvoiceOrderColumns(), []);
+export default function DetailOrderTable({
+  data,
+  onEdit,
+  onDelete,
+  actionsDisabled = false,
+}: DetailOrderTableProps) {
+  const columns = useMemo(
+    () =>
+      getInvoiceOrderColumns({
+        onEdit,
+        onDelete,
+        disabled: actionsDisabled,
+      }),
+    [actionsDisabled, onDelete, onEdit],
+  );
   const table = useTable({
     features: dataTableFeatures,
     data,

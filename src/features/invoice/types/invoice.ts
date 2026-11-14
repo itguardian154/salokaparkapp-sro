@@ -11,6 +11,8 @@ export type InvoiceRecord = {
   revenue: number;
   status: InvoiceStatus;
   status_value: string;
+  payment_status: string;
+  partner_name: string;
 };
 
 // API shapes used by the invoice list endpoint.
@@ -24,11 +26,12 @@ export type InvoiceApiRecord = {
   customer_name: string | null;
   sales_person_name: string | null;
   segment_name: string | null;
-  partner_branch_name: string | null;
+  partner_name: string | null;
   arrival_date: string | null;
   total_amount: string | number;
   status: string;
   status_label: string;
+  payment_status: string;
   items?: InvoiceApiItem[];
 };
 
@@ -79,6 +82,19 @@ export type InvoicePayment = {
   proof_of_payment: string | null;
 };
 
+export type InvoiceApprovalRecord = {
+  id: number;
+  action: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  employee_name: string;
+  department?: string | null;
+  sub_department?: string | null;
+  grade?: string | null;
+  position?: string | null;
+  created_at: string;
+};
+
 export type InvoicePaymentForm = {
   paymentDate: Date | undefined;
   paymentType: string;
@@ -102,7 +118,7 @@ export type InvoiceDetail = {
   sales_person_id: string | null;
   sales_person_name: string | null;
   partner_id: number | null;
-  partner_branch_name: string | null;
+  partner_name: string | null;
   partner_branch_city?: string | null;
   partner_branch_province?: string | null;
   partner_province?: string | null;
@@ -125,11 +141,14 @@ export type InvoiceDetail = {
   arrival_date: string | null;
   due_date: string | null;
   status?: string | null;
+  status_label?: string | null;
+  payment_status?: string | null;
   notes: string | null;
   total_amount: string | number;
   paid_amount?: string | number | null;
   remaining_amount?: string | number | null;
   payments?: InvoicePayment[];
+  approvals?: InvoiceApprovalRecord[];
   items?: InvoiceDetailItem[];
 };
 

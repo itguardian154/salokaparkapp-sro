@@ -5,7 +5,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { NavLink } from "react-router-dom";
 import { formatRupiah } from "@/lib/utils";
 
-export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, InvoiceRecord, unknown>[] {
+export function getInvoiceColumns(): ColumnDef<
+  typeof dataTableFeatures,
+  InvoiceRecord,
+  unknown
+>[] {
   return [
     {
       id: "no",
@@ -27,18 +31,46 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
     {
       accessorKey: "sales",
       header: "Sales",
-    },
-      {
-      accessorKey: "segment_name",
-      header: "Segmen",
+      cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{row.original.sales ?? "-"}</span>
+          </div>
+        );
+      },
     },
     {
-      accessorKey: "partner_branch_name",
+      accessorKey: "segment_name",
+      header: "Segmen",
+      cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{row.original.segment_name ?? "-"}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "partner_name",
       header: "Travel",
+      cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{row.original.partner_name ?? "-"}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "customer_name",
       header: "Group",
+      cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{row.original.customer_name ?? "-"}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "kedatangan",
@@ -51,22 +83,47 @@ export function getInvoiceColumns(): ColumnDef<typeof dataTableFeatures, Invoice
     {
       accessorKey: "revenue",
       header: "Revenue",
-      cell: ({ row }) => formatRupiah(row.original.revenue),
+      cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{formatRupiah(row.original.revenue)}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
         const variant =
-          row.original.status_value === "partially_paid"
+          row.original.status_value === "waiting_sales_spv_or_manager"
             ? "amber"
-            : row.original.status_value === "paid"
+            : row.original.status_value === "waiting_finance"
+              ? "blue"
+              : "muted";
+
+        return (
+          <div className="flex justify-end lg:justify-center min-w-[180px]">
+            <Badge variant={variant}>{row.original.status}</Badge>
+          </div>
+        );
+      },
+    },
+
+    {
+      accessorKey: "payment_status",
+      header: "Status Pembayaran",
+      cell: ({ row }) => {
+        const variant =
+          row.original.payment_status === "partially_paid"
+            ? "amber"
+            : row.original.payment_status === "paid"
               ? "success"
               : "muted";
 
         return (
           <div className="flex justify-end lg:justify-center">
-            <Badge variant={variant}>{row.original.status}</Badge>
+            <Badge variant={variant}>{row.original.payment_status}</Badge>
           </div>
         );
       },

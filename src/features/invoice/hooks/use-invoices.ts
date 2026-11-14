@@ -41,7 +41,7 @@ const useInvoices = () => {
           sales: invoice.sales_person_name ?? "-",
           segment_name: invoice.segment_name ?? "-",
           customer_name: invoice.customer_name ?? "-",
-          partner_branch_name: invoice.partner_branch_name ?? "-",
+          partner_name: invoice.partner_name ?? "-",
           kedatangan: formatTanggal(invoice.arrival_date),
           ticket: (invoice.items ?? []).reduce(
             (total, item) => total + Number(item.quantity || 0),
@@ -50,6 +50,7 @@ const useInvoices = () => {
           revenue: Number(invoice.total_amount) || 0,
           status: invoice.status_label || invoice.status,
           status_value: invoice.status,
+          payment_status: invoice.payment_status,
         }));
 
         setDataInvoices(invoices);

@@ -13,12 +13,14 @@ type UseOptionAgentOptions = {
   label?: string;
   province_name?: string;
   city_name?: string;
+  is_active?: boolean;
 };
 
 export const useOptionAgent = ({
   label,
   province_name,
   city_name,
+  is_active,
 }: UseOptionAgentOptions = {}) => {
   const [optionAgents, setOptionAgents] = useState<OptionAgent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,8 +41,11 @@ export const useOptionAgent = ({
 
       try {
         const params: GetOptionAgentParams = {
+          ...(is_active !== undefined && {
+            "filter[is_active]": is_active ? "1" : "0",
+          }),
           ...(search.trim() && {
-            "filter[search]": search.trim(),
+            "search": search.trim(),
           }),
 
         };
@@ -70,7 +75,7 @@ export const useOptionAgent = ({
         }
       }
     },
-    [search, page, perPage, label, province_name, city_name],
+    [search, page, perPage, label, province_name, city_name, is_active],
   );
 
   useEffect(() => {

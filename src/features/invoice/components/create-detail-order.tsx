@@ -8,7 +8,7 @@ import useMasterProduk from "@/features/master/master-produk/hooks/use-master-pr
 import type { ProdukRecord } from "@/features/master/master-produk/types/master-produk";
 import type { InvoiceOrder } from "../types/invoice-order";
 import { formatRupiah } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa6";
 
@@ -16,12 +16,19 @@ type CreateDetailInvoiceProps = {
   open: boolean;
   onClose: () => void;
   onSave: (order: Omit<InvoiceOrder, "id">) => void;
+  initialValue?: InvoiceOrder | null;
 };
+
+type SelectedProduct = Pick<
+  ProdukRecord,
+  "id" | "name" | "description" | "is_ticket" | "price"
+>;
 
 export default function CreateDetailInvoice({
   open,
   onClose,
   onSave,
+  initialValue = null,
 }: CreateDetailInvoiceProps) {
   const {
     dataMasterProduk,
@@ -32,7 +39,7 @@ export default function CreateDetailInvoice({
   } = useMasterProduk();
 
   const [openProduk, setOpenProduk] = useState(false);
-  const [selectedProduk, setSelectedProduk] = useState<ProdukRecord | null>(
+  const [selectedProduk, setSelectedProduk] = useState<SelectedProduct | null>(
     null,
   );
   const [quantity, setQuantity] = useState("");
@@ -52,6 +59,29 @@ export default function CreateDetailInvoice({
     0,
     quantityAmount * (unitPriceAmount - discountAmount),
   );
+
+  useEffect(() => {
+    if (!open) return;
+
+    setSelectedProduk(
+      initialValue
+        ? {
+            id: initialValue.productId,
+            name: initialValue.product,
+            description: initialValue.description,
+            is_ticket: initialValue.isTicket,
+            price: String(initialValue.unitPrice),
+          }
+        : null,
+    );
+    setQuantity(initialValue ? String(initialValue.quantity) : "");
+    setComplimentary(
+      initialValue ? String(initialValue.compliment ?? 0) : "0",
+    );
+    setUnitPrice(initialValue ? String(initialValue.unitPrice) : "");
+    setDiscountPrice(initialValue ? String(initialValue.discountPrice) : "");
+    setErrors({});
+  }, [initialValue, open]);
 
   const resetForm = () => {
     setOpenProduk(false);
@@ -102,7 +132,7 @@ export default function CreateDetailInvoice({
     <AppModal
       open={open}
       onClose={handleClose}
-      title="Tambah Detail Pesanan"
+      title={initialValue ? "Ubah Detail Pesanan" : "Tambah Detail Pesanan"}
       icon={<FaPlus />}
       footer={
         <div className="flex justify-end gap-3">
@@ -216,11 +246,12 @@ export default function CreateDetailInvoice({
           <Field>
             <FieldLabel>Harga Satuan</FieldLabel>
             <Input
-              type="number"
-              min={0}
-              step={1}
+              type="text"
+              inputMode="numeric"
               value={unitPrice ? formatRupiah(Number(unitPrice), false) : ""}
-              onChange={(event) => setUnitPrice(event.target.value)}
+              onChange={(event) =>
+                setUnitPrice(event.target.value.replace(/\D/g, ""))
+              }
               placeholder="Otomatis dari produk"
               readOnly={selectedProduk?.is_ticket === true}
               disabled={!selectedProduk || selectedProduk?.is_ticket === true}

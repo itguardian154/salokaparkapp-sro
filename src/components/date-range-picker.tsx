@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-type DateRangePickerProps =
+type DateRangePickerProps = (
   | {
       mode?: "range";
       value: DateRange | undefined;
@@ -18,7 +18,8 @@ type DateRangePickerProps =
       mode: "single";
       value: Date | undefined;
       onChange: (value: Date | undefined) => void;
-    };
+    }
+  ) & { disabled?: boolean };
 
 const calendarClassNames = {
   root: "p-1 text-slate-700 dark:text-slate-200",
@@ -64,10 +65,16 @@ export default function DateRangePicker(props: DateRangePickerProps) {
         : "DD-MM-YYYY ~ DD-MM-YYYY";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={props.disabled ? false : open}
+      onOpenChange={(nextOpen) => {
+        if (!props.disabled) setOpen(nextOpen);
+      }}
+    >
       <PopoverTrigger
         type="button"
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+        disabled={props.disabled}
+        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
       >
         <span
           className={
