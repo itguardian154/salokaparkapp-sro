@@ -14,12 +14,9 @@ import {
   Users,
   CalendarDays,
   Building2,
-  CircleCheck,
-  CircleX,
   Plus,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -42,6 +39,10 @@ import type {
   InvoiceApiRecord,
 } from "@/features/invoice/types/invoice";
 
+import DetailOrderTable from "@/features/invoice/components/detail-order-table";
+
+import type { InvoiceOrder } from "@/features/invoice/types/invoice-order";
+
 import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 
 import {
@@ -63,6 +64,7 @@ import {
 } from "@/components/ui/select";
 
 import CreateEventOrderModal from "./create-event-order";
+import { FaPen } from "react-icons/fa6";
 
 type EventOrderForm = CreateReservasiEventOrder;
 
@@ -158,6 +160,30 @@ const getEventOrderStatus = (
 };
 
 // ==============================
+// MAPPING DETAIL PESANAN
+// ==============================
+
+const mapInvoiceItemsToOrders = (
+  items: NonNullable<InvoiceDetail["items"]>,
+): InvoiceOrder[] =>
+  items.map((item) => ({
+    id: item.id,
+    productId: item.product_id ?? 0,
+    product: item.product_name,
+    description: item.product_description ?? "",
+    quantity: Number(item.quantity) || 0,
+    compliment:
+      item.bonus_quantity !== null &&
+        item.bonus_quantity !== undefined
+        ? Number(item.bonus_quantity)
+        : null,
+    unitPrice: Number(item.unit_price) || 0,
+    isTicket: Boolean(item.is_ticket),
+    discountPrice: Number(item.discount_amount) || 0,
+    subtotal: Number(item.subtotal) || 0,
+  }));
+
+// ==============================
 // MAIN COMPONENT
 // ==============================
 
@@ -225,6 +251,14 @@ export default function CreateReservasi() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // ==============================
+  // DETAIL PESANAN
+  // ==============================
+
+  const detailPesanan = selectedInvoice
+    ? mapInvoiceItemsToOrders(selectedInvoice.items ?? [])
+    : [];
 
   // ==============================
   // LOAD INVOICE
@@ -311,11 +345,9 @@ export default function CreateReservasi() {
 
           meal_voucher: item.meal_voucher ?? null,
           voucher_tour_leader: item.voucher_tour_leader ?? null,
-          shopping_voucher:
-            item.shopping_voucher != null
-              ? [item.shopping_voucher]
-              : [],
-
+          shopping_voucher: Array.isArray(item.shopping_voucher)
+            ? item.shopping_voucher
+            : [],
           product_id: item.product_id ?? null,
           quantity: item.quantity ?? null,
           unit_price: item.unit_price ?? null,
@@ -366,7 +398,6 @@ export default function CreateReservasi() {
   ): Promise<void> => {
     setEventOrders((prev) => [...prev, payload]);
 
-
     setOpenCreateEventOrder(false);
     setEditingEventOrderIndex(null);
   };
@@ -382,8 +413,6 @@ export default function CreateReservasi() {
         index === editingEventOrderIndex ? payload : item
       )
     );
-
-
 
     setOpenCreateEventOrder(false);
     setEditingEventOrderIndex(null);
@@ -518,7 +547,7 @@ export default function CreateReservasi() {
       )}
 
       {successMessage && (
-        <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-300">
           {successMessage}
         </div>
       )}
@@ -645,64 +674,79 @@ export default function CreateReservasi() {
                 {hasValue(selectedInvoice.invoice_number) && (
                   <InfoItem label="Nomor Invoice" value={selectedInvoice.invoice_number} />
                 )}
+
                 {hasValue(selectedInvoice.invoice_date) && (
                   <InfoItem label="Tanggal Invoice" value={selectedInvoice.invoice_date} />
                 )}
+
                 {hasValue(selectedInvoice.booking_type) && (
                   <InfoItem label="Jenis Pemesanan" value={selectedInvoice.booking_type} />
-                )}
-                {hasValue(selectedInvoice.notes) && (
-                  <InfoItem label="Catatan" value={selectedInvoice.notes} />
                 )}
 
                 {hasValue(selectedInvoice.customer_name) && (
                   <InfoItem label="Nama Pelanggan" value={selectedInvoice.customer_name} />
                 )}
+
                 {hasValue(selectedInvoice.customer_address) && (
                   <InfoItem label="Alamat Pelanggan" value={selectedInvoice.customer_address} />
                 )}
+
                 {hasValue(selectedInvoice.customer_city) && (
                   <InfoItem label="Kota Pelanggan" value={selectedInvoice.customer_city} />
                 )}
+
                 {hasValue(selectedInvoice.customer_province) && (
                   <InfoItem label="Provinsi Pelanggan" value={selectedInvoice.customer_province} />
                 )}
+
                 {hasValue(selectedInvoice.customer_phone) && (
                   <InfoItem label="Nomor Telepon Pelanggan" value={selectedInvoice.customer_phone} />
                 )}
+
                 {hasValue(selectedInvoice.customer_contact_person) && (
                   <InfoItem label="PIC Pelanggan" value={selectedInvoice.customer_contact_person} />
                 )}
+
                 {hasValue(selectedInvoice.partner_name) && (
                   <InfoItem label="Nama Group" value={selectedInvoice.partner_name} />
                 )}
+
                 {hasValue(selectedInvoice.partner_association_name) && (
                   <InfoItem label="Asosiasi" value={selectedInvoice.partner_association_name} />
                 )}
+
                 {hasValue(selectedInvoice.partner_city) && (
                   <InfoItem label="Kota Group" value={selectedInvoice.partner_city} />
                 )}
+
                 {hasValue(selectedInvoice.partner_province) && (
                   <InfoItem label="Provinsi Group" value={selectedInvoice.partner_province} />
                 )}
+
                 {hasValue(selectedInvoice.partner_phone) && (
                   <InfoItem label="Nomor Telepon Group" value={selectedInvoice.partner_phone} />
                 )}
+
                 {hasValue(selectedInvoice.partner_contact_person) && (
                   <InfoItem label="PIC Group" value={selectedInvoice.partner_contact_person} />
                 )}
+
                 {hasValue(selectedInvoice.partner_branch_name) && (
                   <InfoItem label="Nama Cabang" value={selectedInvoice.partner_branch_name} />
                 )}
+
                 {hasValue(selectedInvoice.partner_branch_city) && (
                   <InfoItem label="Kota Cabang" value={selectedInvoice.partner_branch_city} />
                 )}
+
                 {hasValue(selectedInvoice.partner_branch_province) && (
                   <InfoItem label="Provinsi Cabang" value={selectedInvoice.partner_branch_province} />
                 )}
+
                 {hasValue(selectedInvoice.partner_branch_phone) && (
                   <InfoItem label="Nomor Telepon Cabang" value={selectedInvoice.partner_branch_phone} />
                 )}
+
                 {hasValue(selectedInvoice.partner_branch_contact_person) && (
                   <InfoItem label="PIC Cabang" value={selectedInvoice.partner_branch_contact_person} />
                 )}
@@ -710,18 +754,23 @@ export default function CreateReservasi() {
                 {hasValue(selectedInvoice.sales_person_name) && (
                   <InfoItem label="Nama Sales" value={selectedInvoice.sales_person_name} />
                 )}
+
                 {hasValue(selectedInvoice.arrival_date) && (
                   <InfoItem label="Tanggal Kedatangan" value={selectedInvoice.arrival_date} />
                 )}
+
                 {hasValue(selectedInvoice.segment_name) && (
                   <InfoItem label="Segmen" value={selectedInvoice.segment_name} />
                 )}
+
                 {hasValue(selectedInvoice.segment_detail_name) && (
                   <InfoItem label="Detail Segmen" value={selectedInvoice.segment_detail_name} />
                 )}
+
                 {hasValue(selectedInvoice.sub_segment_detail_name) && (
                   <InfoItem label="Sub Segmen" value={selectedInvoice.sub_segment_detail_name} />
                 )}
+
                 {hasValue(selectedInvoice.segment_option_name) && (
                   <InfoItem label="Pilihan Segmen" value={selectedInvoice.segment_option_name} />
                 )}
@@ -739,6 +788,21 @@ export default function CreateReservasi() {
                   />
                 </div>
               )}
+            </div>
+          </DetailSection>
+
+          {/* DETAIL PESANAN */}
+
+          <DetailSection
+            icon={FaFileInvoice}
+            title="Detail Pesanan"
+            variant="blue"
+          >
+            <div className="p-5">
+              <DetailOrderTable
+                data={detailPesanan}
+                hideActions
+              />
             </div>
           </DetailSection>
 
@@ -850,16 +914,26 @@ export default function CreateReservasi() {
               )}
 
               {eventOrders.map((item, index) => {
+                const isIR = String(item.department_id) === "DP005";
+                const isFinance = String(item.department_id) === "DP013";
+
                 const status = getEventOrderStatus(
                   item.status,
                   item.status_label,
                 );
+
+                const shoppingVoucher = Array.isArray(item.shopping_voucher)
+                  ? item.shopping_voucher.length > 0
+                    ? item.shopping_voucher.join(", ")
+                    : "-"
+                  : item.shopping_voucher ?? "-";
 
                 return (
                   <div
                     key={index}
                     className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
                   >
+                    {/* HEADER */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/30">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
@@ -875,130 +949,120 @@ export default function CreateReservasi() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            status.positive ? "success" : "secondary"
-                          }
-                          className="shrink-0 gap-1.5 px-2.5 py-1"
-                        >
-                          {status.positive ? (
-                            <CircleCheck size={13} />
-                          ) : (
-                            <CircleX size={13} />
-                          )}
-
-                          {status.label}
-                        </Badge>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditEventOrder(index)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditEventOrder(index)}
+                        title="Edit"
+                        className="border-orange-300 text-orange-500 hover:bg-orange-50 hover:text-orange-600 dark:border-orange-500/40 dark:hover:bg-orange-500/10"
+                      >
+                        <FaPen className="h-4 w-4" />
+                      </Button>
                     </div>
 
-                    {/* INFORMASI EVENT ORDER */}
-
+                    {/* DETAIL */}
                     <div className="space-y-4 p-4">
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {hasValue(item.product_id) && (
-                          <InfoItem label="ID Produk" value={item.product_id} />
-                        )}
 
-                        {hasValue(item.quantity) && (
-                          <InfoItem label="Jumlah" value={item.quantity} />
-                        )}
+                      {/* IR */}
+                      {isIR && (
+                        <>
+                          <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                            <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                              Food & Beverage
+                            </h4>
 
-                        {hasValue(item.unit_price) && (
-                          <InfoItem label="Harga Satuan" value={item.unit_price} />
-                        )}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              <InfoItem label="Paket" value={item.product_description} />
+                              <InfoItem label="Penyajian" value={item.serving_type} />
+                              <InfoItem label="Jumlah Pax" value={item.quantity} />
+                              <InfoItem label="Jam Penyajian" value={item.serving_time} />
+                              <InfoItem label="Harga" value={item.unit_price} />
+                              <InfoItem label="Tempat Penyajian" value={item.serving_location} />
+                              <InfoItem label="Detail Menu" value={item.product_description} />
+                            </div>
+                          </div>
 
-                        {hasValue(item.total_price) && (
-                          <InfoItem label="Total Harga" value={item.total_price} />
-                        )}
+                          <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                            <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                              Retail & Merchandise
+                            </h4>
 
-                        {hasValue(item.meal_voucher) && (
-                          <InfoItem label="Voucher Makan" value={item.meal_voucher} />
-                        )}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              <InfoItem label="Nama Barang" value={item.product_description} />
+                              <InfoItem label="Jumlah" value={item.quantity} />
+                              <InfoItem label="Harga" value={item.unit_price} />
+                            </div>
+                          </div>
+                        </>
+                      )}
 
-                        {hasValue(item.voucher_tour_leader) && (
-                          <InfoItem
-                            label="Voucher Tour Leader"
-                            value={item.voucher_tour_leader}
-                          />
-                        )}
-
-                        {hasValue(item.shopping_voucher) && (
-                          <InfoItem
-                            label="Voucher Belanja"
-                            value={item.shopping_voucher}
-                          />
-                        )}
-
-                        {hasValue(item.sub_department_name) && (
-                          <InfoItem
-                            label="Sub Departemen"
-                            value={item.sub_department_name}
-                          />
-                        )}
-
-                        {hasValue(item.location_detail) && (
-                          <InfoItem label="Detail Lokasi" value={item.location_detail} />
-                        )}
-
-                        {hasValue(item.product_code) && (
-                          <InfoItem label="Kode Produk" value={item.product_code} />
-                        )}
-
-                        {hasValue(item.product_description) && (
-                          <InfoItem
-                            label="Deskripsi Produk"
-                            value={item.product_description}
-                          />
-                        )}
-
-                        {hasValue(item.ticket_print_date) && (
-                          <InfoItem
-                            label="Tanggal Cetak Tiket"
-                            value={item.ticket_print_date}
-                          />
-                        )}
-
-                        {hasValue(item.serving_time) && (
-                          <InfoItem label="Waktu Penyajian" value={item.serving_time} />
-                        )}
-
-                        {hasValue(item.serving_location) && (
-                          <InfoItem
-                            label="Lokasi Penyajian"
-                            value={item.serving_location}
-                          />
-                        )}
-
-                        {hasValue(item.serving_type) && (
-                          <InfoItem
-                            label="Jenis Penyajian"
-                            value={item.serving_type}
-                          />
-                        )}
-
-                        {hasValue(item.start_at) && (
-                          <InfoItem label="Waktu Mulai" value={item.start_at} />
-                        )}
-
-                        {hasValue(item.end_at) && (
-                          <InfoItem label="Waktu Selesai" value={item.end_at} />
-                        )}
-                      </div>
-
-                      {hasValue(item.description) && (
+                      {/* FINANCE */}
+                      {isFinance && (
                         <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                          <InfoItem label="Deskripsi" value={item.description} />
+
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <InfoItem
+                              label="Tanggal Cetak Tiket"
+                              value={item.ticket_print_date}
+                            />
+
+                            <InfoItem
+                              label="Kupon Makan"
+                              value={item.meal_voucher}
+                            />
+
+                            <InfoItem
+                              label="Kupon Belanja"
+                              value={
+                                item.shopping_voucher?.length > 0 ? (
+                                  <div className="flex flex-col gap-1">
+                                    {item.shopping_voucher.map((voucher, index) => (
+                                      <div key={index}>
+                                        {index + 1}. {voucher.name} ({voucher.quantity} x Rp
+                                        {Number(voucher.pecahan).toLocaleString("id-ID")})
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  "-"
+                                )
+                              }
+                            />
+
+                            <InfoItem
+                              label="Voucher Tour Leader"
+                              value={item.voucher_tour_leader}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* DEPARTEMEN LAINNYA */}
+                      {!isIR && !isFinance && (
+                        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                          <InfoItem
+                            label="Desc Request"
+                            value={
+                              <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
+                                "{item.description}"
+                              </p>
+                            }
+                          />
+                        </div>
+                      )}
+
+                      {/* DESKRIPSI TAMBAHAN IR DAN FINANCE */}
+                      {(isIR || isFinance) && hasValue(item.description) && (
+                        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                          <InfoItem
+                            label="Desc Request"
+                            value={
+                              <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
+                                "{item.description}"
+                              </p>
+                            }
+                          />
                         </div>
                       )}
                     </div>

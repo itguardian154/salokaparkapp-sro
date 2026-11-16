@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -9,6 +10,7 @@ import {
 } from "react-icons/fa";
 
 import {
+    AlertTriangle,
     Building2,
     CalendarDays,
     ClipboardList,
@@ -40,6 +42,12 @@ type ReservasiDetailView = ReservasiDetail & {
     segment_option_id?: number | null;
     segment_option_name?: string | null;
     total_ticket_count?: number | null;
+};
+
+type ShoppingVoucherView = {
+    name?: string | null;
+    quantity?: string | number | null;
+    pecahan?: string | number | null;
 };
 
 type EventOrderView = Record<string, unknown>;
@@ -232,6 +240,7 @@ const DetailReservasi = () => {
     // ==============================
     // DETAIL PESANAN
     // ==============================
+
     const invoiceOrderItems: InvoiceOrder[] = useMemo(() => {
         return ((detail?.items ?? []) as ReservasiItem[]).map((item) => ({
             id: item.id,
@@ -329,56 +338,179 @@ const DetailReservasi = () => {
             onClose={() => navigate("/reservation")}
             footer={<DetailActionFooter actions={actions} />}
         >
-            {/* ========================================= */}
             {/* INFORMASI RESERVASI */}
-            {/* ========================================= */}
 
             <DetailSection
                 icon={CalendarDays}
                 title="Informasi Reservasi"
                 variant="blue"
             >
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {/* Informasi Invoice dan Reservasi */}
-                    <InfoItem label="Nomor Sales Order" value={formatValue(detail.sales_order_number)} />
-                    <InfoItem label="Nomor Invoice" value={formatValue(detail.invoice_number)} />
-                    <InfoItem label="Tipe Booking" value={formatValue(detail.booking_type)} />
-                    <InfoItem label="Tanggal Sales Order" value={formatDate(detail.sales_order_date)} />
-                    <InfoItem label="Status Reservasi" value={
-                        <Badge variant="secondary">{detail.status_label || detail.status}</Badge>
-                    } />
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
 
-                    {/* Customer */}
-                    <InfoItem label="Nama Customer" value={formatValue(detail.customer_name)} />
-                    <InfoItem label="Alamat Customer" value={formatValue(detail.customer_address)} />
+                    {/* Informasi Reservasi - Kolom 1 sampai 3 */}
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+                        {hasValue(detail.sales_order_number) && (
+                            <InfoItem label="Nomor Sales Order" value={detail.sales_order_number} />
+                        )}
+                        {hasValue(detail.invoice_number) && (
+                            <InfoItem label="Nomor Invoice" value={detail.invoice_number} />
+                        )}
 
-                    {/* Partner */}
-                    <InfoItem label="Nama Partner" value={formatValue(detail.partner_name)} />
-                    <InfoItem label="Nama Cabang Partner" value={formatValue(detail.partner_branch_name)} />
 
-                    {/* Segment */}
-                    <InfoItem label="Segment" value={formatValue(detail.segment_name)} />
-                    <InfoItem label="Detail Segment" value={formatValue(detail.segment_detail_name)} />
-                    <InfoItem label="Sub Segment Detail" value={formatValue(detail.sub_segment_detail_name)} />
-                    <InfoItem label="Segment Option" value={formatValue(detail.segment_option_name)} />
+                        {hasValue(detail.booking_type) && (
+                            <InfoItem label="Jenis Pemesanan" value={detail.booking_type} />
+                        )}
 
-                    {/* Sales */}
-                    <InfoItem label="Nama Sales Person" value={formatValue(detail.sales_person_name)} />
-                    <InfoItem label="Dibuat Oleh" value={formatValue(detail.created_by_name)} />
+                        {hasValue(detail.customer_name) && (
+                            <InfoItem label="Nama Pelanggan" value={detail.customer_name} />
+                        )}
 
-                    {/* Kedatangan */}
-                    <InfoItem label="Tanggal Kedatangan" value={formatDate(detail.arrival_date)} />
-                    <InfoItem label="Access Tour Leader" value={formatValue(detail.access_tour_leader)} />
-                    <InfoItem label="Arrival Type" value={formatValue(detail.arrival_type)} />
-                    <InfoItem label="Arrival Time" value={formatTime(detail.arrival_time)} />
+                        {hasValue(detail.customer_address) && (
+                            <InfoItem label="Alamat Pelanggan" value={detail.customer_address} />
+                        )}
 
-                    {/* Metadata */}
-                    <InfoItem label="Catatan" value={formatValue(detail.notes)} />
+                        {hasValue(detail.customer_city) && (
+                            <InfoItem label="Kota Pelanggan" value={detail.customer_city} />
+                        )}
+
+                        {hasValue(detail.customer_province) && (
+                            <InfoItem label="Provinsi Pelanggan" value={detail.customer_province} />
+                        )}
+
+                        {hasValue(detail.customer_phone) && (
+                            <InfoItem label="Nomor Telepon Pelanggan" value={detail.customer_phone} />
+                        )}
+
+                        {hasValue(detail.customer_contact_person) && (
+                            <InfoItem label="PIC Pelanggan" value={detail.customer_contact_person} />
+                        )}
+
+                        {hasValue(detail.partner_name) && (
+                            <InfoItem label="Nama Group" value={detail.partner_name} />
+                        )}
+
+                        {hasValue(detail.partner_association_name) && (
+                            <InfoItem label="Asosiasi" value={detail.partner_association_name} />
+                        )}
+
+                        {hasValue(detail.partner_city) && (
+                            <InfoItem label="Kota Group" value={detail.partner_city} />
+                        )}
+
+                        {hasValue(detail.partner_province) && (
+                            <InfoItem label="Provinsi Group" value={detail.partner_province} />
+                        )}
+
+                        {hasValue(detail.partner_phone) && (
+                            <InfoItem label="Nomor Telepon Group" value={detail.partner_phone} />
+                        )}
+
+                        {hasValue(detail.partner_contact_person) && (
+                            <InfoItem label="PIC Group" value={detail.partner_contact_person} />
+                        )}
+
+                        {hasValue(detail.partner_branch_name) && (
+                            <InfoItem label="Nama Cabang" value={detail.partner_branch_name} />
+                        )}
+
+                        {hasValue(detail.partner_branch_city) && (
+                            <InfoItem label="Kota Cabang" value={detail.partner_branch_city} />
+                        )}
+
+                        {hasValue(detail.partner_branch_province) && (
+                            <InfoItem label="Provinsi Cabang" value={detail.partner_branch_province} />
+                        )}
+
+                        {hasValue(detail.partner_branch_phone) && (
+                            <InfoItem label="Nomor Telepon Cabang" value={detail.partner_branch_phone} />
+                        )}
+
+                        {hasValue(detail.partner_branch_contact_person) && (
+                            <InfoItem label="PIC Cabang" value={detail.partner_branch_contact_person} />
+                        )}
+
+                        {hasValue(detail.sales_person_name) && (
+                            <InfoItem label="Nama Sales" value={detail.sales_person_name} />
+                        )}
+
+                        {hasValue(detail.arrival_date) && (
+                            <InfoItem label="Tanggal Kedatangan" value={detail.arrival_date} />
+                        )}
+
+                        {hasValue(detail.segment_name) && (
+                            <InfoItem label="Segmen" value={detail.segment_name} />
+                        )}
+
+                        {hasValue(detail.segment_detail_name) && (
+                            <InfoItem label="Detail Segmen" value={detail.segment_detail_name} />
+                        )}
+
+                        {hasValue(detail.sub_segment_detail_name) && (
+                            <InfoItem label="Sub Segmen" value={detail.sub_segment_detail_name} />
+                        )}
+
+                        {hasValue(detail.segment_option_name) && (
+                            <InfoItem label="Pilihan Segmen" value={detail.segment_option_name} />
+                        )}
+                        {hasValue(detail.access_tour_leader) && (
+                            <InfoItem label="Akses Tour Leader" value={detail.access_tour_leader} />
+                        )}
+                    </div>
+
+                    {/* Informasi Kedatangan & Status - Kolom 4 */}
+                    {(hasValue(detail.arrival_type) ||
+                        hasValue(detail.arrival_time) ||
+                        hasValue(detail.status_label || detail.status)) && (
+                            <div className="flex flex-col gap-5 border-l border-slate-200 pl-5 dark:border-slate-700">
+                                {hasValue(detail.arrival_type) && (
+                                    <div>
+                                        <p className="mb-1 text-sm text-muted-foreground">
+                                            Tipe Kedatangan
+                                        </p>
+
+                                        {String(detail.arrival_type).toLowerCase() === "early" ? (
+                                            <Badge className="gap-1.5 border border-red-200 bg-red-50 text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                                EARLY - PERHATIAN
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary">
+                                                {String(detail.arrival_type).toUpperCase()}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                )}
+
+                                {hasValue(detail.arrival_time) && (
+                                    <InfoItem label="Jam Kedatangan" value={formatTime(detail.arrival_time)} />
+                                )}
+
+                                {hasValue(detail.status_label || detail.status) && (
+                                    <InfoItem
+                                        label="Status Reservasi"
+                                        value={detail.status_label || detail.status}
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                    {/* Deskripsi */}
+                    {hasValue(detail.notes) && (
+                        <div className="col-span-full mt-2 border-t border-slate-200 pt-5 dark:border-slate-700">
+                            <InfoItem
+                                label="Deskripsi"
+                                value={
+                                    <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
+                                        "{detail.notes}"
+                                    </p>
+                                }
+                            />
+                        </div>
+                    )}
                 </div>
             </DetailSection>
-            {/* ========================================= */}
+
             {/* DETAIL PESANAN */}
-            {/* ========================================= */}
 
             <DetailSection
                 icon={ClipboardList}
@@ -387,12 +519,10 @@ const DetailReservasi = () => {
             >
                 <div className="p-5">
                     {invoiceOrderItems.length > 0 ? (
-                        <div className="p-5">
-                            <DetailOrderTable
-                                data={invoiceOrderItems}
-                                hideActions
-                            />
-                        </div>
+                        <DetailOrderTable
+                            data={invoiceOrderItems}
+                            hideActions
+                        />
                     ) : (
                         <div className="rounded-lg border border-dashed p-8 text-center">
                             <ClipboardList
@@ -408,9 +538,7 @@ const DetailReservasi = () => {
                 </div>
             </DetailSection>
 
-            {/* ========================================= */}
             {/* EVENT ORDER */}
-            {/* ========================================= */}
 
             <DetailSection
                 icon={Building2}
@@ -419,183 +547,239 @@ const DetailReservasi = () => {
             >
                 <div className="space-y-4 p-5">
                     {eventOrders.length > 0 ? (
-                        eventOrders.map((event, index) => (
-                            <div
-                                key={
-                                    hasValue(event.id)
-                                        ? String(event.id)
-                                        : `event-order-${index}`
-                                }
-                                className="overflow-hidden rounded-xl border bg-card"
-                            >
-                                {/* Header Event Order */}
+                        eventOrders.map((event, index) => {
+                            const isIR = String(event.department_id) === "DP005";
+                            const isFinance = String(event.department_id) === "DP013";
 
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primer-60/10 text-primer-60">
-                                            <Building2 size={18} />
-                                        </div>
+                            const shoppingVouchers = Array.isArray(event.shopping_voucher)
+                                ? event.shopping_voucher as ShoppingVoucherView[]
+                                : [];
 
-                                        <div>
-                                            <p className="text-sm font-semibold">
-                                                {hasValue(event.department_name)
-                                                    ? String(event.department_name)
-                                                    : `Event Order ${index + 1}`}
-                                            </p>
+                            return (
+                                <div
+                                    key={
+                                        hasValue(event.id)
+                                            ? String(event.id)
+                                            : `event-order-${index}`
+                                    }
+                                    className="overflow-hidden rounded-xl border bg-card"
+                                >
+                                    {/* HEADER EVENT ORDER */}
 
-                                            {hasValue(event.department_id) && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    {String(event.department_id)}
+                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primer-60/10 text-primer-60">
+                                                <Building2 size={18} />
+                                            </div>
+
+                                            <div>
+                                                <p className="text-sm font-semibold">
+                                                    {hasValue(event.department_name)
+                                                        ? String(event.department_name)
+                                                        : `Event Order ${index + 1}`}
                                                 </p>
-                                            )}
+
+                                                {hasValue(event.department_id) && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {String(event.department_id)}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {hasValue(event.status_label) && (
+                                            <Badge variant="secondary">
+                                                {String(event.status_label)}
+                                            </Badge>
+                                        )}
                                     </div>
 
-                                    {hasValue(event.status_label) && (
-                                        <Badge variant="secondary">
-                                            {String(event.status_label)}
-                                        </Badge>
-                                    )}
+                                    {/* ISI EVENT ORDER */}
+
+                                    <div className="space-y-4 p-4">
+
+                                        {/* IR */}
+
+                                        {isIR && (
+                                            <>
+                                                {/* FOOD & BEVERAGE */}
+
+                                                <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                                                    <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                        Food & Beverage
+                                                    </h4>
+
+                                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                        <InfoItem
+                                                            label="Paket"
+                                                            value={formatValue(event.product_description)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Penyajian"
+                                                            value={formatValue(event.serving_type)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Jumlah Pax"
+                                                            value={formatValue(event.quantity)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Jam Penyajian"
+                                                            value={formatTime(event.serving_time)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Harga"
+                                                            value={hasValue(event.unit_price)
+                                                                ? formatCurrency(event.unit_price)
+                                                                : null}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Tempat Penyajian"
+                                                            value={formatValue(event.serving_location)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Detail Menu"
+                                                            value={formatValue(event.product_description)}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* RETAIL & MERCHANDISE */}
+
+                                                <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                                                    <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                        Retail & Merchandise
+                                                    </h4>
+
+                                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                        <InfoItem
+                                                            label="Nama Barang"
+                                                            value={formatValue(event.product_description)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Jumlah"
+                                                            value={formatValue(event.quantity)}
+                                                        />
+
+                                                        <InfoItem
+                                                            label="Harga"
+                                                            value={hasValue(event.unit_price)
+                                                                ? formatCurrency(event.unit_price)
+                                                                : null}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* FINANCE & ACCOUNTING */}
+
+                                        {isFinance && (
+                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                    <InfoItem
+                                                        label="Tanggal Cetak Tiket"
+                                                        value={formatDate(event.ticket_print_date)}
+                                                    />
+
+                                                    <InfoItem
+                                                        label="Kupon Makan"
+                                                        value={formatValue(event.meal_voucher)}
+                                                    />
+
+                                                    <InfoItem
+                                                        label="Voucher Tour Leader"
+                                                        value={formatValue(event.voucher_tour_leader)}
+                                                    />
+                                                </div>
+
+                                                {/* KUPON BELANJA */}
+
+                                                <div className="mt-5">
+                                                    <p className="mb-3 text-xs font-medium text-muted-foreground">
+                                                        Kupon Belanja
+                                                    </p>
+
+                                                    {shoppingVouchers.length > 0 ? (
+                                                        <div className="overflow-x-auto rounded-lg border">
+                                                            <table className="w-full min-w-[500px] text-sm">
+                                                                <thead className="bg-muted/50">
+                                                                    <tr>
+                                                                        <th className="px-4 py-3 text-left font-semibold">No</th>
+                                                                        <th className="px-4 py-3 text-left font-semibold">Nama Voucher</th>
+                                                                        <th className="px-4 py-3 text-left font-semibold">Jumlah</th>
+                                                                        <th className="px-4 py-3 text-left font-semibold">Pecahan</th>
+                                                                    </tr>
+                                                                </thead>
+
+                                                                <tbody>
+                                                                    {shoppingVouchers.map((voucher, voucherIndex) => (
+                                                                        <tr
+                                                                            key={voucherIndex}
+                                                                            className="border-t"
+                                                                        >
+                                                                            <td className="px-4 py-3">
+                                                                                {voucherIndex + 1}
+                                                                            </td>
+
+                                                                            <td className="px-4 py-3 font-medium">
+                                                                                {voucher.name || "-"}
+                                                                            </td>
+
+                                                                            <td className="px-4 py-3">
+                                                                                {voucher.quantity ?? "-"}
+                                                                            </td>
+
+                                                                            <td className="px-4 py-3">
+                                                                                {hasValue(voucher.pecahan)
+                                                                                    ? formatCurrency(voucher.pecahan)
+                                                                                    : "-"}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Tidak ada kupon belanja.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* DEPARTEMEN LAINNYA */}
+
+                                        {!isIR && !isFinance && (
+                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                                                <InfoItem
+                                                    label="Desc Request"
+                                                    value={formatValue(event.description)}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* DESC REQUEST IR DAN FINANCE */}
+
+                                        {(isIR || isFinance) && (
+                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+                                                <InfoItem
+                                                    label="Desc Request"
+                                                    value={formatValue(event.description)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-
-                                {/* Isi Event Order */}
-
-                                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    <InfoItem
-                                        label="ID Sub Department"
-                                        value={formatValue(event.sub_department_id)}
-                                    />
-
-                                    <InfoItem
-                                        label="Nama Sub Department"
-                                        value={formatValue(event.sub_department_name)}
-                                    />
-
-                                    <InfoItem
-                                        label="Product ID"
-                                        value={formatValue(event.product_id)}
-                                    />
-
-                                    <InfoItem
-                                        label="Product Code"
-                                        value={formatValue(event.product_code)}
-                                    />
-
-                                    <InfoItem
-                                        label="Product Description"
-                                        value={formatValue(event.product_description)}
-                                    />
-
-                                    <InfoItem
-                                        label="Quantity"
-                                        value={formatValue(event.quantity)}
-                                    />
-
-                                    <InfoItem
-                                        label="Unit Price"
-                                        value={
-                                            hasValue(event.unit_price)
-                                                ? formatCurrency(event.unit_price)
-                                                : null
-                                        }
-                                    />
-
-                                    <InfoItem
-                                        label="Total Price"
-                                        value={
-                                            hasValue(event.total_price)
-                                                ? formatCurrency(event.total_price)
-                                                : null
-                                        }
-                                    />
-
-                                    <InfoItem
-                                        label="Meal Voucher"
-                                        value={formatValue(event.meal_voucher)}
-                                    />
-
-                                    <InfoItem
-                                        label="Voucher Tour Leader"
-                                        value={formatValue(event.voucher_tour_leader)}
-                                    />
-
-                                    <InfoItem
-                                        label="Shopping Voucher"
-                                        value={formatValue(event.shopping_voucher)}
-                                    />
-
-                                    <InfoItem
-                                        label="Location ID"
-                                        value={formatValue(event.location_id)}
-                                    />
-
-                                    <InfoItem
-                                        label="Location Detail"
-                                        value={formatValue(event.location_detail)}
-                                    />
-
-                                    <InfoItem
-                                        label="Serving Time"
-                                        value={formatValue(event.serving_time)}
-                                    />
-
-                                    <InfoItem
-                                        label="Serving Location"
-                                        value={formatValue(event.serving_location)}
-                                    />
-
-                                    <InfoItem
-                                        label="Serving Type"
-                                        value={formatValue(event.serving_type)}
-                                    />
-
-                                    <InfoItem
-                                        label="Ticket Print Date"
-                                        value={formatDate(event.ticket_print_date)}
-                                    />
-
-                                    <InfoItem
-                                        label="Start At"
-                                        value={formatDateTime(event.start_at)}
-                                    />
-
-                                    <InfoItem
-                                        label="End At"
-                                        value={formatDateTime(event.end_at)}
-                                    />
-
-                                    <InfoItem
-                                        label="Diterima Oleh"
-                                        value={formatValue(event.received_by)}
-                                    />
-
-                                    <InfoItem
-                                        label="Diterima Pada"
-                                        value={formatDateTime(event.received_at)}
-                                    />
-
-                                    <InfoItem
-                                        label="Dibuat Oleh"
-                                        value={formatValue(event.created_by)}
-                                    />
-
-                                    <InfoItem
-                                        label="Dibuat Pada"
-                                        value={formatDateTime(event.created_at)}
-                                    />
-
-                                    <InfoItem
-                                        label="Diperbarui Pada"
-                                        value={formatDateTime(event.updated_at)}
-                                    />
-
-                                    <InfoItem
-                                        label="Deskripsi"
-                                        value={formatValue(event.description)}
-                                    />
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="rounded-lg border border-dashed p-8 text-center">
                             <Building2

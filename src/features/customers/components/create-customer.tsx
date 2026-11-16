@@ -20,7 +20,6 @@ import { useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa6";
 
-
 import type { CreateCustomerPayload } from "../types/customer";
 import {
     createCustomerFormSchema,
@@ -175,7 +174,9 @@ const SegmentFields = ({
                     search={searchSegment}
                     onSearchChange={setSearchSegment}
                     placeholder={
-                        segmentsLoading ? "Memuat segment..." : "Pilih segment"
+                        segmentsLoading
+                            ? "Memuat segment..."
+                            : "Pilih segment"
                     }
                     selectedLabel={selectedSegment?.name ?? null}
                     selectedKey={segmentId !== null ? String(segmentId) : null}
@@ -220,13 +221,19 @@ const SegmentFields = ({
                     }
                     selectedLabel={selectedSegmentDetail?.name ?? null}
                     selectedKey={
-                        segmentDetailId !== null ? String(segmentDetailId) : null
+                        segmentDetailId !== null
+                            ? String(segmentDetailId)
+                            : null
                     }
                     items={filteredSegmentDetails}
                     getKey={(item) => String(item.id)}
                     renderItem={(item) => item.name}
-                    onSelect={(item) => handleSegmentDetailChange(item.id)}
-                    disabled={segmentId === null || segmentDetailsLoading}
+                    onSelect={(item) =>
+                        handleSegmentDetailChange(item.id)
+                    }
+                    disabled={
+                        segmentId === null || segmentDetailsLoading
+                    }
                     emptyText={
                         segmentDetailsError
                             ? "Segment detail gagal dimuat."
@@ -469,7 +476,6 @@ const CreateCustomer = ({
             id === null ? "" : String(id),
         );
 
-        // Setiap kali provinsi berubah, kota sebelumnya direset.
         updateField("city_id", "");
 
         const selectedProvince = provinces.find(
@@ -599,6 +605,7 @@ const CreateCustomer = ({
             onClose={handleClose}
             title="Tambah Customer"
             icon={<FaPlus />}
+            className="md:-translate-y-24"
             footer={
                 <div className="flex justify-end gap-3">
                     <Button
@@ -622,128 +629,122 @@ const CreateCustomer = ({
                 </div>
             }
         >
-            <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-1">
-                {submitError && (
-                    <p role="alert" className="text-sm text-red-500">
-                        {submitError}
-                    </p>
-                )}
+            {submitError && (
+                <p role="alert" className="mb-4 text-sm text-red-500">
+                    {submitError}
+                </p>
+            )}
 
-                {/* INFORMASI CUSTOMER */}
-                <AppModal.Section title="Customer" showHeader={false}
-                >
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field>
-                            <FieldLabel>Nama Customer</FieldLabel>
-                            <Input
-                                value={formData.name}
-                                onChange={(event) =>
-                                    updateField("name", event.target.value)
-                                }
-                                placeholder="Masukkan nama customer"
-                            />
-                            {getError("name") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("name")}
-                                </p>
-                            )}
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>WhatsApp Customer</FieldLabel>
-                            <Input
-                                type="tel"
-                                value={formData.phone}
-                                onChange={(event) =>
-                                    updateField("phone", event.target.value)
-                                }
-                                placeholder="Contoh: 081234567890"
-                            />
-                            {getError("phone") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("phone")}
-                                </p>
-                            )}
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>Email Customer</FieldLabel>
-                            <Input
-                                type="email"
-                                value={formData.email}
-                                onChange={(event) =>
-                                    updateField("email", event.target.value)
-                                }
-                                placeholder="Masukkan email customer"
-                            />
-                            {getError("email") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("email")}
-                                </p>
-                            )}
-                        </Field>
-                        <Field>
-                            <FieldLabel>Nama PIC</FieldLabel>
-                            <Input
-                                value={formData.contact_person}
-                                onChange={(event) =>
-                                    updateField("contact_person", event.target.value)
-                                }
-                                placeholder="Masukkan nama PIC"
-                            />
-                            {getError("contact_person") && (
-                                <p className="text-sm text-red-500">
-                                    {getError("contact_person")}
-                                </p>
-                            )}
-                        </Field>
-
-
-
-                        <SegmentFields
-                            segmentId={
-                                formData.segment_id
-                                    ? Number(formData.segment_id)
-                                    : null
+            <AppModal.Section title="Customer" showHeader={false}>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field>
+                        <FieldLabel>Nama Customer</FieldLabel>
+                        <Input
+                            value={formData.name}
+                            onChange={(event) =>
+                                updateField("name", event.target.value)
                             }
-                            segmentDetailId={
-                                formData.segment_detail_id
-                                    ? Number(formData.segment_detail_id)
-                                    : null
-                            }
-                            onSegmentChange={handleSegmentChange}
-                            onSegmentDetailChange={handleSegmentDetailChange}
-                            segmentValidationError={getError("segment_id")}
-                            segmentDetailValidationError={getError(
-                                "segment_detail_id",
-                            )}
+                            placeholder="Masukkan nama customer"
                         />
+                        {getError("name") && (
+                            <p className="text-sm text-red-500">
+                                {getError("name")}
+                            </p>
+                        )}
+                    </Field>
 
-                        <ProvinceCityFields
-                            provinces={provinces}
-                            provinceId={
-                                formData.province_id
-                                    ? Number(formData.province_id)
-                                    : null
+                    <Field>
+                        <FieldLabel>WhatsApp Customer</FieldLabel>
+                        <Input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(event) =>
+                                updateField("phone", event.target.value)
                             }
-                            cityId={
-                                formData.city_id
-                                    ? Number(formData.city_id)
-                                    : null
-                            }
-                            onProvinceChange={handleProvinceChange}
-                            onCityChange={handleCityChange}
-                            provinceLoading={provincesLoading}
-                            provinceError={provincesError}
-                            provinceValidationError={getError("province_id")}
-                            cityValidationError={getError("city_id")}
+                            placeholder="Contoh: 081234567890"
                         />
-                    </div>
-                </AppModal.Section>
-            </div>
+                        {getError("phone") && (
+                            <p className="text-sm text-red-500">
+                                {getError("phone")}
+                            </p>
+                        )}
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Email Customer</FieldLabel>
+                        <Input
+                            type="email"
+                            value={formData.email}
+                            onChange={(event) =>
+                                updateField("email", event.target.value)
+                            }
+                            placeholder="Masukkan email customer"
+                        />
+                        {getError("email") && (
+                            <p className="text-sm text-red-500">
+                                {getError("email")}
+                            </p>
+                        )}
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Nama PIC</FieldLabel>
+                        <Input
+                            value={formData.contact_person}
+                            onChange={(event) =>
+                                updateField("contact_person", event.target.value)
+                            }
+                            placeholder="Masukkan nama PIC"
+                        />
+                        {getError("contact_person") && (
+                            <p className="text-sm text-red-500">
+                                {getError("contact_person")}
+                            </p>
+                        )}
+                    </Field>
+
+                    <SegmentFields
+                        segmentId={
+                            formData.segment_id
+                                ? Number(formData.segment_id)
+                                : null
+                        }
+                        segmentDetailId={
+                            formData.segment_detail_id
+                                ? Number(formData.segment_detail_id)
+                                : null
+                        }
+                        onSegmentChange={handleSegmentChange}
+                        onSegmentDetailChange={handleSegmentDetailChange}
+                        segmentValidationError={getError("segment_id")}
+                        segmentDetailValidationError={getError(
+                            "segment_detail_id",
+                        )}
+                    />
+
+                    <ProvinceCityFields
+                        provinces={provinces}
+                        provinceId={
+                            formData.province_id
+                                ? Number(formData.province_id)
+                                : null
+                        }
+                        cityId={
+                            formData.city_id
+                                ? Number(formData.city_id)
+                                : null
+                        }
+                        onProvinceChange={handleProvinceChange}
+                        onCityChange={handleCityChange}
+                        provinceLoading={provincesLoading}
+                        provinceError={provincesError}
+                        provinceValidationError={getError("province_id")}
+                        cityValidationError={getError("city_id")}
+                    />
+                </div>
+            </AppModal.Section>
         </AppModal>
     );
-
 };
 
 export default CreateCustomer;

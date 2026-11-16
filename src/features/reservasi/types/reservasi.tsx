@@ -1,3 +1,4 @@
+
 export type ReservasiStatus = string;
 
 // ==============================
@@ -9,36 +10,67 @@ export type ReservasiRecord = {
     invoice_id: number;
     invoice_number: string;
     sales_order_number: string;
+    booking_type: string;
+
     customer_id: number;
-    customer_name: string;
-    customer_address: string;
-    sales_person_id: number;
-    sales_person_name: string;
-    partner_id: number;
-    partner_name: string;
+    customer_name: string | null;
+    customer_address: string | null;
+    customer_city: string | null;
+    customer_province: string | null;
+    customer_phone: string | null;
+    customer_contact_person: string | null;
+
+    sales_person_id: string | number;
+    sales_person_name: string | null;
+
+    partner_id: number | null;
+    partner_name: string | null;
+    partner_association_name: string | null;
+    partner_city: string | null;
+    partner_province: string | null;
+    partner_phone: string | null;
+    partner_contact_person: string | null;
+
     partner_branch_id: number | null;
     partner_branch_name: string | null;
+    partner_branch_city: string | null;
+    partner_branch_province: string | null;
+    partner_branch_phone: string | null;
+    partner_branch_contact_person: string | null;
+
     segment_id: number;
-    segment_name: string;
-    segment_detail_id: number;
-    segment_detail_name: string;
-    sub_segment_detail_id: number;
-    sub_segment_detail_name: string;
-    sales_order_date: string;
-    arrival_date: string;
-    access_tour_leader: number;
-    arrival_type: string;
-    arrival_time: string;
+    segment_name: string | null;
+    segment_detail_id: number | null;
+    segment_detail_name: string | null;
+    sub_segment_detail_id: number | null;
+    sub_segment_detail_name: string | null;
+    segment_option_id: number | null;
+    segment_option_name: string | null;
+
+    sales_order_date: string | null;
+    arrival_date: string | null;
+    access_tour_leader: number | null;
+    arrival_type: string | null;
+    arrival_time: string | null;
+
     subtotal: number;
     discount_amount: number;
     total_amount: number;
+    paid_amount: number;
+
+    payment_status: string;
+
     ticket_created_count: number;
+    total_ticket_count: number;
     ticket_printed_count: number;
+    ticket_used_count: number;
+
     status: ReservasiStatus;
     status_label: string;
     notes: string | null;
+
     created_by: number;
-    created_by_name: string;
+    created_by_name: string | null;
 };
 
 // ==============================
@@ -46,9 +78,6 @@ export type ReservasiRecord = {
 // ==============================
 
 export type ReservasiDetail = ReservasiRecord & {
-    paid_amount: number;
-    ticket_used_count: number;
-
     items: ReservasiItem[];
     event_orders: ReservasiDetailEO[];
     activities: ReservasiActivity[];
@@ -58,7 +87,6 @@ export type ReservasiDetail = ReservasiRecord & {
 
     created_at: string;
     updated_at: string;
-    is_ticket?: boolean | null;
 };
 
 // ==============================
@@ -92,19 +120,28 @@ export type GenerateReservasiEventOrder = {
     voucher_tour_leader?: number | null;
     shopping_voucher?: number | null;
 
-    product_id?: number;
-    quantity?: string;
-    unit_price?: string;
-    total_price?: string;
+    product_id?: number | null;
+    quantity?: string | number | null;
+    unit_price?: string | number | null;
+    total_price?: string | number | null;
 
     status: string;
     status_label: string;
 };
 
 // ==============================
-// CREATE EVENT ORDER
+// SHOPPING VOUCHER
 // ==============================
 
+export type ShoppingVoucher = {
+    name: string;
+    quantity: string;
+    pecahan: string;
+};
+
+// ==============================
+// CREATE EVENT ORDER
+// ==============================
 
 export type CreateReservasiEventOrder = {
     department_id: string;
@@ -125,7 +162,7 @@ export type CreateReservasiEventOrder = {
     unit_price: number | string | null;
     total_price: number | string | null;
 
-    shopping_voucher: number[] | null;
+    shopping_voucher: ShoppingVoucher[];
     voucher_tour_leader: number | null;
     meal_voucher: number | null;
 
@@ -140,6 +177,10 @@ export type CreateReservasiEventOrder = {
     status: string;
     status_label: string;
 };
+
+// ==============================
+// EDIT EVENT ORDER
+// ==============================
 
 export type EditReservasiEventOrder = {
     department_id: string;
@@ -160,7 +201,7 @@ export type EditReservasiEventOrder = {
     unit_price: number | string | null;
     total_price: number | string | null;
 
-    shopping_voucher: number | null;
+    shopping_voucher: ShoppingVoucher[];
     voucher_tour_leader: number | null;
     meal_voucher: number | null;
 
@@ -176,7 +217,6 @@ export type EditReservasiEventOrder = {
     status_label: string;
 };
 
-
 // ==============================
 // RESERVASI ITEM
 // ==============================
@@ -185,9 +225,11 @@ export type ReservasiItem = {
     id: number;
     invoice_item_id: number;
     product_id: number;
+    product_code: string | null;
     product_name: string;
-    product_description: string;
-    product_type: string | null;
+    product_description: string | null;
+    product_type?: string | null;
+
     quantity: number;
     bonus_quantity: number;
     unit_price: number;
@@ -195,6 +237,7 @@ export type ReservasiItem = {
     discount_amount: number;
     subtotal: number;
     total_amount: number;
+
     notes: string | null;
     status: string;
     status_label: string;
@@ -208,29 +251,45 @@ export type ReservasiItem = {
 export type ReservasiDetailEO = {
     id: number;
     sales_order_id: number;
+
     department_id: string;
     department_name: string;
-    sub_department_id: string | null;
+
+    sub_department_id: number | string | null;
     sub_department_name: string | null;
-    description: string;
+
+    description: string | null;
+
     location_id: number | null;
+    location_detail: string | null;
+
     product_id: number | null;
+    product_code: string | null;
+    product_description: string | null;
+
     quantity: number | null;
     unit_price: number | null;
     total_price: number | null;
-    shopping_voucher: number | null;
+
+    shopping_voucher: ShoppingVoucher[];
+
     voucher_tour_leader: number | null;
     meal_voucher: number | null;
+
     ticket_print_date: string | null;
     serving_time: string | null;
     serving_location: string | null;
     serving_type: string | null;
+
     start_at: string | null;
     end_at: string | null;
+
     status: string;
     status_label: string;
+
     received_by: number | null;
     received_at: string | null;
+
     created_by: number;
     created_at: string;
     updated_at: string;
@@ -246,20 +305,26 @@ export type ReservasiActivity = {
     log_name: string;
     event: string;
     action_label: string;
+
+    properties?: unknown[];
+
     subject: {
         id: number;
         type: string;
     };
+
     user: {
         id: number;
         name: string;
         email: string;
     } | null;
+
     changes: {
         before: Record<string, unknown>;
         after: Record<string, unknown>;
         items: ReservasiActivityChange[];
     };
+
     created_at: string;
     created_at_human: string;
 };
@@ -292,6 +357,10 @@ export type ReservasiSalesPerson = {
     position: string | null;
 };
 
+// ==============================
+// RESERVASI LIST PARAMS
+// ==============================
+
 export type ReservasiListParams = {
     page: number;
     per_page: number;
@@ -299,8 +368,12 @@ export type ReservasiListParams = {
     "filter[status]"?: string;
 };
 
+// ==============================
+// RESERVASI DETAIL RESPONSE
+// ==============================
+
 export type ReservasiDetailResponse = {
-    data: ReservasiDetail
+    data: ReservasiDetail;
 };
 
 // ==============================
@@ -312,37 +385,59 @@ export type ReservasiApiRecord = {
     invoice_id: number;
     invoice_number: string;
     sales_order_number: string;
+    booking_type: string;
+
     customer_id: number;
     customer_name: string | null;
     customer_address: string | null;
-    sales_person_id: number;
+
+    sales_person_id: string | number;
     sales_person_name: string | null;
-    partner_id: number;
+
+    partner_id: number | null;
     partner_name: string | null;
     partner_branch_id: number | null;
     partner_branch_name: string | null;
+
     segment_id: number;
     segment_name: string | null;
-    segment_detail_id: number;
+    segment_detail_id: number | null;
     segment_detail_name: string | null;
-    sub_segment_detail_id: number;
+    sub_segment_detail_id: number | null;
     sub_segment_detail_name: string | null;
+    segment_option_id: number | null;
+    segment_option_name: string | null;
+
     sales_order_date: string | null;
     arrival_date: string | null;
-    access_tour_leader: number;
-    arrival_type: string;
-    arrival_time: string;
+    access_tour_leader: number | null;
+    arrival_type: string | null;
+    arrival_time: string | null;
+
     subtotal: string | number;
     discount_amount: string | number;
     total_amount: string | number;
+    paid_amount: string | number;
+
+    payment_status: string;
+
     ticket_created_count: number;
+    total_ticket_count: number;
     ticket_printed_count: number;
+    ticket_used_count: number;
+
     status: string;
     status_label: string;
+
     notes: string | null;
+
     created_by: number;
     created_by_name: string | null;
 };
+
+// ==============================
+// RESERVASI PAGINATION META
+// ==============================
 
 export type ReservasiPaginationMeta = {
     current_page: number;
@@ -375,4 +470,3 @@ export type ReservasiTableRecord = {
     status: string;
     status_value: string;
 };
-

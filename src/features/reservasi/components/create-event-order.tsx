@@ -47,8 +47,8 @@ type CreateEventOrderModalProps = {
 };
 
 type KuponBelanja = {
-    id: number;
-    jumlah: string;
+    name: string;
+    quantity: string;
     pecahan: string;
 };
 
@@ -66,7 +66,7 @@ const EMPTY_FORM: CreateReservasiEventOrder = {
     quantity: null,
     unit_price: null,
     total_price: null,
-    shopping_voucher: null,
+    shopping_voucher: [],
     voucher_tour_leader: null,
     meal_voucher: null,
     ticket_print_date: null,
@@ -147,7 +147,7 @@ const CreateEventOrderModal = ({
         useState<Departemen | null>(null);
 
     const [kuponBelanja, setKuponBelanja] = useState<KuponBelanja[]>([
-        { id: 1, jumlah: "", pecahan: "" },
+        { name: "", quantity: "", pecahan: "" },
     ]);
 
     const [attachments, setAttachments] = useState<File[]>([]);
@@ -188,6 +188,17 @@ const CreateEventOrderModal = ({
         if (initialData) {
             setFormData({ ...EMPTY_FORM, ...initialData });
 
+            setKuponBelanja(
+                Array.isArray(initialData.shopping_voucher) &&
+                    initialData.shopping_voucher.length > 0
+                    ? initialData.shopping_voucher.map((item) => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        pecahan: item.pecahan,
+                    }))
+                    : [{ name: "", quantity: "", pecahan: "" }],
+            );
+
             const department = departemen.find(
                 (item) =>
                     String(item.id_dept) ===
@@ -198,14 +209,10 @@ const CreateEventOrderModal = ({
         } else {
             setFormData({ ...EMPTY_FORM });
             setSelectedDepartemen(null);
+            setKuponBelanja([
+                { name: "", quantity: "", pecahan: "" },
+            ]);
         }
-
-        setSearchDepartemen("");
-        setOpenDepartemen(false);
-
-        setKuponBelanja([
-            { id: Date.now(), jumlah: "", pecahan: "" },
-        ]);
 
         setAttachments([]);
         setAttachmentError("");
@@ -260,30 +267,24 @@ const CreateEventOrderModal = ({
     const handleAddKuponBelanja = () => {
         setKuponBelanja((current) => [
             ...current,
-            {
-                id: Date.now() + Math.random(),
-                jumlah: "",
-                pecahan: "",
-            },
+            { name: "", quantity: "", pecahan: "" },
         ]);
     };
 
-    const handleDeleteKuponBelanja = (id: number) => {
+    const handleDeleteKuponBelanja = (index: number) => {
         setKuponBelanja((current) =>
-            current.filter((item) => item.id !== id),
+            current.filter((_, i) => i !== index),
         );
     };
 
     const handleChangeKuponBelanja = (
-        id: number,
-        field: "jumlah" | "pecahan",
+        index: number,
+        field: "name" | "quantity" | "pecahan",
         value: string,
     ) => {
         setKuponBelanja((current) =>
-            current.map((item) =>
-                item.id === id
-                    ? { ...item, [field]: value }
-                    : item,
+            current.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
             ),
         );
     };
@@ -359,22 +360,20 @@ const CreateEventOrderModal = ({
             return;
         }
 
-        let shoppingVoucher = 0;
-
-        kuponBelanja.forEach((item) => {
-            const jumlah = Number(item.jumlah) || 0;
-            const pecahan = Number(item.pecahan) || 0;
-
-            shoppingVoucher += jumlah * pecahan;
-        });
-
         const payload: CreateReservasiEventOrder = {
             ...formData,
-            shopping_voucher:
-                shoppingVoucher > 0
-                    ? [shoppingVoucher]
-                    : formData.shopping_voucher ?? [],
-
+            shopping_voucher: kuponBelanja
+                .filter(
+                    (item) =>
+                        item.name.trim() !== "" &&
+                        item.quantity.trim() !== "" &&
+                        item.pecahan.trim() !== "",
+                )
+                .map((item) => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    pecahan: item.pecahan,
+                })),
             department_id: String(formData.department_id),
             department_name: formData.department_name,
             status: formData.status || "draft",
@@ -682,31 +681,46 @@ const CreateEventOrderModal = ({
 
                                     <Button
                                         type="button"
-                                        variant="outline"
+                                        variant="primer"
                                         size="sm"
                                         onClick={handleAddKuponBelanja}
                                     >
                                         <FaPlus />
-                                        Add Line
+                                        Tambah
                                     </Button>
                                 </div>
 
                                 <div className="space-y-3">
-                                    {kuponBelanja.map((item) => (
+                                    {kuponBelanja.map((item, index) => (
                                         <div
-                                            key={item.id}
+                                            key={index}
                                             className="grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_1fr_auto]"
                                         >
+                                            <Field>
+                                                <FieldLabel>Nama Voucher</FieldLabel>
+                                                <Input
+                                                    placeholder="Masukkan nama voucher"
+                                                    value={item.name}
+                                                    onChange={(event) =>
+                                                        handleChangeKuponBelanja(
+                                                            index,
+                                                            "name",
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                />
+                                            </Field>
+
                                             <Field>
                                                 <FieldLabel>Jumlah</FieldLabel>
                                                 <Input
                                                     type="number"
                                                     min="0"
-                                                    value={item.jumlah}
+                                                    value={item.quantity}
                                                     onChange={(event) =>
                                                         handleChangeKuponBelanja(
-                                                            item.id,
-                                                            "jumlah",
+                                                            index,
+                                                            "quantity",
                                                             event.target.value,
                                                         )
                                                     }
@@ -720,7 +734,7 @@ const CreateEventOrderModal = ({
                                                     value={item.pecahan}
                                                     onValueChange={(value) =>
                                                         handleChangeKuponBelanja(
-                                                            item.id,
+                                                            index,
                                                             "pecahan",
                                                             value ?? "",
                                                         )
@@ -747,9 +761,7 @@ const CreateEventOrderModal = ({
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={kuponBelanja.length === 1}
-                                                onClick={() =>
-                                                    handleDeleteKuponBelanja(item.id)
-                                                }
+                                                onClick={() => handleDeleteKuponBelanja(index)}
                                                 className="h-10 w-10 text-red-500"
                                             >
                                                 <FaXmark />

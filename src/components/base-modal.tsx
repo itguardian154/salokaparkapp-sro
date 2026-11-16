@@ -1,3 +1,5 @@
+
+import { useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import type { ReactElement, ReactNode } from "react";
 import {
@@ -40,18 +42,30 @@ const AppModal: AppModalComponent = ({
   footer,
   className = "",
 }) => {
+  // Kunci scroll halaman belakang ketika modal terbuka
+  useEffect(() => {
+    if (!open) return;
+
+    const originalOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 p-4 font-poppins backdrop-blur-sm">
+    <div className="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto bg-black/60 p-4 font-poppins backdrop-blur-sm">
       <div
         className={`
           flex min-h-0 w-full max-w-4xl flex-col
           overflow-hidden rounded-3xl
           bg-slate-50 shadow-2xl
           dark:bg-slate-900
-          max-h-full
-          lg:max-h-[calc(100vh-2rem)]
+          max-h-[calc(100dvh-2rem)]
           ${className}
         `}
       >
