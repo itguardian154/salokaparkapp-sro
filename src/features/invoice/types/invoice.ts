@@ -150,6 +150,11 @@ export type InvoiceDetail = {
   payments?: InvoicePayment[];
   approvals?: InvoiceApprovalRecord[];
   items?: InvoiceDetailItem[];
+  partner_association_name?: string | null;
+  partner_phone?: string | null;
+  partner_contact_person?: string | null;
+  partner_branch_phone?: string | null;
+  partner_branch_contact_person?: string | null;
 };
 
 export type InvoiceDetailResponse = { data: InvoiceDetail };

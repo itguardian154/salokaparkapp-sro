@@ -9,9 +9,10 @@ import type { InvoiceOrder } from "../types/invoice-order";
 
 type DetailOrderTableProps = {
   data: InvoiceOrder[];
-  onEdit: (order: InvoiceOrder) => void;
-  onDelete: (order: InvoiceOrder) => void;
+  onEdit?: (order: InvoiceOrder) => void;
+  onDelete?: (order: InvoiceOrder) => void;
   actionsDisabled?: boolean;
+  hideActions?: boolean;
 };
 
 export default function DetailOrderTable({
@@ -19,20 +20,29 @@ export default function DetailOrderTable({
   onEdit,
   onDelete,
   actionsDisabled = false,
+  hideActions = false,
 }: DetailOrderTableProps) {
   const columns = useMemo(
     () =>
       getInvoiceOrderColumns({
-        onEdit,
-        onDelete,
+        onEdit: onEdit ?? (() => { }),
+        onDelete: onDelete ?? (() => { }),
         disabled: actionsDisabled,
       }),
     [actionsDisabled, onDelete, onEdit],
   );
+
+  const visibleColumns = useMemo(
+    () =>
+      hideActions
+        ? columns.filter((column) => column.id !== "aksi")
+        : columns,
+    [columns, hideActions],
+  );
   const table = useTable({
     features: dataTableFeatures,
     data,
-    columns,
+    columns: visibleColumns,
   });
 
   return (
@@ -48,7 +58,7 @@ export default function DetailOrderTable({
         />
       </div>
       <div className="hidden overflow-hidden rounded-lg border border-slate-300 md:block">
-      <DataTable table={table} cellClassName="px-3 py-2" />
+        <DataTable table={table} cellClassName="px-3 py-2" />
       </div>
     </>
   );

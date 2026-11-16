@@ -58,7 +58,7 @@ export type ReservasiDetail = ReservasiRecord & {
 
     created_at: string;
     updated_at: string;
-      is_ticket?: boolean | null;
+    is_ticket?: boolean | null;
 };
 
 // ==============================
@@ -105,23 +105,77 @@ export type GenerateReservasiEventOrder = {
 // CREATE EVENT ORDER
 // ==============================
 
+
 export type CreateReservasiEventOrder = {
     department_id: string;
     department_name: string;
-    description: string;
+    sub_department_id: string | null;
+    sub_department_name: string | null;
 
-    meal_voucher?: number | null;
-    voucher_tour_leader?: number | null;
-    shopping_voucher?: number | null;
+    description: string | null;
 
-    product_id?: number;
-    quantity?: string;
-    unit_price?: string;
-    total_price?: string;
+    location_id: number | null;
+    location_detail: string | null;
+
+    product_id: number | null;
+    product_code: string | null;
+    product_description: string | null;
+
+    quantity: number | string | null;
+    unit_price: number | string | null;
+    total_price: number | string | null;
+
+    shopping_voucher: number[] | null;
+    voucher_tour_leader: number | null;
+    meal_voucher: number | null;
+
+    ticket_print_date: string | null;
+    serving_time: string | null;
+    serving_location: string | null;
+    serving_type: string | null;
+
+    start_at: string | null;
+    end_at: string | null;
 
     status: string;
     status_label: string;
 };
+
+export type EditReservasiEventOrder = {
+    department_id: string;
+    department_name: string;
+    sub_department_id: string | null;
+    sub_department_name: string | null;
+
+    description: string | null;
+
+    location_id: number | null;
+    location_detail: string | null;
+
+    product_id: number | null;
+    product_code: string | null;
+    product_description: string | null;
+
+    quantity: number | string | null;
+    unit_price: number | string | null;
+    total_price: number | string | null;
+
+    shopping_voucher: number | null;
+    voucher_tour_leader: number | null;
+    meal_voucher: number | null;
+
+    ticket_print_date: string | null;
+    serving_time: string | null;
+    serving_location: string | null;
+    serving_type: string | null;
+
+    start_at: string | null;
+    end_at: string | null;
+
+    status: string;
+    status_label: string;
+};
+
 
 // ==============================
 // RESERVASI ITEM
@@ -239,13 +293,13 @@ export type ReservasiSalesPerson = {
 };
 
 export type ReservasiListParams = {
-  page: number;
-  per_page: number;
-  "filter[search]"?: string;
-  "filter[status]"?: string;
+    page: number;
+    per_page: number;
+    "filter[search]"?: string;
+    "filter[status]"?: string;
 };
 
-export type ReservasiDetailResponse ={
+export type ReservasiDetailResponse = {
     data: ReservasiDetail
 };
 

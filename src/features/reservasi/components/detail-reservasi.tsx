@@ -12,12 +12,6 @@ import {
     Building2,
     CalendarDays,
     ClipboardList,
-    Clock,
-    FileText,
-    MapPin,
-    Package,
-    ShoppingBag,
-    Users,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -393,7 +387,12 @@ const DetailReservasi = () => {
             >
                 <div className="p-5">
                     {invoiceOrderItems.length > 0 ? (
-                        <DetailOrderTable data={invoiceOrderItems} />
+                        <div className="p-5">
+                            <DetailOrderTable
+                                data={invoiceOrderItems}
+                                hideActions
+                            />
+                        </div>
                     ) : (
                         <div className="rounded-lg border border-dashed p-8 text-center">
                             <ClipboardList
