@@ -5,6 +5,13 @@ export const segmentSubDetailSchema = z.object({
   id: z.number().optional(),
   name: z.string().nullable(),
   is_active: z.boolean().nullable(),
+  options: z.array(
+    z.object({
+      id: z.number().optional(),
+      name: z.string().trim().min(1, "Nama option wajib diisi"),
+      is_active: z.boolean(),
+    }),
+  ),
 });
 
 export const segmentDetailSchema = z.object({

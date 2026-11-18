@@ -19,6 +19,8 @@ type CustomerSuggestionFieldProps = {
   existingOnly?: boolean;
   inputDisabled?: boolean;
   hideClearButton?: boolean;
+  searchEnabled?: boolean;
+  placeholder?: string;
 };
 
 export default function CustomerSuggestionField({
@@ -34,6 +36,8 @@ export default function CustomerSuggestionField({
   existingOnly = false,
   inputDisabled = false,
   hideClearButton = false,
+  searchEnabled = true,
+  placeholder,
 }: CustomerSuggestionFieldProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -43,6 +47,7 @@ export default function CustomerSuggestionField({
   const selectingCustomer = useRef(false);
   const { dataCustomer, loadingData, setSearchData } = useCustomer({
     is_active: true,
+    enabled: searchEnabled,
   });
   const activeCustomers = dataCustomer.filter((customer) => customer.is_active);
   const searchQuery =
@@ -61,12 +66,12 @@ export default function CustomerSuggestionField({
       selectingCustomer.current = false;
       return;
     }
-    if (plainText) {
+    if (!searchEnabled || plainText) {
       setOpen(false);
       return;
     }
     if (value.trim()) setOpen(true);
-  }, [existingOnly, manualEntry, plainText, value]);
+  }, [existingOnly, manualEntry, plainText, searchEnabled, value]);
 
   useEffect(() => {
     if (!open) return;
@@ -134,8 +139,8 @@ export default function CustomerSuggestionField({
         )}
         <div className="relative w-full">
           <Input
-            className={`pr-28 ${plainText || inputDisabled || existingOnly ? "cursor-not-allowed" : ""} ${tags.length && !manualEntry ? "h-8 border-0 px-1 pr-28 shadow-none focus-visible:ring-0" : ""}`}
-            placeholder={
+            className={`${searchEnabled ? "pr-28" : "pr-2"} ${plainText || inputDisabled || existingOnly ? "cursor-not-allowed" : ""} ${tags.length && !manualEntry ? `h-8 border-0 px-1 ${searchEnabled ? "pr-28" : "pr-2"} shadow-none focus-visible:ring-0` : ""}`}
+            placeholder={placeholder ?? (
               existingOnly
                 ? "Pilih customer dari data existing"
                 : plainText || manualEntry
@@ -143,13 +148,13 @@ export default function CustomerSuggestionField({
                   : tags.length
                     ? "Ketik nama di sini"
                     : "Ketik nama group"
-            }
+            )}
             value={plainText || manualEntry ? value : text}
             readOnly={plainText}
             disabled={plainText || inputDisabled || existingOnly}
             onFocus={() => {
               setSearchExistingMode(false);
-              setOpen(true);
+              if (searchEnabled) setOpen(true);
             }}
             onBlur={(event) => {
               const nextFocusedElement = event.relatedTarget;
@@ -182,7 +187,7 @@ export default function CustomerSuggestionField({
                 event.preventDefault();
                 onAddTextTag(text.trim());
                 setText("");
-                setOpen(true);
+                if (searchEnabled) setOpen(true);
               }
             }}
             onChange={(event) => {
@@ -192,7 +197,7 @@ export default function CustomerSuggestionField({
               } else {
                 setText(event.target.value);
               }
-              setOpen(true);
+              if (searchEnabled) setOpen(true);
             }}
           />
           {plainText && !hideClearButton && (
@@ -200,26 +205,28 @@ export default function CustomerSuggestionField({
               type="button"
               aria-label="Hapus customer terpilih"
               onClick={onClearPlainText}
-              className="absolute right-[6.5rem] top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              className="absolute right-12 top-1/2 z-20 -translate-y-1/2 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white sm:right-[6.5rem]"
             >
               <X className="h-4 w-4" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setExistingSearch("");
-              setSearchExistingMode(true);
-              setOpen(true);
-            }}
-            className="customer-search-button absolute right-1 top-1/2 z-10 inline-flex h-7 w-auto min-h-0 -translate-y-1/2 items-center justify-center gap-1 rounded-md bg-emerald-50 px-2 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-900"
-          >
-            <Search className="h-3 w-3" />
-            Cari Group
-          </button>
+          {searchEnabled && (
+            <button
+              type="button"
+              onClick={() => {
+                setExistingSearch("");
+                setSearchExistingMode(true);
+                setOpen(true);
+              }}
+              className="customer-search-button absolute right-1 top-1/2 z-10 inline-flex h-7 w-auto min-h-0 -translate-y-1/2 items-center justify-center gap-1 rounded-md bg-emerald-50 px-2 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-900"
+            >
+              <Search className="h-3 w-3" />
+              <span className="hidden md:inline">Cari Group</span>
+            </button>
+          )}
         </div>
       </div>
-      {open && (
+      {searchEnabled && open && (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
             <div className="flex items-center gap-2">
@@ -236,11 +243,6 @@ export default function CustomerSuggestionField({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {!loadingData && activeCustomers.length > 0 && (
-                <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
-                  {activeCustomers.length} hasil
-                </span>
-              )}
               <button
                 type="button"
                 aria-label="Tutup saran customer"

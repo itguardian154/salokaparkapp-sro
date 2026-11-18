@@ -54,6 +54,12 @@ export type InvoiceListParams = {
   per_page: number;
   "filter[search]"?: string;
   "filter[status]"?: string;
+  "filter[sales_person_id]"?: string;
+  "filter[segment_id]"?: string;
+  "filter[partner_id]"?: string;
+  "filter[customer_id]"?: string;
+  "filter[arrival_date_from]"?: string;
+  "filter[arrival_date_to]"?: string;
 };
 
 export type InvoiceDetailItem = {

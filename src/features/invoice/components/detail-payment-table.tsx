@@ -11,6 +11,7 @@ import { useMemo } from "react";
 export type InvoicePaymentRow = {
   id: string;
   paymentDate: string | Date | null;
+  paymentType: string;
   paymentMethod: string;
   accountHolderName: string;
   fromBank: string;
@@ -34,6 +35,17 @@ const paymentMethodLabel = (method: string) => {
   return labels[method] ?? (method || "-");
 };
 
+const paymentTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    dp: "DP",
+    down_payment: "DP",
+    pelunasan: "Pelunasan",
+    full_payment: "Pelunasan",
+    settlement: "Pelunasan",
+  };
+  return labels[type.toLowerCase()] ?? (type || "-");
+};
+
 export default function DetailPaymentTable({
   data,
 }: {
@@ -50,6 +62,11 @@ export default function DetailPaymentTable({
           row.original.paymentDate
             ? formatTanggal(row.original.paymentDate)
             : "-",
+      },
+      {
+        accessorKey: "paymentType",
+        header: "Jenis",
+        cell: ({ row }) => paymentTypeLabel(row.original.paymentType),
       },
       {
         accessorKey: "paymentMethod",

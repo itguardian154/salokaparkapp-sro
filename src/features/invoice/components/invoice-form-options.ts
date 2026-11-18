@@ -1,3 +1,7 @@
+import { customerGroupNumberOptions } from "@/features/customers/utils/customer-group-number-options";
+
+export { customerGroupNumberOptions } from "@/features/customers/utils/customer-group-number-options";
+
 export type InvoiceSearchOption = {
   value: string;
   label: string;
@@ -43,14 +47,6 @@ export const educationStatusOptions: InvoiceSearchOption[] = [
   { value: "negeri", label: "Negeri" },
   { value: "swasta", label: "Swasta" },
 ];
-
-export const customerGroupNumberOptions: InvoiceSearchOption[] = Array.from(
-  { length: 999 },
-  (_, index) => {
-    const value = String(index + 1);
-    return { value, label: value };
-  },
-);
 
 export const filterInvoiceOptions = (
   options: InvoiceSearchOption[],

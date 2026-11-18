@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatTanggal } from "@/lib/utils";
 import { getInvoices } from "../service/invoice-service";
 import type { InvoiceListParams, InvoiceRecord } from "../types/invoice";
@@ -11,6 +11,12 @@ const useInvoices = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchData, setSearchData] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [salesPersonFilter, setSalesPersonFilter] = useState("");
+  const [segmentFilter, setSegmentFilter] = useState("");
+  const [agenFilter, setAgenFilter] = useState("");
+  const [customerIdFilter, setCustomerIdFilter] = useState("");
+  const [arrivalDateFrom, setArrivalDateFrom] = useState("");
+  const [arrivalDateTo, setArrivalDateTo] = useState("");
   const [itemPerPage, setItemPerPage] = useState(DEFAULT_ITEM_PER_PAGE);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -31,6 +37,14 @@ const useInvoices = () => {
         per_page: itemPerPage,
         ...(searchData.trim() && { "filter[search]": searchData.trim() }),
         ...(statusFilter && { "filter[status]": statusFilter }),
+        ...(salesPersonFilter && {
+          "filter[sales_person_id]": salesPersonFilter,
+        }),
+        ...(segmentFilter && { "filter[segment_id]": segmentFilter }),
+         ...(agenFilter && { "filter[partner_id]": agenFilter }),
+        ...(customerIdFilter && { "filter[customer_id]": customerIdFilter }),
+        ...(arrivalDateFrom && { "filter[arrival_date_from]": arrivalDateFrom }),
+        ...(arrivalDateTo && { "filter[arrival_date_to]": arrivalDateTo }),
       };
 
       try {
@@ -80,7 +94,19 @@ const useInvoices = () => {
 
     void fetchInvoices();
     return () => controller.abort();
-  }, [currentPage, itemPerPage, refreshKey, searchData, statusFilter]);
+  }, [
+    arrivalDateFrom,
+    arrivalDateTo,
+    currentPage,
+    customerIdFilter,
+    itemPerPage,
+    refreshKey,
+    salesPersonFilter,
+    searchData,
+    segmentFilter,
+    agenFilter,
+    statusFilter,
+  ]);
 
   const changeSearch = (value: string) => {
     setSearchData(value);
@@ -89,6 +115,32 @@ const useInvoices = () => {
 
   const changeStatusFilter = (value: string) => {
     setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const changeSalesPersonFilter = (value: string) => {
+    setSalesPersonFilter(value);
+    setCurrentPage(1);
+  };
+
+  const changeSegmentFilter = (value: string) => {
+    setSegmentFilter(value);
+    setCurrentPage(1);
+  };
+
+  const changeAgenFilter = (value: string) => {
+    setAgenFilter(value);
+    setCurrentPage(1);
+  };
+
+  const changeCustomerIdFilter = useCallback((value: string) => {
+    setCustomerIdFilter(value);
+    setCurrentPage(1);
+  }, []);
+
+  const changeArrivalDateRange = (from: string, to: string) => {
+    setArrivalDateFrom(from);
+    setArrivalDateTo(to);
     setCurrentPage(1);
   };
 
@@ -115,6 +167,17 @@ const useInvoices = () => {
     setSearchData: changeSearch,
     statusFilter,
     setStatusFilter: changeStatusFilter,
+    salesPersonFilter,
+    setSalesPersonFilter: changeSalesPersonFilter,
+    segmentFilter,
+    setSegmentFilter: changeSegmentFilter,
+    agenFilter,
+    setAgenFilter: changeAgenFilter,
+    customerIdFilter,
+    setCustomerIdFilter: changeCustomerIdFilter,
+    arrivalDateFrom,
+    arrivalDateTo,
+    setArrivalDateRange: changeArrivalDateRange,
     itemPerPage,
     setItemPerPage: changeItemPerPage,
     currentPage,

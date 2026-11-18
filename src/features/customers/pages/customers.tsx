@@ -54,9 +54,7 @@ function getUniqueRegions(
 
   customers.forEach((customer) => {
     const name =
-      type === "province"
-        ? customer.province_name
-        : customer.city_name;
+      type === "province" ? customer.province_name : customer.city_name;
 
     if (name) {
       uniqueRegions.set(name, {
@@ -118,8 +116,9 @@ export default function CustomerPage() {
 
   // State untuk detail customer
   const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedDetailCustomerId, setSelectedDetailCustomerId] =
-    useState<number | null>(null);
+  const [selectedDetailCustomerId, setSelectedDetailCustomerId] = useState<
+    number | null
+  >(null);
 
   const {
     customer: detailCustomer,
@@ -127,22 +126,19 @@ export default function CustomerPage() {
     error: detailCustomerError,
   } = useDetailCustomer(selectedDetailCustomerId, detailOpen);
 
-  const [provincePickerOpen, setProvincePickerOpen] =
-    useState(false);
-  const [cityPickerOpen, setCityPickerOpen] =
-    useState(false);
+  const [provincePickerOpen, setProvincePickerOpen] = useState(false);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
 
   const [provinceSearch, setProvinceSearch] = useState("");
   const [citySearch, setCitySearch] = useState("");
 
-  const [selectedProvince, setSelectedProvince] =
-    useState<RegionOption | null>(null);
-  const [selectedCity, setSelectedCity] =
-    useState<RegionOption | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<RegionOption | null>(
+    null,
+  );
+  const [selectedCity, setSelectedCity] = useState<RegionOption | null>(null);
 
   const [selectedSegment, setSelectedSegment] = useState("");
-  const [selectedSegmentDetail, setSelectedSegmentDetail] =
-    useState("");
+  const [selectedSegmentDetail, setSelectedSegmentDetail] = useState("");
 
   const customers = useMemo<CustomerRecord[]>(
     () => dataCustomer ?? [],
@@ -160,50 +156,46 @@ export default function CustomerPage() {
   );
 
   const segmentOptions = useMemo<CustomerFilterOption[]>(() => {
-  const uniqueSegments = new Map<string, string>();
+    const uniqueSegments = new Map<string, string>();
 
-  customers.forEach((customer) => {
-    const segment = customer.segment;
+    customers.forEach((customer) => {
+      const segment = customer.segment;
 
-    if (segment?.id && segment.name) {
-      uniqueSegments.set(String(segment.id), segment.name);
-    }
-  });
+      if (segment?.id && segment.name) {
+        uniqueSegments.set(String(segment.id), segment.name);
+      }
+    });
 
-  return Array.from(uniqueSegments.entries())
-    .map(([id, name]) => ({
-      value: id,
-      label: name,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, "id"));
-}, [customers]);
+    return Array.from(uniqueSegments.entries())
+      .map(([id, name]) => ({
+        value: id,
+        label: name,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "id"));
+  }, [customers]);
 
   const segmentDetailOptions = useMemo<CustomerFilterOption[]>(() => {
-  const uniqueDetails = new Map<string, string>();
+    const uniqueDetails = new Map<string, string>();
 
-  customers.forEach((customer) => {
-    const detail = customer.segment_detail;
+    customers.forEach((customer) => {
+      const detail = customer.segment_detail;
 
-    if (!detail?.id || !detail.name) return;
+      if (!detail?.id || !detail.name) return;
 
-    if (
-      selectedSegment &&
-      String(customer.segment?.id) !== selectedSegment
-    ) {
-      return;
-    }
+      if (selectedSegment && String(customer.segment?.id) !== selectedSegment) {
+        return;
+      }
 
-    uniqueDetails.set(String(detail.id), detail.name);
-  });
+      uniqueDetails.set(String(detail.id), detail.name);
+    });
 
-  return Array.from(uniqueDetails.entries())
-    .map(([id, name]) => ({
-      value: id,
-      label: name,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, "id"));
-}, [customers, selectedSegment]);
-
+    return Array.from(uniqueDetails.entries())
+      .map(([id, name]) => ({
+        value: id,
+        label: name,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "id"));
+  }, [customers, selectedSegment]);
 
   const handleOpenEdit = useCallback(
     (customer: CustomerRecord) => {
@@ -250,9 +242,7 @@ export default function CustomerPage() {
     setCreateOpen(true);
   };
 
-  const handleCreateCustomer = async (
-    payload: CreateCustomerPayload,
-  ) => {
+  const handleCreateCustomer = async (payload: CreateCustomerPayload) => {
     try {
       await submitCustomer(payload);
 
@@ -363,237 +353,227 @@ export default function CustomerPage() {
   );
 
   return (
-    <section className="min-w-0 space-y-5">
-      <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <FaUserGroup
-                className="text-emerald-500"
-                aria-hidden="true"
-              />
+    <>
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <FaUserGroup className="text-emerald-500" aria-hidden="true" />
 
-              <h1 className="text-lg font-bold text-slate-800 dark:text-white">
-                Customer
-              </h1>
+                <h1 className="text-lg font-bold text-slate-800 dark:text-white">
+                  Customer
+                </h1>
+              </div>
+
+              <p className="ml-6 text-xs text-slate-500 dark:text-slate-400">
+                Daftar customer
+              </p>
             </div>
 
-            <p className="ml-6 text-xs text-slate-500 dark:text-slate-400">
-              Daftar customer
-            </p>
-          </div>
+            <div className="flex w-full items-center gap-3 lg:w-auto">
+              <div className="w-full lg:w-96">
+                <FilterBar
+                  search={searchData}
+                  onSearchChange={setSearchData}
+                  active={activeFilters}
+                  onReset={resetFilters}
+                >
+                  <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="w-full">
+                      <FilterSelect
+                        label="Segment"
+                        value={selectedSegment}
+                        onChange={(value) => {
+                          setSelectedSegment(value);
+                          setSelectedSegmentDetail("");
 
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-            <div className="w-full sm:min-w-0 sm:flex-1 lg:w-96 lg:flex-none">
-              <FilterBar
-                search={searchData}
-                onSearchChange={setSearchData}
-                active={activeFilters}
-                onReset={resetFilters}
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              segment_id: value,
+                              segment_detail_id: "",
+                            },
+                          }));
+                        }}
+                        placeholder="Semua"
+                        options={segmentOptions}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSelect
+                        label="Segment Detail"
+                        value={selectedSegmentDetail}
+                        onChange={(value) => {
+                          setSelectedSegmentDetail(value);
+
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              segment_detail_id: value,
+                            },
+                          }));
+                        }}
+                        placeholder="Semua"
+                        options={segmentDetailOptions}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSearchable<RegionOption>
+                        label="Provinsi"
+                        open={provincePickerOpen}
+                        onOpenChange={setProvincePickerOpen}
+                        search={provinceSearch}
+                        onSearchChange={setProvinceSearch}
+                        placeholder="Semua"
+                        selectedLabel={selectedProvince?.name}
+                        selectedKey={selectedProvince?.id}
+                        emptyText="Provinsi tidak ditemukan pada data customer"
+                        items={provinceOptions}
+                        getKey={(item) => item.id}
+                        renderItem={(item) => item.name}
+                        onSelect={(item) => {
+                          setSelectedProvince(item);
+
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              province_name: item?.name ?? "",
+                            },
+                          }));
+
+                          setProvinceSearch("");
+                          setProvincePickerOpen(false);
+                        }}
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      <FilterSearchable<RegionOption>
+                        label="Kota"
+                        open={cityPickerOpen}
+                        onOpenChange={setCityPickerOpen}
+                        search={citySearch}
+                        onSearchChange={setCitySearch}
+                        placeholder="Semua"
+                        selectedLabel={selectedCity?.name}
+                        selectedKey={selectedCity?.id}
+                        emptyText="Kota tidak ditemukan pada data customer"
+                        items={cityOptions}
+                        getKey={(item) => item.id}
+                        renderItem={(item) => item.name}
+                        onSelect={(item) => {
+                          setSelectedCity(item);
+
+                          setFilterData((current) => ({
+                            ...current,
+                            filter: {
+                              ...current.filter,
+                              city_name: item?.name ?? "",
+                            },
+                          }));
+
+                          setCitySearch("");
+                          setCityPickerOpen(false);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </FilterBar>
+              </div>
+
+              <Button
+                type="button"
+                variant="primer"
+                onClick={handleOpenCreate}
+                className="hidden gap-2 xl:flex"
               >
-                <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="w-full">
-                    <FilterSelect
-                      label="Segment"
-                      value={selectedSegment}
-                      onChange={(value) => {
-                        setSelectedSegment(value);
-                        setSelectedSegmentDetail("");
-
-                        setFilterData((current) => ({
-                          ...current,
-                          filter: {
-                            ...current.filter,
-                            segment_id: value,
-                            segment_detail_id: "",
-                          },
-                        }));
-                      }}
-                      placeholder="Semua"
-                      options={segmentOptions}
-                    />
-                  </div>
-
-                  <div className="w-full">
-                    <FilterSelect
-                      label="Segment Detail"
-                      value={selectedSegmentDetail}
-                      onChange={(value) => {
-                        setSelectedSegmentDetail(value);
-
-                        setFilterData((current) => ({
-                          ...current,
-                          filter: {
-                            ...current.filter,
-                            segment_detail_id: value,
-                          },
-                        }));
-                      }}
-                      placeholder="Semua"
-                      options={segmentDetailOptions}
-                    />
-                  </div>
-
-                  <div className="w-full">
-                    <FilterSearchable<RegionOption>
-                      label="Provinsi"
-                      open={provincePickerOpen}
-                      onOpenChange={setProvincePickerOpen}
-                      search={provinceSearch}
-                      onSearchChange={setProvinceSearch}
-                      placeholder="Semua"
-                      selectedLabel={selectedProvince?.name}
-                      selectedKey={selectedProvince?.id}
-                      emptyText="Provinsi tidak ditemukan pada data customer"
-                      items={provinceOptions}
-                      getKey={(item) => item.id}
-                      renderItem={(item) => item.name}
-                      onSelect={(item) => {
-                        setSelectedProvince(item);
-
-                        setFilterData((current) => ({
-                          ...current,
-                          filter: {
-                            ...current.filter,
-                            province_name: item?.name ?? "",
-                          },
-                        }));
-
-                        setProvinceSearch("");
-                        setProvincePickerOpen(false);
-                      }}
-                    />
-                  </div>
-
-                  <div className="w-full">
-                    <FilterSearchable<RegionOption>
-                      label="Kota"
-                      open={cityPickerOpen}
-                      onOpenChange={setCityPickerOpen}
-                      search={citySearch}
-                      onSearchChange={setCitySearch}
-                      placeholder="Semua"
-                      selectedLabel={selectedCity?.name}
-                      selectedKey={selectedCity?.id}
-                      emptyText="Kota tidak ditemukan pada data customer"
-                      items={cityOptions}
-                      getKey={(item) => item.id}
-                      renderItem={(item) => item.name}
-                      onSelect={(item) => {
-                        setSelectedCity(item);
-
-                        setFilterData((current) => ({
-                          ...current,
-                          filter: {
-                            ...current.filter,
-                            city_name: item?.name ?? "",
-                          },
-                        }));
-
-                        setCitySearch("");
-                        setCityPickerOpen(false);
-                      }}
-                    />
-                  </div>
-                </div>
-              </FilterBar>
+                <FaPlus size={14} />
+                Tambah
+              </Button>
             </div>
-
-            <Button 
-              type="button"
-              variant="primer"
-              onClick={handleOpenCreate}
-              className="hidden gap-2 xl:flex"
-            >
-              <FaPlus size={14} />
-              Tambah
-            </Button>
           </div>
-        </div>
 
-        <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
-          <TablePagination
-            leftSlot={<ColumnVisibility table={table} />}
-            itemPerPage={itemPerPage}
-            setItemPerPage={setItemPerPage}
-            currentPage={currentPage}
-            lastPage={lastPage}
-            fromPage={fromPage ?? 0}
-            toPage={toPage ?? 0}
-            totalData={totalData}
-            onPrev={handlePrevPage}
-            onNext={handleNextPage}
-          />
-        </div>
-
-        {error ? (
-          <p
-            role="alert"
-            className="px-4 py-3 text-sm text-red-600"
-          >
-            {error}
-          </p>
-        ) : loadingData ? (
-          <p className="px-4 py-8 text-center text-sm text-slate-500">
-            Memuat data customer...
-          </p>
-        ) : (
-          <>
-            <div className="hidden md:block">
-              <DataTable
-                table={table}
-                cellClassName="px-3 py-2"
-              />
-            </div>
-
-            <div className="p-3 md:hidden">
-              <MobileDataCard
-                table={table}
-                titleKey="name"
-                titleLabel="Nama Customer"
-                icon={
-                  <FaUsers
-                    className="h-5 w-5"
-                    aria-hidden="true"
-                  />
-                }
-                emptyTitle="Belum ada data customer"
-                emptyDescription="Data customer akan ditampilkan di sini."
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      <CreateCustomer
-        open={createOpen}
-        onClose={handleCloseCreate}
-        onSubmit={handleCreateCustomer}
-        submitting={submittingCreate}
-        submitError={createError}
-      />
-
-      <UpdateCustomer
-        open={updateOpen}
-        onClose={handleCloseEdit}
-        customer={selectedCustomer}
-        onSubmit={handleUpdateCustomer}
-        submitting={submittingUpdate}
-        submitError={updateError}
-      />
-
-      <DetailCustomer
-        open={detailOpen}
-        customer={detailCustomer}
-        loading={loadingDetailCustomer}
-        error={detailCustomerError}
-        onClose={handleCloseDetail}
-      />
-       {/* FLOATING BUTTON TAMBAH CUSTOMER - MOBILE */}
-            <MobileFloatingActionButton
-              ariaLabel="Tambah Customer"
-              onClick={handleOpenCreate}
+          <div className="shrink-0 border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
+            <TablePagination
+              leftSlot={<ColumnVisibility table={table} />}
+              itemPerPage={itemPerPage}
+              setItemPerPage={setItemPerPage}
+              currentPage={currentPage}
+              lastPage={lastPage}
+              fromPage={fromPage ?? 0}
+              toPage={toPage ?? 0}
+              totalData={totalData}
+              onPrev={handlePrevPage}
+              onNext={handleNextPage}
             />
-    </section>
+          </div>
+
+          {error ? (
+            <p role="alert" className="px-4 py-3 text-sm text-red-600">
+              {error}
+            </p>
+          ) : loadingData ? (
+            <p className="px-4 py-8 text-center text-sm text-slate-500">
+              Memuat data customer...
+            </p>
+          ) : (
+            <>
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+                <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
+                  <DataTable table={table} cellClassName="px-3 py-2" />
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
+                <MobileDataCard
+                  table={table}
+                  titleKey="name"
+                  titleLabel="Nama Customer"
+                  icon={<FaUsers className="h-5 w-5" aria-hidden="true" />}
+                  emptyTitle="Belum ada data customer"
+                  emptyDescription="Data customer akan ditampilkan di sini."
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <CreateCustomer
+          open={createOpen}
+          onClose={handleCloseCreate}
+          onSubmit={handleCreateCustomer}
+          submitting={submittingCreate}
+          submitError={createError}
+        />
+
+        <UpdateCustomer
+          open={updateOpen}
+          onClose={handleCloseEdit}
+          customer={selectedCustomer}
+          onSubmit={handleUpdateCustomer}
+          submitting={submittingUpdate}
+          submitError={updateError}
+        />
+
+        <DetailCustomer
+          open={detailOpen}
+          customer={detailCustomer}
+          loading={loadingDetailCustomer}
+          error={detailCustomerError}
+          onClose={handleCloseDetail}
+        />
+      </section>
+
+      {/* FLOATING BUTTON TAMBAH CUSTOMER - MOBILE */}
+      <MobileFloatingActionButton
+        ariaLabel="Tambah Customer"
+        onClick={handleOpenCreate}
+      />
+    </>
   );
 }

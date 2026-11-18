@@ -5,7 +5,9 @@ export type CreateCustomerPayload = {
   email: string;
   phone: string;
   segment_id: number;
-  segment_detail_id: number;
+  segment_detail_id?: number;
+  sub_segment_detail_id?: number;
+  segment_option_id?: number;
   contact_person: string;
 };
 
@@ -16,7 +18,9 @@ export type UpdateCustomerPayload = {
   email: string;
   phone: string;
   segment_id: number;
-  segment_detail_id: number;
+  segment_detail_id?: number;
+  sub_segment_detail_id?: number;
+  segment_option_id?: number;
   contact_person: string;
   is_active: boolean;
 };
@@ -38,6 +42,7 @@ export type CustomerRecord = {
   city_name: string | null;
   segment: CustomerSegment | null;
   segment_detail: CustomerSegment | null;
+  sub_segment_detail_id?: number | null;
   sub_segment_detail?: {
     id: number;
     segment_detail_id?: number;

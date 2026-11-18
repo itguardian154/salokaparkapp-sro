@@ -9,7 +9,7 @@ import DetailSection from "@/components/detail-page/detail-section";
 
 import { FaUsers } from "react-icons/fa";
 import { MdWorkHistory } from "react-icons/md";
-import { Building2} from "lucide-react";
+import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import type { CustomerDetail } from "../types/customer";
@@ -98,60 +98,61 @@ const DetailCustomer = ({
                 Memuat detail customer...
               </p>
             ) : error ? (
-              <p
-                role="alert"
-                className="py-8 text-center text-sm text-red-600"
-              >
+              <p role="alert" className="py-8 text-center text-sm text-red-600">
                 {error}
               </p>
             ) : customer ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-                <InfoItem
-                  label="Nama Customer"
-                  value={customer.name}
-                />
+                <InfoItem label="Nama Customer" value={customer.name} />
 
-                <InfoItem
-                  label="WhatsApp Customer"
-                  value={customer.phone}
-                />
+                <InfoItem label="WhatsApp Customer" value={customer.phone} />
 
-                <InfoItem
-                  label="Email Customer"
-                  value={customer.email}
-                />
+                <InfoItem label="Email Customer" value={customer.email} />
 
-                <InfoItem
-                  label="Nama PIC"
-                  value={customer.contact_person}
-                />
+                <InfoItem label="Nama PIC" value={customer.contact_person} />
 
-                <InfoItem
-                  label="Segment"
-                  value={customer.segment?.name}
-                />
+                <InfoItem label="Segment" value={customer.segment?.name} />
+                {customer.segment?.name == "Edukasi" || customer.segment?.name == "Corporate" ? (
+                  <>
+                    <InfoItem
+                      label={
+                        customer.segment?.name == "Edukasi"
+                          ? "Jenis"
+                          : customer.segment?.name == "Corporate"
+                            ? "Bidang Usaha"
+                            : ""
+                      }
+                      value={customer.segment_detail?.name}
+                    />
 
-                <InfoItem
-                  label="Segment Detail"
-                  value={customer.segment_detail?.name}
-                />
+                    <InfoItem
+                      label={
+                        customer.segment?.name == "Edukasi"
+                          ? "Jenjang"
+                          : customer.segment?.name == "Corporate"
+                            ? "Jenis Usaha"
+                            : ""
+                      }
+                      value={customer.sub_segment_detail?.name}
+                    />
+                  </>
+                ) : null}
 
-                <InfoItem
-                  label="Provinsi"
-                  value={customer.province_name}
-                />
+                {customer.segment?.name == "Edukasi" ? (
+                  <InfoItem
+                    label={customer.segment?.name == "Edukasi" ? "Status" : ""}
+                    value={customer.segment_option?.name}
+                  />
+                ) : null}
 
-                <InfoItem
-                  label="Kota/Kabupaten"
-                  value={customer.city_name}
-                />
+                <InfoItem label="Provinsi" value={customer.province_name} />
+
+                <InfoItem label="Kota/Kabupaten" value={customer.city_name} />
 
                 <InfoItem
                   label="Status Customer"
                   value={
-                    <Badge
-                      variant={customer.is_active ? "success" : "warning"}
-                    >
+                    <Badge variant={customer.is_active ? "success" : "warning"}>
                       {customer.is_active ? "Aktif" : "Nonaktif"}
                     </Badge>
                   }

@@ -147,7 +147,7 @@ export default function CreateDetailInvoice({
       }
     >
       <AppModal.Section title="Detail Pesanan" showHeader={false}>
-        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 p-2 lg:p-5 md:grid-cols-2">
           <Field className="md:col-span-2">
             <FieldLabel>
               Produk <span className="text-xs text-red-500">*</span>
