@@ -16,6 +16,7 @@ import {
     Building2,
     CalendarDays,
     ClipboardList,
+    HandCoins,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,13 @@ import DetailPageLayout from "@/components/detail-page/detail-page-ayout";
 import DetailSection from "@/components/detail-page/detail-section";
 
 import DetailOrderTable from "@/features/invoice/components/detail-order-table";
+import DetailPaymentTable from "@/features/invoice/components/detail-payment-table";
+
 import type { InvoiceOrder } from "@/features/invoice/types/invoice-order";
+import type {
+    InvoicePayment,
+    InvoicePaymentRow,
+} from "@/features/invoice/types/invoice";
 
 import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 
@@ -46,12 +53,13 @@ import CreateEventOrderModal from "./create-event-order";
 // TYPES
 // ==============================
 
-type ReservasiDetailView = ReservasiDetail & {
+type ReservasiDetailView = Omit<ReservasiDetail, "payments"> & {
     booking_type?: string | null;
     payment_status?: string | null;
     segment_option_id?: number | null;
     segment_option_name?: string | null;
     total_ticket_count?: number | null;
+    payments?: InvoicePayment[];
 };
 
 type ShoppingVoucherView = {
@@ -135,6 +143,33 @@ const formatValue = (value: unknown): ReactNode => {
 
     return String(value);
 };
+
+// ==============================
+// MAPPING INFORMASI PEMBAYARAN
+// ==============================
+
+const mapInvoicePayments = (
+    payments: InvoicePayment[]
+): InvoicePaymentRow[] =>
+    payments.map((payment, index) => ({
+        id: String(payment.id ?? payment.payment_id ?? index + 1),
+        serverId: payment.payment_id ?? payment.id,
+        paymentDate: payment.payment_date ?? null,
+        paymentType: payment.payment_type ?? "",
+        paymentTypeValue: payment.payment_type ?? "",
+        uploadType:
+            payment.payment_type === "surat_keterangan"
+                ? "surat_keterangan"
+                : "bukti_bayar",
+        paymentMethod: payment.payment_method ?? "",
+        accountHolderName: payment.account_holder_name ?? "",
+        depositNumber: payment.deposit_number ?? "",
+        fromBank: payment.from_bank ?? "",
+        toBank: payment.to_bank ?? "",
+        amount: payment.amount ?? 0,
+        notes: payment.notes ?? "",
+        proof: payment.proof_of_payment ?? "",
+    }));
 
 // ==============================
 // INFO ITEM
@@ -642,7 +677,7 @@ const DetailReservasi = () => {
                                         </p>
 
                                         {String(detail.arrival_type).toLowerCase() === "early" ? (
-                                            <Badge className="gap-1.5 border border-red-200 bg-red-50 text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                                            <Badge className="gap-1.5 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                                                 <AlertTriangle className="h-3.5 w-3.5" />
                                                 EARLY - PERHATIAN
                                             </Badge>
@@ -712,6 +747,21 @@ const DetailReservasi = () => {
                             </p>
                         </div>
                     )}
+                </div>
+            </DetailSection>
+
+            {/* INFORMASI PEMBAYARAN */}
+
+            <DetailSection
+                icon={HandCoins}
+                title="Informasi Pembayaran"
+                variant="blue"
+            >
+                <div className="p-5">
+                    <DetailPaymentTable
+                        data={mapInvoicePayments(detail.payments ?? [])}
+                        hideActions
+                    />
                 </div>
             </DetailSection>
 

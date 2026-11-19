@@ -14,7 +14,6 @@ import {
   Users,
   CalendarDays,
   Building2,
-  Plus,
   Clock,
   HandCoins,
 } from "lucide-react";
@@ -39,6 +38,7 @@ import {
 import type {
   InvoiceDetail,
   InvoiceApiRecord,
+  InvoicePaymentRow,
 } from "@/features/invoice/types/invoice";
 
 import DetailOrderTable from "@/features/invoice/components/detail-order-table";
@@ -58,7 +58,6 @@ import {
 import type {
   CreateReservasi,
   CreateReservasiEventOrder,
-  ReservasiPayment,
 } from "../types/reservasi";
 
 import {
@@ -150,26 +149,26 @@ const isInvoiceDone = (invoice: InvoiceApiRecord) => {
   return statuses.includes("done");
 };
 
-const getEventOrderStatus = (
-  status?: string | null,
-  statusLabel?: string | null,
-) => {
-  const value = String(statusLabel || status || "").trim();
-  const normalized = value.toLowerCase();
+// const getEventOrderStatus = (
+//   status?: string | null,
+//   statusLabel?: string | null,
+// ) => {
+//   const value = String(statusLabel || status || "").trim();
+//   const normalized = value.toLowerCase();
 
-  const positiveStatuses = [
-    "active",
-    "aktif",
-    "done",
-    "completed",
-    "success",
-  ];
+//   const positiveStatuses = [
+//     "active",
+//     "aktif",
+//     "done",
+//     "completed",
+//     "success",
+//   ];
 
-  return {
-    label: value || "-",
-    positive: positiveStatuses.includes(normalized),
-  };
-};
+//   return {
+//     label: value || "-",
+//     positive: positiveStatuses.includes(normalized),
+//   };
+// };
 
 // ==============================
 // MAPPING DETAIL PESANAN
@@ -197,18 +196,28 @@ const mapInvoiceItemsToOrders = (
 
 const mapInvoicePayments = (
   payments: NonNullable<InvoiceDetail["payments"]>
-): ReservasiPayment[] =>
+): InvoicePaymentRow[] =>
   payments.map((payment, index) => ({
-    id: String(index + 1),
+    id: String(payment.id ?? payment.payment_id ?? index + 1),
+    serverId: payment.payment_id ?? payment.id,
+
     paymentDate: payment.payment_date ?? null,
+    paymentType: payment.payment_type ?? "",
+    paymentTypeValue: payment.payment_type ?? "",
+
+    uploadType:
+      payment.payment_type === "surat_keterangan"
+        ? "surat_keterangan"
+        : "bukti_bayar",
+
     paymentMethod: payment.payment_method ?? "",
     accountHolderName: payment.account_holder_name ?? "",
+    depositNumber: payment.deposit_number ?? "",
     fromBank: payment.from_bank ?? "",
     toBank: payment.to_bank ?? "",
-    amount: Number(payment.amount) || 0,
+    amount: payment.amount ?? 0,
     notes: payment.notes ?? "",
     proof: payment.proof_of_payment ?? "",
-    status: "-",
   }));
 
 // ==============================
@@ -410,10 +419,10 @@ export default function CreateReservasi() {
   // EVENT ORDER HANDLERS
   // ==============================
 
-  const handleAddEventOrder = () => {
-    setEditingEventOrderIndex(null);
-    setOpenCreateEventOrder(true);
-  };
+  // const handleAddEventOrder = () => {
+  //   setEditingEventOrderIndex(null);
+  //   setOpenCreateEventOrder(true);
+  // };
 
   const handleEditEventOrder = (index: number) => {
     setEditingEventOrderIndex(index);
@@ -422,7 +431,7 @@ export default function CreateReservasi() {
 
   const handleCreateEventOrder = async (
     payload: EventOrderForm,
-    attachments: File[]
+    // attachments: File[]
   ): Promise<void> => {
     setEventOrders((prev) => [...prev, payload]);
 
@@ -432,7 +441,7 @@ export default function CreateReservasi() {
 
   const handleUpdateEventOrder = async (
     payload: EventOrderForm,
-    attachments: File[]
+    // attachments: File[]
   ): Promise<void> => {
     if (editingEventOrderIndex === null) return;
 
@@ -448,12 +457,12 @@ export default function CreateReservasi() {
 
   const handleSubmitEventOrder = async (
     payload: EventOrderForm,
-    attachments: File[]
+    // attachments: File[]
   ): Promise<void> => {
     if (editingEventOrderIndex !== null) {
-      await handleUpdateEventOrder(payload, attachments);
+      await handleUpdateEventOrder(payload);
     } else {
-      await handleCreateEventOrder(payload, attachments);
+      await handleCreateEventOrder(payload);
     }
   };
 
@@ -877,6 +886,7 @@ export default function CreateReservasi() {
             <div className="p-5">
               <DetailPaymentTable
                 data={mapInvoicePayments(selectedInvoice.payments ?? [])}
+                 hideActions
               />
             </div>
           </DetailSection>
@@ -1011,16 +1021,16 @@ export default function CreateReservasi() {
             icon={Users}
             title="Event Order"
             variant="orange"
-            action={
-              <Button
-                variant="primer"
-                size="lg"
-                onClick={handleAddEventOrder}
-              >
-                <Plus size={16} />
-                Tambah
-              </Button>
-            }
+            // action={
+            //   <Button
+            //     variant="primer"
+            //     size="lg"
+            //     onClick={handleAddEventOrder}
+            //   >
+            //     <Plus size={16} />
+            //     Tambah
+            //   </Button>
+            // }
           >
             <div className="space-y-4 p-5">
               {generateLoading && (
@@ -1049,16 +1059,16 @@ export default function CreateReservasi() {
                 const isIR = String(item.department_id) === "DP005";
                 const isFinance = String(item.department_id) === "DP013";
 
-                const status = getEventOrderStatus(
-                  item.status,
-                  item.status_label,
-                );
+                // const status = getEventOrderStatus(
+                //   item.status,
+                //   item.status_label,
+                // );
 
-                const shoppingVoucher = Array.isArray(item.shopping_voucher)
-                  ? item.shopping_voucher.length > 0
-                    ? item.shopping_voucher.join(", ")
-                    : "-"
-                  : item.shopping_voucher ?? "-";
+                // const shoppingVoucher = Array.isArray(item.shopping_voucher)
+                //   ? item.shopping_voucher.length > 0
+                //     ? item.shopping_voucher.join(", ")
+                //     : "-"
+                //   : item.shopping_voucher ?? "-";
 
                 return (
                   <div
@@ -1206,7 +1216,6 @@ export default function CreateReservasi() {
         </>
       )}
 
-      {/* MODAL CREATE / EDIT EVENT ORDER */}
       {/* MODAL CREATE / EDIT EVENT ORDER */}
 
       <CreateEventOrderModal

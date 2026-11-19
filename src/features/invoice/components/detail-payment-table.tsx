@@ -1,3 +1,4 @@
+
 import DataTable from "@/components/data-table/data-table";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { dataTableFeatures } from "@/components/data-table/table-features";
@@ -10,26 +11,35 @@ import type { InvoicePaymentRow } from "../types/invoice";
 type DetailPaymentTableProps = {
   data: InvoicePaymentRow[];
   actionsDisabled?: boolean;
-  onEdit: (payment: InvoicePaymentRow) => void;
-  onDelete: (payment: InvoicePaymentRow) => void;
+  hideActions?: boolean;
+  onEdit?: (payment: InvoicePaymentRow) => void;
+  onDelete?: (payment: InvoicePaymentRow) => void;
 };
 
 export default function DetailPaymentTable({
   data,
   actionsDisabled = false,
+  hideActions = false,
   onEdit,
   onDelete,
 }: DetailPaymentTableProps) {
-  const columns = useMemo(
-    () =>
-      getInvoicePaymentColumns({
-        disabled: actionsDisabled,
-        onEdit,
-        onDelete,
-      }),
-    [actionsDisabled, onDelete, onEdit],
-  );
-  const table = useTable({ features: dataTableFeatures, data, columns });
+  const columns = useMemo(() => {
+    const paymentColumns = getInvoicePaymentColumns({
+      disabled: actionsDisabled || hideActions,
+      onEdit: onEdit ?? (() => {}),
+      onDelete: onDelete ?? (() => {}),
+    });
+
+    return hideActions
+      ? paymentColumns.filter((column) => column.id !== "actions")
+      : paymentColumns;
+  }, [actionsDisabled, hideActions, onEdit, onDelete]);
+
+  const table = useTable({
+    features: dataTableFeatures,
+    data,
+    columns,
+  });
 
   return (
     <>
@@ -43,6 +53,7 @@ export default function DetailPaymentTable({
           emptyDescription="Pembayaran yang ditambahkan akan tampil di sini."
         />
       </div>
+
       <div className="hidden overflow-hidden rounded-lg border border-slate-300 md:block">
         <DataTable table={table} cellClassName="px-3 py-2" />
       </div>

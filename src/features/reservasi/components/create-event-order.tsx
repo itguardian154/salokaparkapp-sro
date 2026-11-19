@@ -14,7 +14,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Departemen } from "@/features/departemen/types/departemen";
-import type { InvoiceDetail } from "@/features/invoice/types/invoice";
 import type { LokasiPenyajianRecord } from "@/features/master/lokasi-penyajian/types/lokasi-penyajian";
 import type { CreateReservasiEventOrder } from "../types/reservasi";
 
