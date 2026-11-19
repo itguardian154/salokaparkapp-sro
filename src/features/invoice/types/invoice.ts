@@ -54,6 +54,7 @@ export type InvoiceListParams = {
   per_page: number;
   "filter[search]"?: string;
   "filter[status]"?: string;
+  "filter[has_sales_order]"?: number;
 };
 
 export type InvoiceDetailItem = {

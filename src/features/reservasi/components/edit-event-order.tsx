@@ -66,7 +66,7 @@ const EMPTY_FORM: EditReservasiEventOrder = {
   quantity: null,
   unit_price: null,
   total_price: null,
-  shopping_voucher: null,
+  shopping_voucher: [],
   voucher_tour_leader: null,
   meal_voucher: null,
   ticket_print_date: null,
@@ -166,9 +166,65 @@ const EditEventOrderModal = ({
   const departemenPembuat =
     localStorage.getItem("departemen") ?? "";
 
-  const requestName = `${namaKaryawan}${
-    departemenPembuat ? ` - ${departemenPembuat}` : ""
-  }`;
+  const requestName = `${namaKaryawan}${departemenPembuat ? ` - ${departemenPembuat}` : ""
+    }`;
+  const descRequestRef = useRef<HTMLTextAreaElement>(null);
+
+  const applyDescriptionFormat = (
+    type: "bold" | "italic" | "number",
+  ) => {
+    const textarea = descRequestRef.current;
+    if (!textarea) return;
+
+    const value = formData.description ?? "";
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.substring(start, end);
+
+    let newValue = value;
+    let cursorStart = start;
+    let cursorEnd = end;
+
+    if (type === "bold" || type === "italic") {
+      const marker = type === "bold" ? "**" : "*";
+      const text = selectedText || "teks";
+
+      newValue =
+        value.substring(0, start) +
+        marker +
+        text +
+        marker +
+        value.substring(end);
+
+      cursorStart = start + marker.length;
+      cursorEnd = cursorStart + text.length;
+    }
+
+    if (type === "number") {
+      const text = selectedText || "";
+      const numberedText = text
+        ? text
+          .split("\n")
+          .map((line, index) => `${index + 1}. ${line}`)
+          .join("\n")
+        : "1. ";
+
+      newValue =
+        value.substring(0, start) +
+        numberedText +
+        value.substring(end);
+
+      cursorStart = start;
+      cursorEnd = start + numberedText.length;
+    }
+
+    updateField("description", newValue || null);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursorStart, cursorEnd);
+    });
+  };
 
   const updateField = <K extends keyof EditReservasiEventOrder>(
     field: K,
@@ -355,21 +411,21 @@ const EditEventOrderModal = ({
   const handleSubmit = async () => {
     if (submitting || !formData.department_id) return;
 
-    let shoppingVoucher = 0;
-
-    kuponBelanja.forEach((item) => {
-      const jumlah = Number(item.jumlah) || 0;
-      const pecahan = Number(item.pecahan) || 0;
-
-      shoppingVoucher += jumlah * pecahan;
-    });
+    const shoppingVoucher = kuponBelanja
+      .filter(
+        (item) =>
+          Number(item.jumlah) > 0 &&
+          Number(item.pecahan) > 0,
+      )
+      .map((item) => ({
+        name: "Kupon Belanja",
+        quantity: item.jumlah,
+        pecahan: item.pecahan,
+      }));
 
     const payload: EditReservasiEventOrder = {
       ...formData,
-      shopping_voucher:
-        shoppingVoucher > 0
-          ? shoppingVoucher
-          : formData.shopping_voucher,
+      shopping_voucher: shoppingVoucher,
       department_id: String(formData.department_id),
       department_name: formData.department_name,
       status: formData.status || "draft",
@@ -463,7 +519,7 @@ const EditEventOrderModal = ({
                 loadingDepartemen
                   ? "Memuat departemen..."
                   : departemenError ??
-                    "Departemen tidak ditemukan"
+                  "Departemen tidak ditemukan"
               }
             />
           </Field>
@@ -769,10 +825,50 @@ const EditEventOrderModal = ({
           {/* INFORMASI UMUM */}
 
           {formData.department_id && (
-            <>
-              <Field className="md:col-span-2">
-                <FieldLabel>Desc Request</FieldLabel>
+            <Field className="md:col-span-2">
+              <FieldLabel>Desc Request</FieldLabel>
+
+              <div className="overflow-hidden rounded-md border">
+                <div className="flex items-center gap-1 border-b bg-muted/40 p-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => applyDescriptionFormat("bold")}
+                    className="h-8 w-8 p-0 font-bold"
+                    title="Bold"
+                  >
+                    B
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => applyDescriptionFormat("italic")}
+                    className="h-8 w-8 p-0 italic"
+                    title="Italic"
+                  >
+                    I
+                  </Button>
+
+                  <div className="mx-1 h-5 w-px bg-border" />
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => applyDescriptionFormat("number")}
+                    className="h-8 px-2"
+                    title="Numbered List"
+                  >
+                    <span className="font-semibold">1.</span>
+                    <span className="ml-1">List</span>
+                  </Button>
+                </div>
+
                 <Textarea
+                  ref={descRequestRef}
                   value={formData.description ?? ""}
                   onChange={(event) =>
                     updateField(
@@ -781,9 +877,10 @@ const EditEventOrderModal = ({
                     )
                   }
                   placeholder="Masukkan deskripsi request"
+                  className="min-h-[120px] resize-y rounded-none border-0 focus-visible:ring-0"
                 />
-              </Field>
-            </>
+              </div>
+            </Field>
           )}
         </div>
 
@@ -819,11 +916,10 @@ const EditEventOrderModal = ({
                 setDraggingFiles(false);
                 addAttachments(event.dataTransfer.files);
               }}
-              className={`flex min-h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-3 text-center ${
-                draggingFiles
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-blue-200 hover:bg-blue-50/50 dark:border-slate-600"
-              }`}
+              className={`flex min-h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-3 text-center ${draggingFiles
+                ? "border-blue-500 bg-blue-50"
+                : "border-blue-200 hover:bg-blue-50/50 dark:border-slate-600"
+                }`}
             >
               <FaUpload className="text-lg text-blue-600" />
               <span className="text-sm font-medium">

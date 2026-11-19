@@ -14,7 +14,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Departemen } from "@/features/departemen/types/departemen";
+import type { InvoiceDetail } from "@/features/invoice/types/invoice";
+import type { LokasiPenyajianRecord } from "@/features/master/lokasi-penyajian/types/lokasi-penyajian";
 import type { CreateReservasiEventOrder } from "../types/reservasi";
+
+import { getMasterLokasiPenyajian } from "@/features/master/lokasi-penyajian/service/lokasi-penyajian-service";
 
 import { useEffect, useRef, useState } from "react";
 import { FaSave } from "react-icons/fa";
@@ -26,12 +30,23 @@ import {
     FaXmark,
 } from "react-icons/fa6";
 
+
 type DepartemenOptions = {
     items: Departemen[];
     search: string;
     onSearchChange: (value: string) => void;
     loading: boolean;
     error: string | null;
+};
+
+type EventOrderPackage = {
+    id: number;
+    product_id: number;
+    product_name?: string | null;
+    product_description?: string | null;
+    quantity: number | string;
+    unit_price: number | string;
+    subtotal?: number | string | null;
 };
 
 type CreateEventOrderModalProps = {
@@ -44,6 +59,7 @@ type CreateEventOrderModalProps = {
     submitting?: boolean;
     initialData?: CreateReservasiEventOrder | null;
     departemenOptions: DepartemenOptions;
+    invoiceItems: EventOrderPackage[];
 };
 
 type KuponBelanja = {
@@ -86,14 +102,6 @@ const penyajianOptions = [
     "Platter",
 ];
 
-const tempatPenyajianOptions = [
-    "Restaurant",
-    "Hall",
-    "Meeting Room",
-    "Outdoor",
-    "Lobby",
-];
-
 const pecahanOptions = [
     { label: "Rp 1.000", value: 1000 },
     { label: "Rp 2.000", value: 2000 },
@@ -129,6 +137,7 @@ const CreateEventOrderModal = ({
     submitting = false,
     initialData,
     departemenOptions,
+    invoiceItems,
 }: CreateEventOrderModalProps) => {
     const {
         items: departemen,
@@ -145,6 +154,15 @@ const CreateEventOrderModal = ({
     const [openDepartemen, setOpenDepartemen] = useState(false);
     const [selectedDepartemen, setSelectedDepartemen] =
         useState<Departemen | null>(null);
+
+    const [selectedInvoiceItemId, setSelectedInvoiceItemId] =
+        useState("");
+
+    const [lokasiPenyajianOptions, setLokasiPenyajianOptions] =
+        useState<LokasiPenyajianRecord[]>([]);
+
+    const [loadingLokasiPenyajian, setLoadingLokasiPenyajian] =
+        useState(false);
 
     const [kuponBelanja, setKuponBelanja] = useState<KuponBelanja[]>([
         { name: "", quantity: "", pecahan: "" },
@@ -180,13 +198,59 @@ const CreateEventOrderModal = ({
         }));
     };
 
+    // Ambil data Master Lokasi Penyajian
+    useEffect(() => {
+        if (!open) return;
+
+        const controller = new AbortController();
+
+        const fetchLokasiPenyajian = async () => {
+            try {
+                setLoadingLokasiPenyajian(true);
+
+                const response = await getMasterLokasiPenyajian(
+                    {
+                        page: 1,
+                        per_page: 100,
+                    },
+                    controller.signal,
+                );
+
+                if (!controller.signal.aborted) {
+                    setLokasiPenyajianOptions(
+                        response.data.filter((item) => item.is_active),
+                    );
+                }
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error(
+                        "Gagal mengambil lokasi penyajian:",
+                        error,
+                    );
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoadingLokasiPenyajian(false);
+                }
+            }
+        };
+
+        void fetchLokasiPenyajian();
+
+        return () => controller.abort();
+    }, [open]);
+
+    // Inisialisasi form ketika modal dibuka
     useEffect(() => {
         if (!open) return;
 
         setDateTime(getCurrentDateTime());
 
         if (initialData) {
-            setFormData({ ...EMPTY_FORM, ...initialData });
+            setFormData({
+                ...EMPTY_FORM,
+                ...initialData,
+            });
 
             setKuponBelanja(
                 Array.isArray(initialData.shopping_voucher) &&
@@ -206,9 +270,27 @@ const CreateEventOrderModal = ({
             );
 
             setSelectedDepartemen(department ?? null);
+
+            // Cocokkan paket yang sebelumnya dipilih
+            const matchedItem = invoiceItems.find(
+                (item) =>
+                    item.product_id === initialData.product_id &&
+                    (item.product_description ?? item.product_name) ===
+                    initialData.product_description &&
+                    Number(item.quantity) ===
+                    Number(initialData.quantity) &&
+                    Number(item.unit_price) ===
+                    Number(initialData.unit_price),
+            );
+
+            setSelectedInvoiceItemId(
+                matchedItem ? String(matchedItem.id) : "",
+            );
         } else {
             setFormData({ ...EMPTY_FORM });
             setSelectedDepartemen(null);
+            setSelectedInvoiceItemId("");
+
             setKuponBelanja([
                 { name: "", quantity: "", pecahan: "" },
             ]);
@@ -217,13 +299,15 @@ const CreateEventOrderModal = ({
         setAttachments([]);
         setAttachmentError("");
         setDraggingFiles(false);
-    }, [open, initialData]);
+    }, [open, initialData, departemen, invoiceItems]);
 
+    // Bersihkan URL preview file
     useEffect(
         () => () => {
             previewUrls.current.forEach((url) =>
                 URL.revokeObjectURL(url),
             );
+
             previewUrls.current.clear();
         },
         [],
@@ -232,6 +316,7 @@ const CreateEventOrderModal = ({
     const clearForm = () => {
         setFormData({ ...EMPTY_FORM });
         setSelectedDepartemen(null);
+        setSelectedInvoiceItemId("");
         setSearchDepartemen("");
         setOpenDepartemen(false);
         setKuponBelanja([]);
@@ -242,11 +327,13 @@ const CreateEventOrderModal = ({
         previewUrls.current.forEach((url) =>
             URL.revokeObjectURL(url),
         );
+
         previewUrls.current.clear();
     };
 
     const handleClose = () => {
         if (submitting) return;
+
         clearForm();
         onClose();
     };
@@ -263,6 +350,38 @@ const CreateEventOrderModal = ({
         setOpenDepartemen(false);
         setSearchDepartemen("");
     };
+
+    // Pilih item invoice dan isi otomatis data paket
+    const handleSelectInvoiceItem = (itemId: string | null) => {
+    if (!itemId) {
+        setSelectedInvoiceItemId("");
+        return;
+    }
+
+    const item = invoiceItems.find(
+        (item) => String(item.id) === itemId,
+    );
+
+    if (!item) return;
+
+    const quantity = Number(item.quantity) || 0;
+    const unitPrice = Number(item.unit_price) || 0;
+    const totalPrice =
+        Number(item.subtotal) || quantity * unitPrice;
+
+    setSelectedInvoiceItemId(itemId);
+
+    setFormData((current) => ({
+        ...current,
+        product_id: item.product_id,
+        product_code: null,
+        product_description:
+            item.product_description ?? item.product_name ?? null,
+        quantity,
+        unit_price: unitPrice,
+        total_price: totalPrice,
+    }));
+};
 
     const handleAddKuponBelanja = () => {
         setKuponBelanja((current) => [
@@ -316,6 +435,7 @@ const CreateEventOrderModal = ({
         previewUrls.current.forEach((url) =>
             URL.revokeObjectURL(url),
         );
+
         previewUrls.current.clear();
 
         if (selectedFile.type.startsWith("image/")) {
@@ -417,9 +537,7 @@ const CreateEventOrderModal = ({
                         disabled={submitting || !formData.department_id}
                     >
                         <FaSave size={14} />
-                        {submitting
-                            ? "Menyimpan..."
-                            : "Simpan"}
+                        {submitting ? "Menyimpan..." : "Simpan"}
                     </Button>
                 </div>
             }
@@ -492,12 +610,26 @@ const CreateEventOrderModal = ({
 
                             <Field>
                                 <FieldLabel>Paket</FieldLabel>
-                                <Input
-                                    value={formData.product_description ?? ""}
-                                    readOnly
-                                    placeholder="Auto fill"
-                                    className="bg-slate-100"
-                                />
+                                <Select
+                                    value={selectedInvoiceItemId}
+                                    onValueChange={handleSelectInvoiceItem}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Pilih paket dari invoice" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                        {invoiceItems.map((item) => (
+                                            <SelectItem
+                                                key={item.id}
+                                                value={String(item.id)}
+                                            >
+                                                {item.product_description ??
+                                                    item.product_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </Field>
 
                             <Field>
@@ -505,15 +637,22 @@ const CreateEventOrderModal = ({
                                 <Select
                                     value={formData.serving_type ?? ""}
                                     onValueChange={(value) =>
-                                        updateField("serving_type", value ?? null)
+                                        updateField(
+                                            "serving_type",
+                                            value || null,
+                                        )
                                     }
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Pilih penyajian" />
                                     </SelectTrigger>
+
                                     <SelectContent>
                                         {penyajianOptions.map((item) => (
-                                            <SelectItem key={item} value={item}>
+                                            <SelectItem
+                                                key={item}
+                                                value={item}
+                                            >
                                                 {item}
                                             </SelectItem>
                                         ))}
@@ -564,17 +703,27 @@ const CreateEventOrderModal = ({
                                     onValueChange={(value) =>
                                         updateField(
                                             "serving_location",
-                                            value ?? null,
+                                            value || null,
                                         )
                                     }
                                 >
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Pilih tempat penyajian" />
+                                        <SelectValue
+                                            placeholder={
+                                                loadingLokasiPenyajian
+                                                    ? "Memuat lokasi..."
+                                                    : "Pilih tempat penyajian"
+                                            }
+                                        />
                                     </SelectTrigger>
+
                                     <SelectContent>
-                                        {tempatPenyajianOptions.map((item) => (
-                                            <SelectItem key={item} value={item}>
-                                                {item}
+                                        {lokasiPenyajianOptions.map((item) => (
+                                            <SelectItem
+                                                key={item.id}
+                                                value={item.name}
+                                            >
+                                                {item.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -743,6 +892,7 @@ const CreateEventOrderModal = ({
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Pilih pecahan" />
                                                     </SelectTrigger>
+
                                                     <SelectContent>
                                                         {pecahanOptions.map((option) => (
                                                             <SelectItem
@@ -761,7 +911,9 @@ const CreateEventOrderModal = ({
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={kuponBelanja.length === 1}
-                                                onClick={() => handleDeleteKuponBelanja(index)}
+                                                onClick={() =>
+                                                    handleDeleteKuponBelanja(index)
+                                                }
                                                 className="h-10 w-10 text-red-500"
                                             >
                                                 <FaXmark />
@@ -808,52 +960,6 @@ const CreateEventOrderModal = ({
                                     placeholder="Masukkan deskripsi request"
                                 />
                             </Field>
-
-                            {/* <Field>
-                <FieldLabel>Lokasi Detail</FieldLabel>
-                <Input
-                  value={formData.location_detail ?? ""}
-                  onChange={(event) =>
-                    updateField(
-                      "location_detail",
-                      event.target.value || null,
-                    )
-                  }
-                  placeholder="Masukkan detail lokasi"
-                />
-              </Field> */}
-
-                            {/* <Field>
-                <FieldLabel>Waktu Mulai</FieldLabel>
-                <Input
-                  type="datetime-local"
-                  value={
-                    formData.start_at?.slice(0, 16) ?? ""
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "start_at",
-                      event.target.value || null,
-                    )
-                  }
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>Waktu Selesai</FieldLabel>
-                <Input
-                  type="datetime-local"
-                  value={
-                    formData.end_at?.slice(0, 16) ?? ""
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "end_at",
-                      event.target.value || null,
-                    )
-                  }
-                />
-              </Field> */}
                         </>
                     )}
                 </div>
@@ -873,6 +979,7 @@ const CreateEventOrderModal = ({
                                 if (event.target.files) {
                                     addAttachments(event.target.files);
                                 }
+
                                 event.target.value = "";
                             }}
                         />
@@ -890,15 +997,18 @@ const CreateEventOrderModal = ({
                                 setDraggingFiles(false);
                                 addAttachments(event.dataTransfer.files);
                             }}
-                            className={`flex min-h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-3 text-center ${draggingFiles
-                                ? "border-blue-500 bg-blue-50"
-                                : "border-blue-200 hover:bg-blue-50/50 dark:border-slate-600"
-                                }`}
+                            className={`flex min-h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-3 text-center ${
+                                draggingFiles
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-blue-200 hover:bg-blue-50/50 dark:border-slate-600"
+                            }`}
                         >
                             <FaUpload className="text-lg text-blue-600" />
+
                             <span className="text-sm font-medium">
                                 Drag & drop file di sini
                             </span>
+
                             <span className="text-xs text-slate-500">
                                 PDF, JPG, JPEG, PNG (Maksimal 5 MB)
                             </span>
@@ -935,6 +1045,7 @@ const CreateEventOrderModal = ({
                                         <span className="block truncate text-sm font-medium">
                                             {file.name}
                                         </span>
+
                                         <span className="text-xs text-slate-500">
                                             {formatFileSize(file.size)}
                                         </span>
