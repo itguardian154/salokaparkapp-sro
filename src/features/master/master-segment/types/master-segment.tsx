@@ -39,11 +39,18 @@ export type CreateSegmentPayload = {
   name: string;
   is_active: boolean;
   details: {
+    id?: number;
     name: string | null;
     is_active: boolean;
     sub_details: {
+      id?: number;
       name: string | null;
       is_active: boolean | null;
+      options: {
+        id?: number;
+        name: string;
+        is_active: boolean;
+      }[];
     }[];
   }[];
 };

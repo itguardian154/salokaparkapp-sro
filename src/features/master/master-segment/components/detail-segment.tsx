@@ -198,27 +198,45 @@ const DetailMasterSegment = ({
                                                     (subDetail, subIndex) => (
                                                         <div
                                                             key={subDetail.id}
-                                                            className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3 transition-colors hover:bg-slate-100/80 dark:border-slate-700 dark:bg-slate-900/30 dark:hover:bg-slate-900/60"
+                                                            className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3 transition-colors hover:bg-slate-100/80 dark:border-slate-700 dark:bg-slate-900/30 dark:hover:bg-slate-900/60"
                                                         >
-                                                            <div className="flex min-w-0 items-center gap-3">
-                                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                                                    <Tags size={15} />
+                                                            <div className="flex min-w-0 items-center justify-between gap-3">
+                                                                <div className="flex min-w-0 items-center gap-3">
+                                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                                        <Tags size={15} />
+                                                                    </div>
+
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                                                            Sub Detail {subIndex + 1}
+                                                                        </p>
+
+                                                                        <p className="break-words text-sm font-medium text-slate-700 dark:text-slate-200">
+                                                                            {subDetail.name || "-"}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
 
-                                                                <div className="min-w-0">
-                                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                                                                        Sub Detail {subIndex + 1}
-                                                                    </p>
-
-                                                                    <p className="break-words text-sm font-medium text-slate-700 dark:text-slate-200">
-                                                                        {subDetail.name || "-"}
-                                                                    </p>
-                                                                </div>
+                                                                <StatusBadge active={subDetail.is_active} />
                                                             </div>
 
-                                                            <StatusBadge
-                                                                active={subDetail.is_active}
-                                                            />
+                                                            <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                                                    Options
+                                                                </p>
+                                                                {subDetail.options?.length ? (
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {subDetail.options.map((option) => (
+                                                                            <div key={option.id} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
+                                                                                <span className="text-sm text-slate-700 dark:text-slate-200">{option.name || "-"}</span>
+                                                                                <StatusBadge active={option.is_active} />
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada option.</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ),
                                                 )}

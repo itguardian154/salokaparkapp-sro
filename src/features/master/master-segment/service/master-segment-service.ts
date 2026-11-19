@@ -3,10 +3,11 @@ import axios from "axios";
 import API_URLS from "@/config/env";
 import type {
   Segment,
-  PaginatedResponse,
   CreateSegmentPayload,
   UpdateSegmentPayload,
   SegmentDetailRecord,
+  SegmentListResponse,
+  SegmentQueryParams,
 } from "../types/master-segment";
 
 const getAuthHeaders = () => {
@@ -23,16 +24,20 @@ const getAuthHeaders = () => {
 };
 
 // GET LIST SEGMENTS
-export const getSegments = async (): Promise<Segment[]> => {
-  const response = await axios.get<PaginatedResponse<Segment>>(
+export const getSegments = async (
+  params: SegmentQueryParams,
+  signal?: AbortSignal,
+): Promise<SegmentListResponse> => {
+  const response = await axios.get<SegmentListResponse>(
     `${API_URLS.sro}segments`,
     {
-      params: { per_page: 100 },
+      params,
+      signal,
       headers: getAuthHeaders(),
     },
   );
 
-  return response.data.data;
+  return response.data;
 };
 
 // GET DETAIL SEGMENT BY ID

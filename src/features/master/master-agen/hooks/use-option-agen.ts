@@ -14,6 +14,7 @@ type UseOptionAgentOptions = {
   province_name?: string;
   city_name?: string;
   is_active?: boolean;
+  partner_branch_id?: string;
 };
 
 export const useOptionAgent = ({

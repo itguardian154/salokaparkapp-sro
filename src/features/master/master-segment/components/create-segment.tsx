@@ -21,6 +21,12 @@ type CreateMasterSegmentProps = {
 
 type SubDetailForm = {
   name: string;
+  options: OptionForm[];
+};
+
+type OptionForm = {
+  name: string;
+  is_active: boolean;
 };
 
 type DetailForm = {
@@ -37,6 +43,7 @@ type ValidationErrors = Record<string, string>;
 
 const initialSubDetail: SubDetailForm = {
   name: "",
+  options: [],
 };
 
 const initialDetail: DetailForm = {
@@ -148,6 +155,41 @@ const CreateMasterSegment = ({
     );
   };
 
+  const handleOptionChange = (
+    detailIndex: number,
+    subIndex: number,
+    optionIndex: number,
+    field: keyof OptionForm,
+    value: string | boolean,
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+      details: previous.details.map((detail, index) =>
+        index !== detailIndex
+          ? detail
+          : {
+              ...detail,
+              sub_details: detail.sub_details.map((subDetail, indexSub) =>
+                indexSub !== subIndex
+                  ? subDetail
+                  : {
+                      ...subDetail,
+                      options: subDetail.options.map((option, indexOption) =>
+                        indexOption === optionIndex
+                          ? { ...option, [field]: value }
+                          : option,
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+
+    clearError(
+      `details.${detailIndex}.sub_details.${subIndex}.options.${optionIndex}.${field}`,
+    );
+  };
+
   // TAMBAH DETAIL SEGMENT
   const handleAddDetail = () => {
     setForm((previous) => ({
@@ -218,6 +260,54 @@ const CreateMasterSegment = ({
     setValidationErrors({});
   };
 
+  const handleAddOption = (detailIndex: number, subIndex: number) => {
+    setForm((previous) => ({
+      ...previous,
+      details: previous.details.map((detail, index) =>
+        index !== detailIndex
+          ? detail
+          : {
+              ...detail,
+              sub_details: detail.sub_details.map((subDetail, indexSub) =>
+                indexSub === subIndex
+                  ? {
+                      ...subDetail,
+                      options: [...subDetail.options, { name: "", is_active: true }],
+                    }
+                  : subDetail,
+              ),
+            },
+      ),
+    }));
+  };
+
+  const handleRemoveOption = (
+    detailIndex: number,
+    subIndex: number,
+    optionIndex: number,
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+      details: previous.details.map((detail, index) =>
+        index !== detailIndex
+          ? detail
+          : {
+              ...detail,
+              sub_details: detail.sub_details.map((subDetail, indexSub) =>
+                indexSub === subIndex
+                  ? {
+                      ...subDetail,
+                      options: subDetail.options.filter(
+                        (_, indexOption) => indexOption !== optionIndex,
+                      ),
+                    }
+                  : subDetail,
+              ),
+            },
+      ),
+    }));
+  };
+
   // SUBMIT
   const handleSubmit = async () => {
     if (submitting) return;
@@ -231,6 +321,10 @@ const CreateMasterSegment = ({
         sub_details: detail.sub_details.map((subDetail) => ({
           name: subDetail.name.trim() || null,
           is_active: true,
+          options: subDetail.options.map((option) => ({
+            name: option.name.trim(),
+            is_active: option.is_active,
+          })),
         })),
       })),
     };
@@ -419,7 +513,7 @@ const CreateMasterSegment = ({
                           key={subIndex}
                           className="flex items-start gap-2"
                         >
-                          <div className="flex-1">
+                          <div className="flex-1 space-y-3">
                             <Field>
                               <FieldLabel>
                                 Sub Segmen Detail {subIndex + 1}
@@ -447,6 +541,66 @@ const CreateMasterSegment = ({
                                 </p>
                               )}
                             </Field>
+
+                            <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                              <div className="mb-3 flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium">Option</p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAddOption(detailIndex, subIndex)}
+                                  disabled={submitting}
+                                >
+                                  <FaPlus size={11} />
+                                  Tambah Option
+                                </Button>
+                              </div>
+                              {subDetail.options.length === 0 ? (
+                                <p className="text-xs text-slate-500">Belum ada option.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {subDetail.options.map((option, optionIndex) => (
+                                    <div key={optionIndex} className="flex items-start gap-2">
+                                      <div className="min-w-0 flex-1 space-y-2">
+                                        <Input
+                                          value={option.name}
+                                          onChange={(event) =>
+                                            handleOptionChange(detailIndex, subIndex, optionIndex, "name", event.target.value)
+                                          }
+                                          placeholder={`Nama option ${optionIndex + 1}`}
+                                        />
+                                        {getError(`details.${detailIndex}.sub_details.${subIndex}.options.${optionIndex}.name`) && (
+                                          <p className="text-sm text-red-500">
+                                            {getError(`details.${detailIndex}.sub_details.${subIndex}.options.${optionIndex}.name`)}
+                                          </p>
+                                        )}
+                                        <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                          <input
+                                            type="checkbox"
+                                            checked={option.is_active}
+                                            onChange={(event) =>
+                                              handleOptionChange(detailIndex, subIndex, optionIndex, "is_active", event.target.checked)
+                                            }
+                                          />
+                                          Aktif
+                                        </label>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        onClick={() => handleRemoveOption(detailIndex, subIndex, optionIndex)}
+                                        disabled={submitting}
+                                        aria-label={`Hapus option ${optionIndex + 1}`}
+                                      >
+                                        <FaTrash size={12} />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           <Button

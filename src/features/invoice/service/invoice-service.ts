@@ -38,6 +38,22 @@ export const getInvoice = async (id: string, signal?: AbortSignal) => {
   return response.data.data;
 };
 
+export const downloadInvoicePdf = async (
+  id: string,
+  signal?: AbortSignal,
+): Promise<Blob> => {
+  const response = await axios.get<Blob>(`${invoiceUrl}/${id}/pdf`, {
+    responseType: "blob",
+    signal,
+    headers: {
+      ...getAuthHeaders(),
+      Accept: "application/pdf",
+    },
+  });
+
+  return response.data;
+};
+
 export const createInvoice = async (payload: FormData) => {
   const response = await axios.post<InvoiceDetailResponse>(invoiceUrl, payload, {
     headers: getAuthHeaders(),

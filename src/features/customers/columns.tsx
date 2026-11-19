@@ -30,12 +30,6 @@ export function getCustomerColumns(
       cell: ({ row }) => row.original.segment?.name ?? "-",
     },
     {
-      accessorKey: "segment_detail",
-      header: "Segment Detail",
-      cell: ({ row }) => row.original.segment_detail?.name ?? "-",
-    },
-
-    {
       accessorKey: "phone",
       header: "WhatsApp",
     },

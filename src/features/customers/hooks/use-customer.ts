@@ -12,6 +12,7 @@ const DEFAULT_ITEM_PER_PAGE = 25;
 type UseCustomerOptions = {
   segmentId?: number | null;
   is_active?: boolean;
+  enabled?: boolean;
 };
 
 const useCustomer = (
@@ -27,6 +28,8 @@ const useCustomer = (
     options && typeof options === "object" && options.is_active
       ? "1"
       : "";
+  const enabled =
+    !options || typeof options === "number" ? true : options.enabled ?? true;
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +69,12 @@ const useCustomer = (
   }, [segmentId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoadingData(false);
+      setDataCustomer([]);
+      return;
+    }
+
     const controller = new AbortController();
 
     const fetchCustomers = async () => {
@@ -135,6 +144,7 @@ const useCustomer = (
 
     return () => controller.abort();
   }, [
+    enabled,
     searchData,
     itemPerPage,
     currentPage,

@@ -75,6 +75,13 @@ export function getInvoiceColumns(): ColumnDef<
     {
       accessorKey: "kedatangan",
       header: "Kedatangan",
+       cell: ({ row }) => {
+        return (
+          <div className="whitespace-nowrap">
+            <span>{row.original.kedatangan ?? "-"}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "ticket",
@@ -100,10 +107,12 @@ export function getInvoiceColumns(): ColumnDef<
             ? "amber"
             : row.original.status_value === "waiting_finance"
               ? "blue"
+              : row.original.status_value === "done"
+              ? "success"
               : "muted";
 
         return (
-          <div className="flex justify-end lg:justify-center min-w-[180px]">
+          <div className="flex lg:justify-center min-w-[180px]">
             <Badge variant={variant}>{row.original.status}</Badge>
           </div>
         );
@@ -122,7 +131,7 @@ export function getInvoiceColumns(): ColumnDef<
               : "muted";
 
         return (
-          <div className="flex justify-end lg:justify-center">
+          <div className="flex lg:justify-center">
             <Badge variant={variant}>{row.original.payment_status}</Badge>
           </div>
         );

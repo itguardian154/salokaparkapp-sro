@@ -1,5 +1,4 @@
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTable } from "@tanstack/react-table";
 import type {
   ColumnVisibilityState,
@@ -17,16 +16,16 @@ import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
+import { useSegments } from "../hooks/use-master-segment";
 
 import { getMasterSegmentColumns } from "../columns";
 import CreateMasterSegment from "../components/create-segment";
 import UpdateMasterSegment from "../components/update-segment";
 import DetailMasterSegment from "../components/detail-segment";
 import {
-  getSegments,
   getSegmentById,
   createSegment,
- updateMasterSegment,
+  updateMasterSegment,
 } from "../service/master-segment-service";
 
 import type {
@@ -36,8 +35,6 @@ import type {
   UpdateSegmentPayload,
 } from "../types/master-segment";
 
-
-
 type MasterSegmentPageProps = {
   canEdit?: boolean;
 };
@@ -45,18 +42,26 @@ type MasterSegmentPageProps = {
 export default function MasterSegmentPage({
   canEdit = true,
 }: MasterSegmentPageProps) {
-  // DATA SEGMENT
-  const [segments, setSegments] = useState<Segment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // SEARCH DAN FILTER
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
-  // PAGINATION
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const {
+    segments,
+    loading,
+    error,
+    searchData: search,
+    setSearchData: setSearch,
+    statusFilter,
+    setStatusFilter,
+    itemPerPage: perPage,
+    setItemPerPage: setPerPage,
+    currentPage: page,
+    setPage,
+    lastPage: totalPages,
+    totalData,
+    fromPage,
+    toPage,
+    handleNextPage,
+    handlePrevPage,
+    refetch: fetchSegments,
+  } = useSegments({ is_active: null, itemPerPage: 10 });
 
   // COLUMN VISIBILITY
   const [columnVisibility, setColumnVisibility] =
@@ -79,54 +84,6 @@ export default function MasterSegmentPage({
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [updating, setUpdating] = useState(false);
-
-  // GET LIST SEGMENT
-  const fetchSegments = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getSegments();
-      setSegments(data);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Gagal mengambil data Master Segment.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchSegments();
-  }, [fetchSegments]);
-
-  // FILTER DATA
-  const filteredSegments = useMemo(() => {
-    return segments.filter((segment) => {
-      const matchesSearch = segment.name
-        .toLowerCase()
-        .includes(search.trim().toLowerCase());
-
-      const matchesStatus =
-        statusFilter === null ||
-        String(segment.is_active) === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [segments, search, statusFilter]);
-
-  // PAGINATION DATA
-  const totalData = filteredSegments.length;
-  const totalPages = Math.ceil(totalData / perPage);
-
-  const paginatedSegments = useMemo(() => {
-    const start = (page - 1) * perPage;
-
-    return filteredSegments.slice(start, start + perPage);
-  }, [filteredSegments, page, perPage]);
 
   // AMBIL DETAIL SEGMENT
   const handleOpenDetail = useCallback(async (segment: Segment) => {
@@ -186,12 +143,7 @@ export default function MasterSegmentPage({
 
   // COLUMNS
   const columns = useMemo(
-    () =>
-      getMasterSegmentColumns(
-        handleOpenDetail,
-        handleOpenEdit,
-        canEdit,
-      ),
+    () => getMasterSegmentColumns(handleOpenDetail, handleOpenEdit, canEdit),
     [handleOpenDetail, handleOpenEdit, canEdit],
   );
 
@@ -303,10 +255,9 @@ export default function MasterSegmentPage({
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setPage(1);
   };
 
-  const hasActiveFilters = statusFilter !== null;
+  const hasActiveFilters = Boolean(statusFilter);
 
   // PAGINATION TABLE
   const pagination: PaginationState = {
@@ -316,7 +267,7 @@ export default function MasterSegmentPage({
 
   const table = useTable({
     features: dataTableFeatures,
-    data: paginatedSegments,
+    data: segments,
     columns,
     state: {
       columnVisibility,
@@ -325,40 +276,16 @@ export default function MasterSegmentPage({
     manualPagination: true,
     pageCount: Math.max(totalPages, 1),
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: (updater) => {
-      const nextPagination =
-        typeof updater === "function"
-          ? updater(pagination)
-          : updater;
-
-      if (nextPagination.pageSize !== pagination.pageSize) {
-        setPerPage(nextPagination.pageSize);
-        setPage(1);
-      } else if (
-        nextPagination.pageIndex !== pagination.pageIndex
-      ) {
-        setPage(nextPagination.pageIndex + 1);
-      }
-    },
   });
-
-  const rows = table.getRowModel().rows;
-
-  const from = totalData === 0 ? 0 : (page - 1) * perPage + 1;
-  const to = totalData === 0 ? 0 : from + rows.length - 1;
 
   return (
     <>
-      <section className="min-w-0 space-y-5">
-        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          {/* HEADER */}
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaDatabase
-                  className="text-emerald-500"
-                  aria-hidden="true"
-                />
+                <FaDatabase className="text-emerald-500" aria-hidden="true" />
 
                 <h1 className="text-lg font-bold text-slate-800 dark:text-white">
                   Master Segment
@@ -385,10 +312,7 @@ export default function MasterSegmentPage({
                         label="Status Segment"
                         value={statusFilter ?? ""}
                         onChange={(value) => {
-                          setStatusFilter(
-                            value === "" ? null : value,
-                          );
-                          setPage(1);
+                          setStatusFilter(value === "" ? null : value);
                         }}
                         placeholder="Semua"
                         options={[
@@ -403,10 +327,7 @@ export default function MasterSegmentPage({
 
               {/* ACTION */}
               <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={handleOpenCreate}
-                >
+                <Button variant="primer" onClick={handleOpenCreate}>
                   <FaPlus className="text-[16px]" />
                   Tambah
                 </Button>
@@ -419,17 +340,14 @@ export default function MasterSegmentPage({
             <TablePagination
               leftSlot={<ColumnVisibility table={table} />}
               itemPerPage={perPage}
-              setItemPerPage={(value) => {
-                setPerPage(value);
-                setPage(1);
-              }}
+              setItemPerPage={setPerPage}
               currentPage={page}
               lastPage={Math.max(totalPages, 1)}
-              fromPage={from}
-              toPage={to}
+              fromPage={fromPage ?? 0}
+              toPage={toPage ?? 0}
               totalData={totalData}
-              onPrev={() => table.previousPage()}
-              onNext={() => table.nextPage()}
+              onPrev={handlePrevPage}
+              onNext={handleNextPage}
             />
           </div>
 
@@ -442,27 +360,20 @@ export default function MasterSegmentPage({
             <div className="flex flex-col items-center gap-3 p-8 text-center">
               <p className="text-sm text-red-500">{error}</p>
 
-              <Button
-                variant="blue"
-                onClick={() => void fetchSegments()}
-              >
+              <Button variant="blue" onClick={() => void fetchSegments()}>
                 Coba Lagi
               </Button>
             </div>
           ) : (
             <>
-              <div className="hidden md:block">
-                <DataTable
-                  table={table}
-                  cellClassName="px-3 py-2"
-                />
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+                <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
+                  <DataTable table={table} cellClassName="px-3 py-2" />
+                </div>
               </div>
 
               <div className="p-3 md:hidden">
-                <MobileDataCard
-                  table={table}
-                  titleKey="name"
-                />
+                <MobileDataCard table={table} titleKey="name" />
               </div>
 
               {totalData === 0 && (
@@ -512,4 +423,3 @@ export default function MasterSegmentPage({
     </>
   );
 }
-

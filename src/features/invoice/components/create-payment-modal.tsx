@@ -11,19 +11,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/toast";
 import { formatRupiah } from "@/lib/utils";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaPlus, FaUpload } from "react-icons/fa6";
 import type { InvoicePaymentForm } from "../types/invoice";
 import PaymentInformation from "./payment-information";
+import { invoicePaymentFormSchema } from "../schemas/invoice-form-schema";
+
+type UploadType = "surat_keterangan" | "bukti_bayar" | "";
 
 type CreatePaymentModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (payment: InvoicePaymentForm) => void;
+  onSave: (payment: InvoicePaymentForm, uploadType: UploadType) => void;
+  onSaveSuratKeterangan?: (files: File[]) => void;
   initialValue: InvoicePaymentForm;
+  initialUploadType: UploadType;
+  initialAttachmentNames?: string[];
+  isEditing?: boolean;
   hasPendingPayment: boolean;
   totalAmount: string | number;
   paidAmount: string | number;
@@ -32,38 +38,68 @@ type CreatePaymentModalProps = {
 
 type UploadFieldProps = {
   label: string;
-  files?: File[];
+  files: File[];
+  existingFileNames?: string[];
   multiple?: boolean;
-  onFilesChange?: (files: File[]) => void;
+  maxFiles?: number;
+  maxFileSize?: number;
+  accept?: string;
+  formatHint?: string;
+  onFilesChange: (files: File[]) => void;
 };
 
 function UploadField({
   label,
-  files = [],
+  files,
+  existingFileNames = [],
   multiple = false,
+  maxFiles,
+  maxFileSize = 5 * 1024 * 1024,
+  accept = ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png",
+  formatHint = "Format PDF, JPG, PNG (maks. 5 MB)",
   onFilesChange,
 }: UploadFieldProps) {
-  const [internalFiles, setInternalFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
-  const displayedFiles = onFilesChange ? files : internalFiles;
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const validFiles = selectedFiles.filter(
-      (file) => file.size <= 5 * 1024 * 1024,
+
+    const withinCount = maxFiles === undefined || selectedFiles.length <= maxFiles;
+    const allowedExtensions = new Set(
+      accept
+        .split(",")
+        .filter((value) => value.startsWith("."))
+        .map((value) => value.slice(1).toLowerCase()),
     );
+    const validFiles = selectedFiles.filter((file) => {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      return file.size <= maxFileSize && Boolean(extension && allowedExtensions.has(extension));
+    });
+
     setError(
-      validFiles.length === selectedFiles.length
-        ? ""
-        : "Ukuran setiap file maksimal 5 MB.",
+      !withinCount
+        ? `Maksimal ${maxFiles} file.`
+        : validFiles.length === selectedFiles.length
+          ? ""
+          : `Pastikan format file sesuai dan ukuran setiap file maksimal ${Math.floor(maxFileSize / (1024 * 1024))} MB.`,
     );
-    if (onFilesChange) onFilesChange(validFiles);
-    else setInternalFiles(validFiles);
+
+    onFilesChange(
+      !withinCount
+        ? []
+        : maxFiles === undefined
+          ? validFiles
+          : validFiles.slice(0, maxFiles),
+    );
+
+    // Reset input agar file yang sama bisa dipilih kembali.
+    event.target.value = "";
   };
 
   return (
     <Field className="gap-1.5">
       <FieldLabel className="text-xs">{label}</FieldLabel>
+
       <div className="flex min-w-0 flex-wrap items-center gap-3">
         <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
           <FaUpload size={13} />
@@ -71,20 +107,25 @@ function UploadField({
           <input
             type="file"
             className="sr-only"
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            accept={accept}
             multiple={multiple}
             onChange={handleChange}
           />
         </label>
+
         <span className="text-xs text-slate-500">
-          Format PDF, JPG, PNG (maks. 5 MB)
+          {formatHint}
         </span>
-        {displayedFiles.length > 0 && (
+
+        {(files.length > 0 || existingFileNames.length > 0) && (
           <span className="w-full truncate text-xs text-slate-600 dark:text-slate-300">
-            {displayedFiles.map((file) => file.name).join(", ")}
+            {files.length > 0
+              ? files.map((file) => file.name).join(", ")
+              : existingFileNames.join(", ")}
           </span>
         )}
       </div>
+
       {error && <p className="text-xs text-red-500">{error}</p>}
     </Field>
   );
@@ -92,7 +133,7 @@ function UploadField({
 
 const createEmptyPaymentForm = (): InvoicePaymentForm => ({
   paymentDate: undefined,
-  paymentType: "dp",
+  paymentType: "",
   paymentMethod: "",
   accountHolderName: "",
   depositNumber: "",
@@ -107,37 +148,123 @@ export default function CreatePaymentModal({
   open,
   onClose,
   onSave,
+  onSaveSuratKeterangan,
   initialValue,
+  initialUploadType,
+  initialAttachmentNames = [],
+  isEditing = false,
   hasPendingPayment,
   totalAmount,
   paidAmount,
   remainingAmount,
 }: CreatePaymentModalProps) {
-  const [value, setValue] = useState<InvoicePaymentForm>(createEmptyPaymentForm);
+  const [value, setValue] = useState<InvoicePaymentForm>(
+    createEmptyPaymentForm,
+  );
+
+  const [uploadType, setUploadType] = useState<UploadType>("");
+
+  const [suratKeteranganFiles, setSuratKeteranganFiles] = useState<File[]>([]);
+
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     if (open) {
-      setValue(
-        hasPendingPayment ? initialValue : createEmptyPaymentForm(),
-      );
-    }
-  }, [hasPendingPayment, initialValue, open]);
+      setUploadType(initialUploadType);
+      setSuratKeteranganFiles([]);
+      setValidationErrors({});
 
-  const updateValue = (updates: Partial<InvoicePaymentForm>) =>
-    setValue((current) => ({ ...current, ...updates }));
+      setValue(initialValue);
+    }
+  }, [hasPendingPayment, initialUploadType, initialValue, open]);
+
+  const updateValue = (updates: Partial<InvoicePaymentForm>) => {
+    setValue((current) => ({
+      ...current,
+      ...updates,
+    }));
+  };
+
+  const handleUploadTypeChange = (type: string | null) => {
+    if (type === null) return;
+
+    setUploadType(type as UploadType);
+    setValidationErrors({});
+  };
 
   const handleSave = () => {
-    if (!value.paymentDate || !value.paymentMethod || Number(value.amount) <= 0) {
-      toast.add({
-        title: "Informasi pembayaran belum lengkap",
-        description:
-          "Isi tanggal bayar, metode bayar, dan jumlah pembayaran sebelum menambahkan.",
-        type: "error",
-        timeout: 5000,
+    // Validasi pilihan upload
+    if (!uploadType) {
+      setValidationErrors({
+        uploadType: "Silakan pilih jenis upload terlebih dahulu.",
       });
       return;
     }
-    onSave(value);
+
+    // Jika memilih Surat Keterangan
+    if (uploadType === "surat_keterangan") {
+      if (suratKeteranganFiles.length === 0) {
+        if (initialAttachmentNames.length > 0 && onSaveSuratKeterangan) {
+          onSaveSuratKeterangan([]);
+          onClose();
+          return;
+        }
+        setValidationErrors({
+          suratKeteranganFiles: "Silakan upload surat keterangan.",
+        });
+        return;
+      }
+
+      if (
+        suratKeteranganFiles.length > 20 ||
+        suratKeteranganFiles.some((file) => {
+          const extension = file.name.split(".").pop()?.toLowerCase();
+          return (
+            file.size > 10 * 1024 * 1024 ||
+            !["jpg", "jpeg", "png", "webp", "pdf"].includes(extension ?? "")
+          );
+        })
+      ) {
+        setValidationErrors({
+          suratKeteranganFiles:
+            "Maksimal 20 file berformat JPG, JPEG, PNG, WEBP, atau PDF dengan ukuran maksimal 10 MB per file.",
+        });
+        return;
+      }
+
+      if (!onSaveSuratKeterangan) {
+        setValidationErrors({
+          suratKeteranganFiles:
+            "Handler penyimpanan surat keterangan belum tersedia.",
+        });
+        return;
+      }
+
+      onSaveSuratKeterangan(suratKeteranganFiles);
+      setValidationErrors({});
+      onClose();
+      return;
+    }
+
+    // Jika memilih Bukti Bayar
+    const validation = invoicePaymentFormSchema.safeParse(value);
+
+    if (!validation.success) {
+      const nextErrors: Record<string, string> = {};
+
+      validation.error.issues.forEach((issue) => {
+        const field = String(issue.path[0]);
+        nextErrors[field] ??= issue.message;
+      });
+
+      setValidationErrors(nextErrors);
+      return;
+    }
+
+    setValidationErrors({});
+    onSave(value, uploadType);
     onClose();
   };
 
@@ -145,13 +272,14 @@ export default function CreatePaymentModal({
     <AppModal
       open={open}
       onClose={onClose}
-      title={hasPendingPayment ? "Ubah Pembayaran" : "Tambah Pembayaran"}
+      title={isEditing ? "Ubah Pembayaran" : "Tambah Pembayaran"}
       icon={<FaPlus />}
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="destructive" onClick={onClose}>
             Batal
           </Button>
+
           <Button variant="primer" onClick={handleSave}>
             <FaSave size={14} />
             Simpan
@@ -166,136 +294,250 @@ export default function CreatePaymentModal({
             paidAmount={paidAmount}
             remainingAmount={remainingAmount}
           />
+          {/* PILIHAN JENIS UPLOAD */}
+          <Field>
+            <FieldLabel className="text-xs">Jenis Upload</FieldLabel>
+            <Select value={uploadType} onValueChange={handleUploadTypeChange}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Pilih jenis upload">
+                  {uploadType === "surat_keterangan"
+                    ? "Surat Keterangan"
+                    : uploadType === "bukti_bayar"
+                      ? "Bukti Bayar"
+                      : "Pilih jenis upload"}
+                </SelectValue>
+              </SelectTrigger>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <UploadField label="Surat Keterangan" multiple />
-            <UploadField
-              label="Bukti Bayar"
-              multiple
-              files={value.proofFiles}
-              onFilesChange={(proofFiles) => updateValue({ proofFiles })}
-            />
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                <SelectItem value="surat_keterangan">
+                  Surat Keterangan
+                </SelectItem>
 
-            <Field>
-              <FieldLabel className="text-xs">Atas Nama Rekening</FieldLabel>
-              <Input
-                className="h-10"
-                value={value.accountHolderName}
-                onChange={(event) =>
-                  updateValue({ accountHolderName: event.target.value })
-                }
-                placeholder="Nama pemilik rekening"
+                <SelectItem value="bukti_bayar">Bukti Bayar</SelectItem>
+              </SelectContent>
+            </Select>
+            {validationErrors.uploadType && (
+              <p className="text-sm text-red-500" role="alert">
+                {validationErrors.uploadType}
+              </p>
+            )}
+          </Field>
+
+          {/* UPLOAD SURAT KETERANGAN */}
+          {uploadType === "surat_keterangan" && (
+            <div className="space-y-3">
+              <UploadField
+                label="Upload Surat Keterangan"
+                multiple
+                maxFiles={20}
+                maxFileSize={10 * 1024 * 1024}
+                accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                formatHint="Format JPG, JPEG, PNG, WEBP, PDF (maks. 20 file, 10 MB per file)"
+                files={suratKeteranganFiles}
+                existingFileNames={initialAttachmentNames}
+                onFilesChange={setSuratKeteranganFiles}
               />
-            </Field>
+              <p className="text-xs text-slate-500">
+                File akan diunggah saat invoice disimpan.
+              </p>
 
-            <Field>
-              <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
-              <Select
-                value={value.paymentMethod}
-                onValueChange={(method: string | null) => {
-                  if (method !== null) updateValue({ paymentMethod: method });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih metode bayar" />
-                </SelectTrigger>
-                <SelectContent align="start" alignItemWithTrigger={false}>
-                  <SelectItem value="cash">Tunai</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
-                  <SelectItem value="deposit">Deposit</SelectItem>
-                  <SelectItem value="other">Lainnya</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
+              {validationErrors.suratKeteranganFiles && (
+                <p className="text-sm text-red-500" role="alert">
+                  {validationErrors.suratKeteranganFiles}
+                </p>
+              )}
+            </div>
+          )}
 
-            <Field>
-              <FieldLabel className="text-xs">
-                Nomor SO / Group Deposit
-              </FieldLabel>
-              <Input
-                className="h-10"
-                value={value.depositNumber}
-                onChange={(event) =>
-                  updateValue({ depositNumber: event.target.value })
-                }
-                placeholder="Isi jika menggunakan deposit"
-              />
-            </Field>
+          {/* FORM BUKTI BAYAR */}
+          {uploadType === "bukti_bayar" && (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* BUKTI BAYAR */}
+                <UploadField
+                  label="Bukti Bayar"
+                  multiple
+                  files={value.proofFiles}
+                  existingFileNames={initialAttachmentNames}
+                  onFilesChange={(proofFiles) => updateValue({ proofFiles })}
+                />
 
-            <Field>
-              <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
-              <Select
-                value={value.fromBank}
-                onValueChange={(bank: string | null) => {
-                  if (bank !== null) updateValue({ fromBank: bank });
-                }}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Pilih rekening asal" />
-                </SelectTrigger>
-                <SelectContent align="start" alignItemWithTrigger={false}>
-                  <SelectItem value="BCA">BCA</SelectItem>
-                  <SelectItem value="Mandiri">Mandiri</SelectItem>
-                  <SelectItem value="BRI">BRI</SelectItem>
-                  <SelectItem value="BNI">BNI</SelectItem>
-                  <SelectItem value="Tunai">Tunai</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
+                {/* ATAS NAMA REKENING */}
+                <Field>
+                  <FieldLabel className="text-xs">
+                    Atas Nama Rekening
+                  </FieldLabel>
 
-            <Field>
-              <FieldLabel className="text-xs">Ke Rekening</FieldLabel>
-              <Select
-                value={value.toBank}
-                onValueChange={(bank: string | null) => {
-                  if (bank !== null) updateValue({ toBank: bank });
-                }}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Pilih rekening tujuan" />
-                </SelectTrigger>
-                <SelectContent align="start" alignItemWithTrigger={false}>
-                  <SelectItem value="BCA">BCA</SelectItem>
-                  <SelectItem value="Mandiri">Mandiri</SelectItem>
-                  <SelectItem value="BRI">BRI</SelectItem>
-                  <SelectItem value="BNI">BNI</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
+                  <Input
+                    className="h-10"
+                    value={value.accountHolderName}
+                    onChange={(event) =>
+                      updateValue({
+                        accountHolderName: event.target.value,
+                      })
+                    }
+                    placeholder="Nama pemilik rekening"
+                  />
+                </Field>
 
-            <Field>
-              <FieldLabel className="text-xs">Tanggal Bayar</FieldLabel>
-              <DateRangePicker
-                mode="single"
-                value={value.paymentDate}
-                onChange={(paymentDate) => updateValue({ paymentDate })}
-              />
-            </Field>
+                {/* METODE BAYAR */}
+                <Field>
+                  <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
 
-            <Field>
-              <FieldLabel className="text-xs">Jumlah Pembayaran</FieldLabel>
-              <Input
-                className="h-10 text-right font-semibold"
-                inputMode="numeric"
-                value={formatRupiah(value.amount)}
-                onChange={(event) => {
-                  const rawValue = event.target.value.replace(/\D/g, "");
-                  updateValue({ amount: String(Number(rawValue) || 0) });
-                }}
-                placeholder="0"
-              />
-            </Field>
+                  <Select
+                    value={value.paymentMethod}
+                    onValueChange={(method: string | null) => {
+                      if (method !== null) {
+                        updateValue({ paymentMethod: method });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih metode bayar" />
+                    </SelectTrigger>
 
-            <Field className="md:col-span-2">
-              <FieldLabel className="text-xs">Catatan Tambahan</FieldLabel>
-              <Textarea
-                className="min-h-20 resize-y"
-                placeholder="Keterangan jika ada tambahan informasi"
-                value={value.notes}
-                onChange={(event) => updateValue({ notes: event.target.value })}
-              />
-            </Field>
-          </div>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      <SelectItem value="cash">Tunai</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="deposit">Deposit</SelectItem>
+                      <SelectItem value="other">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {validationErrors.paymentMethod && (
+                    <p className="text-sm text-red-500" role="alert">
+                      {validationErrors.paymentMethod}
+                    </p>
+                  )}
+                </Field>
+
+                {/* NOMOR SO / GROUP DEPOSIT */}
+                <Field>
+                  <FieldLabel className="text-xs">
+                    Nomor SO / Group Deposit
+                  </FieldLabel>
+
+                  <Input
+                    className="h-10"
+                    value={value.depositNumber}
+                    onChange={(event) =>
+                      updateValue({
+                        depositNumber: event.target.value,
+                      })
+                    }
+                    placeholder="Isi jika menggunakan deposit"
+                  />
+                </Field>
+
+                {/* DARI REKENING */}
+                <Field>
+                  <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
+
+                  <Select
+                    value={value.fromBank}
+                    onValueChange={(bank: string | null) => {
+                      if (bank !== null) {
+                        updateValue({ fromBank: bank });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Pilih rekening asal" />
+                    </SelectTrigger>
+
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      <SelectItem value="BCA">BCA</SelectItem>
+                      <SelectItem value="Mandiri">Mandiri</SelectItem>
+                      <SelectItem value="BRI">BRI</SelectItem>
+                      <SelectItem value="BNI">BNI</SelectItem>
+                      <SelectItem value="Tunai">Tunai</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                {/* KE REKENING */}
+                <Field>
+                  <FieldLabel className="text-xs">Ke Rekening Saloka</FieldLabel>
+
+                  <Select
+                    value={value.toBank}
+                    onValueChange={(bank: string | null) => {
+                      if (bank !== null) {
+                        updateValue({ toBank: bank });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Pilih rekening tujuan" />
+                    </SelectTrigger>
+
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      <SelectItem value="BCA">BCA</SelectItem>
+                      <SelectItem value="Mandiri">Mandiri</SelectItem>
+                      <SelectItem value="BRI">BRI</SelectItem>
+                      <SelectItem value="BNI">BNI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                {/* TANGGAL BAYAR */}
+                <Field>
+                  <FieldLabel className="text-xs">Tanggal Bayar</FieldLabel>
+
+                  <DateRangePicker
+                    mode="single"
+                    value={value.paymentDate}
+                    onChange={(paymentDate) => updateValue({ paymentDate })}
+                  />
+
+                  {validationErrors.paymentDate && (
+                    <p className="text-sm text-red-500" role="alert">
+                      {validationErrors.paymentDate}
+                    </p>
+                  )}
+                </Field>
+
+                {/* JUMLAH PEMBAYARAN */}
+                <Field>
+                  <FieldLabel className="text-xs">Jumlah Pembayaran</FieldLabel>
+
+                  <Input
+                    className="h-10 text-right font-semibold"
+                    inputMode="numeric"
+                    value={formatRupiah(value.amount)}
+                    onChange={(event) => {
+                      const rawValue = event.target.value.replace(/\D/g, "");
+
+                      updateValue({
+                        amount: String(Number(rawValue) || 0),
+                      });
+                    }}
+                    placeholder="0"
+                  />
+
+                  {validationErrors.amount && (
+                    <p className="text-sm text-red-500" role="alert">
+                      {validationErrors.amount}
+                    </p>
+                  )}
+                </Field>
+
+                {/* CATATAN TAMBAHAN */}
+                <Field className="md:col-span-2">
+                  <FieldLabel className="text-xs">Catatan Tambahan</FieldLabel>
+
+                  <Textarea
+                    className="min-h-20 resize-y"
+                    placeholder="Keterangan jika ada tambahan informasi"
+                    value={value.notes}
+                    onChange={(event) =>
+                      updateValue({ notes: event.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+            </>
+          )}
         </div>
       </AppModal.Section>
     </AppModal>
