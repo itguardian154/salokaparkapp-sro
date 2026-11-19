@@ -470,3 +470,16 @@ export type ReservasiTableRecord = {
     status: string;
     status_value: string;
 };
+
+export interface ReservasiPayment {
+  id: string;
+  paymentDate: string | null;
+  paymentMethod: string;
+  accountHolderName: string;
+  fromBank: string;
+  toBank: string;
+  amount: number;
+  notes: string;
+  proof: string;
+  status: string;
+}

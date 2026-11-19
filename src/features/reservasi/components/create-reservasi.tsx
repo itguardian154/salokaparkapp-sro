@@ -15,6 +15,8 @@ import {
   CalendarDays,
   Building2,
   Plus,
+  Clock,
+  HandCoins,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,9 @@ import type { InvoiceOrder } from "@/features/invoice/types/invoice-order";
 
 import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
 
+import DetailPaymentTable, {
+} from "@/features/invoice/components/detail-payment-table";
+
 import {
   createReservasi,
   generateEventOrders,
@@ -53,6 +58,7 @@ import {
 import type {
   CreateReservasi,
   CreateReservasiEventOrder,
+  ReservasiPayment,
 } from "../types/reservasi";
 
 import {
@@ -62,6 +68,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import CreateEventOrderModal from "./create-event-order";
 import { FaPen } from "react-icons/fa6";
@@ -164,9 +176,9 @@ const getEventOrderStatus = (
 // ==============================
 
 const mapInvoiceItemsToOrders = (
-  items: NonNullable<InvoiceDetail["items"]>,
+  items: InvoiceDetail["items"]
 ): InvoiceOrder[] =>
-  items.map((item) => ({
+  (items ?? []).map((item) => ({
     id: item.id,
     productId: item.product_id ?? 0,
     product: item.product_name,
@@ -175,12 +187,28 @@ const mapInvoiceItemsToOrders = (
     compliment:
       item.bonus_quantity !== null &&
         item.bonus_quantity !== undefined
-        ? Number(item.bonus_quantity)
+        ? Number(item.bonus_quantity) || 0
         : null,
     unitPrice: Number(item.unit_price) || 0,
     isTicket: Boolean(item.is_ticket),
     discountPrice: Number(item.discount_amount) || 0,
     subtotal: Number(item.subtotal) || 0,
+  }));
+
+const mapInvoicePayments = (
+  payments: NonNullable<InvoiceDetail["payments"]>
+): ReservasiPayment[] =>
+  payments.map((payment, index) => ({
+    id: String(index + 1),
+    paymentDate: payment.payment_date ?? null,
+    paymentMethod: payment.payment_method ?? "",
+    accountHolderName: payment.account_holder_name ?? "",
+    fromBank: payment.from_bank ?? "",
+    toBank: payment.to_bank ?? "",
+    amount: Number(payment.amount) || 0,
+    notes: payment.notes ?? "",
+    proof: payment.proof_of_payment ?? "",
+    status: "-",
   }));
 
 // ==============================
@@ -255,7 +283,6 @@ export default function CreateReservasi() {
   // ==============================
   // DETAIL PESANAN
   // ==============================
-
   const detailPesanan = selectedInvoice
     ? mapInvoiceItemsToOrders(selectedInvoice.items ?? [])
     : [];
@@ -280,6 +307,7 @@ export default function CreateReservasi() {
           {
             page: 1,
             per_page: 10,
+            // "filter[has_sales_order]": 1,
             ...(keyword
               ? { "filter[search]": keyword }
               : {}),
@@ -676,13 +704,28 @@ export default function CreateReservasi() {
                 )}
 
                 {hasValue(selectedInvoice.invoice_date) && (
-                  <InfoItem label="Tanggal Invoice" value={selectedInvoice.invoice_date} />
+                  <InfoItem label="Tanggal Invoice" value={new Date(selectedInvoice.invoice_date!).toLocaleString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })} />
                 )}
 
                 {hasValue(selectedInvoice.booking_type) && (
-                  <InfoItem label="Jenis Pemesanan" value={selectedInvoice.booking_type} />
+                  <InfoItem
+                    label="Jenis Pemesanan"
+                    value={
+                      <span
+                        className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${selectedInvoice.booking_type?.toLowerCase() === "travel"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                          }`}
+                      >
+                        {selectedInvoice.booking_type}
+                      </span>
+                    }
+                  />
                 )}
-
                 {hasValue(selectedInvoice.customer_name) && (
                   <InfoItem label="Nama Pelanggan" value={selectedInvoice.customer_name} />
                 )}
@@ -700,7 +743,7 @@ export default function CreateReservasi() {
                 )}
 
                 {hasValue(selectedInvoice.customer_phone) && (
-                  <InfoItem label="Nomor Telepon Pelanggan" value={selectedInvoice.customer_phone} />
+                  <InfoItem label="WhatsApp Pelanggan" value={selectedInvoice.customer_phone} />
                 )}
 
                 {hasValue(selectedInvoice.customer_contact_person) && (
@@ -724,7 +767,7 @@ export default function CreateReservasi() {
                 )}
 
                 {hasValue(selectedInvoice.partner_phone) && (
-                  <InfoItem label="Nomor Telepon Group" value={selectedInvoice.partner_phone} />
+                  <InfoItem label="WhatsApp Group" value={selectedInvoice.partner_phone} />
                 )}
 
                 {hasValue(selectedInvoice.partner_contact_person) && (
@@ -744,7 +787,7 @@ export default function CreateReservasi() {
                 )}
 
                 {hasValue(selectedInvoice.partner_branch_phone) && (
-                  <InfoItem label="Nomor Telepon Cabang" value={selectedInvoice.partner_branch_phone} />
+                  <InfoItem label="WhatsApp Cabang" value={selectedInvoice.partner_branch_phone} />
                 )}
 
                 {hasValue(selectedInvoice.partner_branch_contact_person) && (
@@ -754,9 +797,15 @@ export default function CreateReservasi() {
                 {hasValue(selectedInvoice.sales_person_name) && (
                   <InfoItem label="Nama Sales" value={selectedInvoice.sales_person_name} />
                 )}
-
                 {hasValue(selectedInvoice.arrival_date) && (
-                  <InfoItem label="Tanggal Kedatangan" value={selectedInvoice.arrival_date} />
+                  <InfoItem
+                    label="Tanggal Kedatangan"
+                    value={new Date(selectedInvoice.arrival_date!).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  />
                 )}
 
                 {hasValue(selectedInvoice.segment_name) && (
@@ -764,15 +813,28 @@ export default function CreateReservasi() {
                 )}
 
                 {hasValue(selectedInvoice.segment_detail_name) && (
-                  <InfoItem label="Detail Segmen" value={selectedInvoice.segment_detail_name} />
+                  <InfoItem
+                    label={
+                      selectedInvoice.segment_name?.toLowerCase() === "edukasi"
+                        ? "Jenis"
+                        : "Bidang Usaha"
+                    }
+                    value={selectedInvoice.segment_detail_name}
+                  />
                 )}
 
                 {hasValue(selectedInvoice.sub_segment_detail_name) && (
-                  <InfoItem label="Sub Segmen" value={selectedInvoice.sub_segment_detail_name} />
+                  <InfoItem
+                    label={
+                      selectedInvoice.segment_name?.toLowerCase() === "edukasi"
+                        ? "Jenjang"
+                        : "Jenis Usaha"
+                    }
+                    value={selectedInvoice.sub_segment_detail_name}
+                  />
                 )}
-
                 {hasValue(selectedInvoice.segment_option_name) && (
-                  <InfoItem label="Pilihan Segmen" value={selectedInvoice.segment_option_name} />
+                  <InfoItem label="Status" value={selectedInvoice.segment_option_name} />
                 )}
               </div>
 
@@ -805,6 +867,20 @@ export default function CreateReservasi() {
               />
             </div>
           </DetailSection>
+          {/* INFORMASI PEMBAYARAN */}
+
+          <DetailSection
+            icon={HandCoins}
+            title="Informasi Pembayaran"
+            variant="blue"
+          >
+            <div className="p-5">
+              <DetailPaymentTable
+                data={mapInvoicePayments(selectedInvoice.payments ?? [])}
+              />
+            </div>
+          </DetailSection>
+
 
           {/* INFORMASI RESERVASI */}
 
@@ -862,16 +938,72 @@ export default function CreateReservasi() {
               <Field>
                 <FieldLabel>Jam Kedatangan</FieldLabel>
 
-                <Input
-                  type="time"
-                  value={arrivalTime}
-                  onChange={(event) =>
-                    setArrivalTime(event.target.value)
-                  }
-                />
+                <Popover>
+                  <PopoverTrigger>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {arrivalTime || "Pilih jam kedatangan"}
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-64 p-3" align="start">
+                    <div className="flex items-center gap-3">
+                      <Select
+                        value={arrivalTime.split(":")[0] || ""}
+                        onValueChange={(hour) => {
+                          const minute = arrivalTime.split(":")[1] || "00";
+                          setArrivalTime(`${hour}:${minute}`);
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Jam" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <SelectItem
+                              key={i}
+                              value={String(i).padStart(2, "0")}
+                            >
+                              {String(i).padStart(2, "0")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <span className="font-semibold">:</span>
+
+                      <Select
+                        value={arrivalTime.split(":")[1] || ""}
+                        onValueChange={(minute) => {
+                          const hour = arrivalTime.split(":")[0] || "00";
+                          setArrivalTime(`${hour}:${minute}`);
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Menit" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <SelectItem
+                              key={i}
+                              value={String(i).padStart(2, "0")}
+                            >
+                              {String(i).padStart(2, "0")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </Field>
             </div>
           </DetailSection>
+
 
           {/* EVENT ORDER */}
 
@@ -972,7 +1104,7 @@ export default function CreateReservasi() {
                               Food & Beverage
                             </h4>
 
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                               <InfoItem label="Paket" value={item.product_description} />
                               <InfoItem label="Penyajian" value={item.serving_type} />
                               <InfoItem label="Jumlah Pax" value={item.quantity} />
@@ -988,7 +1120,7 @@ export default function CreateReservasi() {
                               Retail & Merchandise
                             </h4>
 
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                               <InfoItem label="Nama Barang" value={item.product_description} />
                               <InfoItem label="Jumlah" value={item.quantity} />
                               <InfoItem label="Harga" value={item.unit_price} />
@@ -1001,7 +1133,7 @@ export default function CreateReservasi() {
                       {isFinance && (
                         <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
 
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <InfoItem
                               label="Tanggal Cetak Tiket"
                               value={item.ticket_print_date}
@@ -1053,7 +1185,7 @@ export default function CreateReservasi() {
                       )}
 
                       {/* DESKRIPSI TAMBAHAN IR DAN FINANCE */}
-                      {(isIR || isFinance) && hasValue(item.description) && (
+                      {isIR || isFinance && (
                         <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
                           <InfoItem
                             label="Desc Request"
@@ -1075,6 +1207,7 @@ export default function CreateReservasi() {
       )}
 
       {/* MODAL CREATE / EDIT EVENT ORDER */}
+      {/* MODAL CREATE / EDIT EVENT ORDER */}
 
       <CreateEventOrderModal
         open={openCreateEventOrder}
@@ -1086,7 +1219,16 @@ export default function CreateReservasi() {
             : null
         }
         departemenOptions={departemenOptions}
+        invoiceItems={(selectedInvoice?.items ?? [])
+          .filter(
+            (item): item is typeof item & { product_id: number } =>
+              item.product_id !== null
+          )
+          .map((item) => ({
+            ...item,
+            product_id: item.product_id,
+          }))}
       />
     </DetailPageLayout>
   );
-}
+} 

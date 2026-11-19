@@ -60,6 +60,7 @@ export type InvoiceListParams = {
   "filter[customer_id]"?: string;
   "filter[arrival_date_from]"?: string;
   "filter[arrival_date_to]"?: string;
+  "filter[has_sales_order]"?: number;
 };
 
 export type InvoiceDetailItem = {
