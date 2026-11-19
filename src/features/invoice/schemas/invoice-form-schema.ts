@@ -13,6 +13,8 @@ export const invoiceFormSchema = z
     travelAgent: z.string(),
     provinceId: z.number().nullable(),
     cityId: z.number().nullable(),
+    provinceName: z.string().optional(),
+    cityName: z.string().optional(),
     arrivalDate: z.date().optional(),
     customerId: z.number().nullable(),
     customerGroupName: z.string(),
@@ -49,9 +51,10 @@ export const invoiceFormSchema = z
     if (data.isTravelOrder) {
       if (!data.travelAgent.trim())
         required("travelAgent", "Nama travel/agent wajib dipilih");
-      if (data.provinceId === null)
+      if (data.provinceId === null && !data.provinceName?.trim())
         required("provinceId", "Provinsi travel wajib dipilih");
-      if (data.cityId === null) required("cityId", "Kota travel wajib dipilih");
+      if (data.cityId === null && !data.cityName?.trim())
+        required("cityId", "Kota travel wajib dipilih");
     }
 
     if (data.isTravelSegment) {

@@ -77,15 +77,54 @@ export type InvoiceDetailItem = {
 };
 
 export type InvoicePayment = {
+  id?: number | string;
+  payment_id?: number | string;
   payment_date?: string | null;
   payment_type?: string | null;
   payment_method?: string | null;
   account_holder_name?: string | null;
+  deposit_number?: string | null;
   from_bank?: string | null;
   to_bank?: string | null;
   amount?: string | number | null;
   notes?: string | null;
   proof_of_payment: string | null;
+};
+
+export type PaymentAttachment = {
+  name: string;
+  url: string;
+  mimeType?: string;
+};
+
+export type InvoicePaymentRow = {
+  id: string;
+  serverId?: number | string;
+  paymentDate: string | Date | null;
+  paymentType: string;
+  paymentTypeValue?: string;
+  uploadType: "bukti_bayar" | "surat_keterangan";
+  paymentMethod: string;
+  accountHolderName: string;
+  depositNumber: string;
+  fromBank: string;
+  toBank: string;
+  amount: string | number | null;
+  notes: string;
+  proof: string;
+  proofUrl?: string;
+  proofFiles?: File[];
+  attachments?: PaymentAttachment[];
+  pending?: boolean;
+  editable?: boolean;
+};
+
+export type InvoiceAttachment = {
+  id: number;
+  name: string;
+  mime_type: string;
+  size: number;
+  url: string;
 };
 
 export type InvoiceApprovalRecord = {
@@ -154,6 +193,7 @@ export type InvoiceDetail = {
   paid_amount?: string | number | null;
   remaining_amount?: string | number | null;
   payments?: InvoicePayment[];
+  attachments?: InvoiceAttachment[];
   approvals?: InvoiceApprovalRecord[];
   items?: InvoiceDetailItem[];
 };

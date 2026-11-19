@@ -235,7 +235,7 @@ export default function DetailActionFooter({
 
                   const positions: Record<number, { left: number; bottom: number }[]> = {
                     1: [
-                      { left: 131, bottom: 82 },
+                      { left: 131, bottom: 93 },
                     ],
 
                     2: [

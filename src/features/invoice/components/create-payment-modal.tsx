@@ -24,9 +24,12 @@ type UploadType = "surat_keterangan" | "bukti_bayar" | "";
 type CreatePaymentModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (payment: InvoicePaymentForm) => void;
+  onSave: (payment: InvoicePaymentForm, uploadType: UploadType) => void;
   onSaveSuratKeterangan?: (files: File[]) => void;
   initialValue: InvoicePaymentForm;
+  initialUploadType: UploadType;
+  initialAttachmentNames?: string[];
+  isEditing?: boolean;
   hasPendingPayment: boolean;
   totalAmount: string | number;
   paidAmount: string | number;
@@ -36,14 +39,24 @@ type CreatePaymentModalProps = {
 type UploadFieldProps = {
   label: string;
   files: File[];
+  existingFileNames?: string[];
   multiple?: boolean;
+  maxFiles?: number;
+  maxFileSize?: number;
+  accept?: string;
+  formatHint?: string;
   onFilesChange: (files: File[]) => void;
 };
 
 function UploadField({
   label,
   files,
+  existingFileNames = [],
   multiple = false,
+  maxFiles,
+  maxFileSize = 5 * 1024 * 1024,
+  accept = ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png",
+  formatHint = "Format PDF, JPG, PNG (maks. 5 MB)",
   onFilesChange,
 }: UploadFieldProps) {
   const [error, setError] = useState("");
@@ -51,17 +64,33 @@ function UploadField({
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
 
-    const validFiles = selectedFiles.filter(
-      (file) => file.size <= 5 * 1024 * 1024,
+    const withinCount = maxFiles === undefined || selectedFiles.length <= maxFiles;
+    const allowedExtensions = new Set(
+      accept
+        .split(",")
+        .filter((value) => value.startsWith("."))
+        .map((value) => value.slice(1).toLowerCase()),
     );
+    const validFiles = selectedFiles.filter((file) => {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      return file.size <= maxFileSize && Boolean(extension && allowedExtensions.has(extension));
+    });
 
     setError(
-      validFiles.length === selectedFiles.length
-        ? ""
-        : "Ukuran setiap file maksimal 5 MB.",
+      !withinCount
+        ? `Maksimal ${maxFiles} file.`
+        : validFiles.length === selectedFiles.length
+          ? ""
+          : `Pastikan format file sesuai dan ukuran setiap file maksimal ${Math.floor(maxFileSize / (1024 * 1024))} MB.`,
     );
 
-    onFilesChange(validFiles);
+    onFilesChange(
+      !withinCount
+        ? []
+        : maxFiles === undefined
+          ? validFiles
+          : validFiles.slice(0, maxFiles),
+    );
 
     // Reset input agar file yang sama bisa dipilih kembali.
     event.target.value = "";
@@ -78,19 +107,21 @@ function UploadField({
           <input
             type="file"
             className="sr-only"
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            accept={accept}
             multiple={multiple}
             onChange={handleChange}
           />
         </label>
 
         <span className="text-xs text-slate-500">
-          Format PDF, JPG, PNG (maks. 5 MB)
+          {formatHint}
         </span>
 
-        {files.length > 0 && (
+        {(files.length > 0 || existingFileNames.length > 0) && (
           <span className="w-full truncate text-xs text-slate-600 dark:text-slate-300">
-            {files.map((file) => file.name).join(", ")}
+            {files.length > 0
+              ? files.map((file) => file.name).join(", ")
+              : existingFileNames.join(", ")}
           </span>
         )}
       </div>
@@ -102,7 +133,7 @@ function UploadField({
 
 const createEmptyPaymentForm = (): InvoicePaymentForm => ({
   paymentDate: undefined,
-  paymentType: "dp",
+  paymentType: "",
   paymentMethod: "",
   accountHolderName: "",
   depositNumber: "",
@@ -119,6 +150,9 @@ export default function CreatePaymentModal({
   onSave,
   onSaveSuratKeterangan,
   initialValue,
+  initialUploadType,
+  initialAttachmentNames = [],
+  isEditing = false,
   hasPendingPayment,
   totalAmount,
   paidAmount,
@@ -138,13 +172,13 @@ export default function CreatePaymentModal({
 
   useEffect(() => {
     if (open) {
-      setUploadType(hasPendingPayment ? "bukti_bayar" : "");
+      setUploadType(initialUploadType);
       setSuratKeteranganFiles([]);
       setValidationErrors({});
 
-      setValue(hasPendingPayment ? initialValue : createEmptyPaymentForm());
+      setValue(initialValue);
     }
-  }, [hasPendingPayment, initialValue, open]);
+  }, [hasPendingPayment, initialUploadType, initialValue, open]);
 
   const updateValue = (updates: Partial<InvoicePaymentForm>) => {
     setValue((current) => ({
@@ -172,8 +206,30 @@ export default function CreatePaymentModal({
     // Jika memilih Surat Keterangan
     if (uploadType === "surat_keterangan") {
       if (suratKeteranganFiles.length === 0) {
+        if (initialAttachmentNames.length > 0 && onSaveSuratKeterangan) {
+          onSaveSuratKeterangan([]);
+          onClose();
+          return;
+        }
         setValidationErrors({
           suratKeteranganFiles: "Silakan upload surat keterangan.",
+        });
+        return;
+      }
+
+      if (
+        suratKeteranganFiles.length > 20 ||
+        suratKeteranganFiles.some((file) => {
+          const extension = file.name.split(".").pop()?.toLowerCase();
+          return (
+            file.size > 10 * 1024 * 1024 ||
+            !["jpg", "jpeg", "png", "webp", "pdf"].includes(extension ?? "")
+          );
+        })
+      ) {
+        setValidationErrors({
+          suratKeteranganFiles:
+            "Maksimal 20 file berformat JPG, JPEG, PNG, WEBP, atau PDF dengan ukuran maksimal 10 MB per file.",
         });
         return;
       }
@@ -208,7 +264,7 @@ export default function CreatePaymentModal({
     }
 
     setValidationErrors({});
-    onSave(value);
+    onSave(value, uploadType);
     onClose();
   };
 
@@ -216,7 +272,7 @@ export default function CreatePaymentModal({
     <AppModal
       open={open}
       onClose={onClose}
-      title={hasPendingPayment ? "Ubah Pembayaran" : "Tambah Pembayaran"}
+      title={isEditing ? "Ubah Pembayaran" : "Tambah Pembayaran"}
       icon={<FaPlus />}
       footer={
         <div className="flex justify-end gap-3">
@@ -273,9 +329,17 @@ export default function CreatePaymentModal({
               <UploadField
                 label="Upload Surat Keterangan"
                 multiple
+                maxFiles={20}
+                maxFileSize={10 * 1024 * 1024}
+                accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                formatHint="Format JPG, JPEG, PNG, WEBP, PDF (maks. 20 file, 10 MB per file)"
                 files={suratKeteranganFiles}
+                existingFileNames={initialAttachmentNames}
                 onFilesChange={setSuratKeteranganFiles}
               />
+              <p className="text-xs text-slate-500">
+                File akan diunggah saat invoice disimpan.
+              </p>
 
               {validationErrors.suratKeteranganFiles && (
                 <p className="text-sm text-red-500" role="alert">
@@ -294,6 +358,7 @@ export default function CreatePaymentModal({
                   label="Bukti Bayar"
                   multiple
                   files={value.proofFiles}
+                  existingFileNames={initialAttachmentNames}
                   onFilesChange={(proofFiles) => updateValue({ proofFiles })}
                 />
 

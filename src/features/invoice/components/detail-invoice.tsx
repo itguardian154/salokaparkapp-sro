@@ -9,9 +9,7 @@ import { toast } from "@/components/ui/toast";
 import SearchablePopover from "@/components/searchable-popover";
 import DateRangePicker from "@/components/date-range-picker";
 import DetailOrderTable from "./detail-order-table";
-import DetailPaymentTable, {
-  type InvoicePaymentRow,
-} from "./detail-payment-table";
+import DetailPaymentTable from "./detail-payment-table";
 import CreatePaymentModal from "./create-payment-modal";
 import PaymentInformation from "./payment-information";
 import CreateDetailInvoice from "./create-detail-order";
@@ -28,7 +26,12 @@ import useInvoiceApproval, {
 } from "../hooks/use-invoice-approval";
 import useUpdateInvoice from "../hooks/use-update-invoice";
 import { downloadInvoicePdf } from "../service/invoice-service";
-import type { InvoicePayment, InvoicePaymentForm } from "../types/invoice";
+import type {
+  InvoiceAttachment,
+  InvoicePayment,
+  InvoicePaymentForm,
+  InvoicePaymentRow,
+} from "../types/invoice";
 import type { InvoiceOrder } from "../types/invoice-order";
 import type { OptionAgent } from "@/features/master/master-agen/types/master-agen";
 import { Button } from "@/components/ui/button";
@@ -46,7 +49,7 @@ import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import type { City, Province } from "@/features/wilayah/types/wilayah";
 import { useKaryawan } from "@/features/karyawan/hooks/use-karyawan";
 import type { Karyawan } from "@/features/karyawan/types/karyawan";
-import { HandCoins, Pencil, Plus, Signature, Users, X } from "lucide-react";
+import { HandCoins, Plus, Signature, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaDownload, FaFileInvoice } from "react-icons/fa6";
@@ -86,11 +89,90 @@ const createEmptyPaymentForm = (): InvoicePaymentForm => ({
   proofFiles: [],
 });
 
+const mapInvoicePaymentRows = (
+  payments: InvoicePayment[] = [],
+  attachments: InvoiceAttachment[] = [],
+): InvoicePaymentRow[] => [
+  ...payments.map((payment, index) => {
+    const normalizedPaymentType = payment.payment_type
+      ?.toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    const isSuratKeterangan = normalizedPaymentType === "surat_keterangan";
+    return {
+      id: `saved-payment-${payment.id ?? payment.payment_id ?? index}`,
+      serverId: payment.id ?? payment.payment_id,
+      paymentDate: payment.payment_date ?? null,
+      paymentType: payment.payment_type ?? "dp",
+      paymentTypeValue: isSuratKeterangan
+        ? "surat_keterangan"
+        : (payment.payment_type ?? "dp"),
+      uploadType: isSuratKeterangan
+        ? ("surat_keterangan" as const)
+        : ("bukti_bayar" as const),
+      paymentMethod: payment.payment_method ?? "",
+      accountHolderName: payment.account_holder_name ?? "",
+      depositNumber: payment.deposit_number ?? "",
+      fromBank: payment.from_bank ?? "",
+      toBank: payment.to_bank ?? "",
+      amount: payment.amount ?? null,
+      notes: payment.notes ?? "",
+      proof: payment.proof_of_payment?.split(/[\\/]/).pop() ?? "",
+      proofUrl: payment.proof_of_payment ?? undefined,
+      attachments:
+        isSuratKeterangan && attachments.length > 0
+          ? attachments.map((attachment) => ({
+              name: attachment.name,
+              url: attachment.url,
+              mimeType: attachment.mime_type,
+            }))
+          : payment.proof_of_payment
+            ? [
+                {
+                  name:
+                    payment.proof_of_payment.split(/[\\/]/).pop() ?? "Lampiran",
+                  url: payment.proof_of_payment,
+                },
+              ]
+            : [],
+    };
+  }),
+  ...(attachments.length > 0 &&
+  !payments.some(
+    (payment) => payment.payment_type?.toLowerCase() === "surat_keterangan",
+  )
+    ? [
+        {
+          id: "surat-keterangan",
+          paymentDate: null,
+          paymentType: "surat_keterangan",
+          paymentTypeValue: "surat_keterangan",
+          uploadType: "surat_keterangan" as const,
+          paymentMethod: "",
+          accountHolderName: "",
+          depositNumber: "",
+          fromBank: "",
+          toBank: "",
+          amount: null,
+          notes: "",
+          proof: "",
+          attachments: attachments.map((attachment) => ({
+            name: attachment.name,
+            url: attachment.url,
+            mimeType: attachment.mime_type,
+          })),
+          editable: true,
+        },
+      ]
+    : []),
+];
+
 // Setting Tampilnya Save/Submit
 const createInvoiceDraftSnapshot = (
   data: InvoiceFormData,
   hasPendingPayment: boolean,
   payment: InvoicePaymentForm,
+  attachments: File[] = [],
+  paymentRows: InvoicePaymentRow[] = [],
 ) => {
   const invoiceData = {
     ...data,
@@ -113,6 +195,35 @@ const createInvoiceDraftSnapshot = (
           })),
         }
       : null,
+    attachments: attachments.map((file) => ({
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+      type: file.type,
+    })),
+    paymentRows: paymentRows.map((row) => ({
+      id: row.id,
+      serverId: row.serverId,
+      paymentDate:
+        row.paymentDate instanceof Date
+          ? row.paymentDate.toISOString()
+          : row.paymentDate,
+      uploadType: row.uploadType,
+      paymentMethod: row.paymentMethod,
+      accountHolderName: row.accountHolderName,
+      depositNumber: row.depositNumber,
+      fromBank: row.fromBank,
+      toBank: row.toBank,
+      amount: row.amount,
+      notes: row.notes,
+      proof: row.proof,
+      proofFiles: (row.proofFiles ?? []).map((file) => ({
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified,
+        type: file.type,
+      })),
+    })),
   });
 };
 
@@ -456,11 +567,22 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const [searchCustomerCity, setSearchCustomerCity] = useState("");
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [paymentRowsOverride, setPaymentRowsOverride] = useState<
+    InvoicePaymentRow[] | null
+  >(null);
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [paymentUploadType, setPaymentUploadType] = useState<
+    "bukti_bayar" | "surat_keterangan" | ""
+  >("");
+  const [suratKeteranganFiles, setSuratKeteranganFiles] = useState<File[]>([]);
   const [paymentForm, setPaymentForm] = useState<InvoicePaymentForm>(
     createEmptyPaymentForm,
   );
   const [savedPaymentsOverride, setSavedPaymentsOverride] = useState<
     InvoicePayment[] | null
+  >(null);
+  const [savedAttachmentsOverride, setSavedAttachmentsOverride] = useState<
+    InvoiceAttachment[] | null
   >(null);
   const [paymentAmountsOverride, setPaymentAmountsOverride] = useState<{
     totalAmount: string | number;
@@ -482,7 +604,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const {
     canApprove,
     checkingPermission: checkingApprovalPermission,
-    permissionError: approvalPermissionError,
+    // permissionError: approvalPermissionError,
     loadingAction: loadingApprovalAction,
     runAction: runInvoiceApprovalAction,
   } = useInvoiceApproval(
@@ -492,7 +614,32 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const createInvoiceMutation = useCreateInvoice();
   const updateInvoiceMutation = useUpdateInvoice();
   const saving = createInvoiceMutation.loading || updateInvoiceMutation.loading;
-  const openPaymentEditor = () => {
+  const openPaymentEditor = (payment?: InvoicePaymentRow) => {
+    if (payment) {
+      setEditingPaymentId(payment.id);
+      setPaymentUploadType(payment.uploadType);
+      setPaymentForm((current) => ({
+        ...current,
+        paymentDate: payment.paymentDate
+          ? payment.paymentDate instanceof Date
+            ? payment.paymentDate
+            : new Date(payment.paymentDate)
+          : undefined,
+        paymentType: payment.paymentTypeValue ?? "dp",
+        paymentMethod: payment.paymentMethod,
+        accountHolderName: payment.accountHolderName,
+        depositNumber: payment.depositNumber,
+        fromBank: payment.fromBank,
+        toBank: payment.toBank,
+        amount: payment.amount == null ? "" : String(payment.amount),
+        notes: payment.notes,
+        proofFiles: payment.proofFiles ?? [],
+      }));
+    } else {
+      setEditingPaymentId(null);
+      setPaymentUploadType("");
+      setPaymentForm(createEmptyPaymentForm());
+    }
     setOpenPaymentModal(true);
   };
   const handleEditOrder = (order: InvoiceOrder) => {
@@ -532,8 +679,133 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     }));
     setEditingOrderId(null);
   };
-  const savePaymentDraft = (payment: InvoicePaymentForm) => {
+  const savePaymentDraft = (
+    payment: InvoicePaymentForm,
+    uploadType: "bukti_bayar" | "surat_keterangan" | "",
+  ) => {
     setPaymentForm(payment);
+    const currentRows =
+      paymentRowsOverride ??
+      mapInvoicePaymentRows(
+        savedPaymentsOverride ?? invoiceData?.payments ?? [],
+        savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
+      );
+    const nextRow: InvoicePaymentRow = {
+      id: editingPaymentId ?? `pending-payment-${Date.now()}`,
+      serverId: currentRows.find((row) => row.id === editingPaymentId)
+        ?.serverId,
+      paymentDate: payment.paymentDate ?? null,
+      paymentType:
+        uploadType === "surat_keterangan" ? "surat_keterangan" : "bukti_bayar",
+      paymentTypeValue:
+        uploadType === "surat_keterangan" ? "surat_keterangan" : "bukti_bayar",
+      uploadType: uploadType || "bukti_bayar",
+      paymentMethod: payment.paymentMethod,
+      accountHolderName: payment.accountHolderName,
+      depositNumber: payment.depositNumber,
+      fromBank: payment.fromBank,
+      toBank: payment.toBank,
+      amount: payment.amount,
+      notes: payment.notes,
+      proof:
+        payment.proofFiles.map((file) => file.name).join(", ") ||
+        currentRows.find((row) => row.id === editingPaymentId)?.proof ||
+        "",
+      proofUrl:
+        payment.proofFiles.length > 0
+          ? undefined
+          : currentRows.find((row) => row.id === editingPaymentId)?.proofUrl,
+      proofFiles: payment.proofFiles,
+      attachments:
+        payment.proofFiles.length > 0
+          ? payment.proofFiles.map((file) => ({
+              name: file.name,
+              url: URL.createObjectURL(file),
+              mimeType: file.type,
+            }))
+          : currentRows.find((row) => row.id === editingPaymentId)?.attachments,
+      pending: true,
+    };
+    setPaymentRowsOverride(
+      editingPaymentId
+        ? currentRows.map((row) =>
+            row.id === editingPaymentId ? nextRow : row,
+          )
+        : [...currentRows, nextRow],
+    );
+    setEditingPaymentId(null);
+    //setEditingPaymentServerId(null);
+    setPaymentUploadType("");
+    setHasPendingPayment(true);
+  };
+  const saveSuratKeteranganDraft = (files: File[]) => {
+    if (files.length === 0 && editingPaymentId) {
+      setEditingPaymentId(null);
+      setPaymentUploadType("");
+      return;
+    }
+    setSuratKeteranganFiles(files);
+    const rows =
+      paymentRowsOverride ??
+      mapInvoicePaymentRows(
+        savedPaymentsOverride ?? invoiceData?.payments ?? [],
+        savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
+      );
+    const row: InvoicePaymentRow = {
+      id: editingPaymentId ?? `pending-attachment-${Date.now()}`,
+      serverId: rows.find((current) => current.id === editingPaymentId)
+        ?.serverId,
+      paymentDate: null,
+      paymentType: "surat_keterangan",
+      paymentTypeValue: "surat_keterangan",
+      uploadType: "surat_keterangan",
+      paymentMethod: "",
+      accountHolderName: "",
+      depositNumber: "",
+      fromBank: "",
+      toBank: "",
+      amount: null,
+      notes: "",
+      proof: files.map((file) => file.name).join(", "),
+      attachments: files.map((file) => ({
+        name: file.name,
+        url: URL.createObjectURL(file),
+        mimeType: file.type,
+      })),
+      pending: true,
+    };
+    setPaymentRowsOverride(
+      editingPaymentId
+        ? rows.map((current) =>
+            current.id === editingPaymentId ? row : current,
+          )
+        : [...rows, row],
+    );
+    setEditingPaymentId(null);
+    setPaymentUploadType("");
+    setHasPendingPayment(true);
+  };
+  const handleDeletePendingPayment = async (payment: InvoicePaymentRow) => {
+    const confirmation = await Swal.fire({
+      title: "Hapus pembayaran?",
+      text: "Pembayaran ini akan dihapus dari draft invoice.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      confirmButtonColor: "#dc2626",
+      cancelButtonText: "Batal",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
+
+    const rows =
+      paymentRowsOverride ??
+      mapInvoicePaymentRows(
+        savedPaymentsOverride ?? invoiceData?.payments ?? [],
+        savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
+      );
+    setPaymentRowsOverride(rows.filter((row) => row.id !== payment.id));
     setHasPendingPayment(true);
   };
 
@@ -541,6 +813,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   useEffect(() => {
     if (!invoiceData) return;
     setSavedPaymentsOverride(null);
+    setSavedAttachmentsOverride(null);
+    setPaymentRowsOverride(null);
+    setHasPendingPayment(false);
     setPaymentAmountsOverride(null);
     const bookingType =
       invoiceData.booking_type ??
@@ -655,6 +930,11 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       formData,
       false,
       createEmptyPaymentForm(),
+      [],
+      mapInvoicePaymentRows(
+        invoiceData.payments ?? [],
+        invoiceData.attachments ?? [],
+      ),
     );
     capturedInvoiceFormHydrationVersion.current = invoiceFormHydrationVersion;
     setInvoiceFormBaselineVersion(invoiceFormHydrationVersion);
@@ -891,6 +1171,16 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       travelAgent: formData.travelAgent || invoiceData?.partner_name || "",
       provinceId: formData.provinceId,
       cityId: formData.cityId,
+      provinceName:
+        selectedProvince?.name ??
+        invoiceData?.partner_branch_province ??
+        invoiceData?.partner_province ??
+        "",
+      cityName:
+        selectedCity?.name ??
+        invoiceData?.partner_branch_city ??
+        invoiceData?.partner_city ??
+        "",
       arrivalDate: formData.arrivalDate,
       customerId: formData.customerId,
       customerGroupName: formData.customerGroupName,
@@ -1025,30 +1315,42 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       payload.append("customer[is_active]", "1");
     }
 
-    // Payment
-    const hasPaymentInput = hasPendingPayment;
-    if (hasPaymentInput) {
-      if (!paymentForm.paymentDate) return;
-      payload.append(
-        "payment[payment_date]",
-        paymentForm.paymentDate.toISOString(),
-      );
-      payload.append("payment[payment_type]", paymentForm.paymentType || "dp");
-      payload.append("payment[payment_method]", paymentForm.paymentMethod);
-      payload.append(
-        "payment[account_holder_name]",
-        paymentForm.accountHolderName,
-      );
-      payload.append("payment[from_bank]", paymentForm.fromBank);
-      payload.append("payment[to_bank]", paymentForm.toBank);
-      payload.append("payment[amount]", paymentForm.amount);
-      payload.append("payment[notes]", paymentForm.notes);
-      paymentForm.proofFiles.forEach((file) => {
-        payload.append("payment[proof_of_payment]", file);
+    // Like invoice items, send the complete current payment list on invoice PUT.
+    if (hasPendingPayment) {
+      const rows =
+        paymentRowsOverride ??
+        mapInvoicePaymentRows(
+          savedPaymentsOverride ?? invoiceData?.payments ?? [],
+          savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
+        );
+      rows.forEach((payment, index) => {
+        const paymentKey = `payments[${index}]`;
+        payload.append(`${paymentKey}[payment_type]`, payment.uploadType);
+        if (payment.uploadType !== "bukti_bayar") return;
+
+        if (payment.paymentDate) {
+          payload.append(
+            `${paymentKey}[payment_date]`,
+            (payment.paymentDate instanceof Date
+              ? payment.paymentDate
+              : new Date(payment.paymentDate)
+            ).toISOString(),
+          );
+        }
+        payload.append(`${paymentKey}[payment_method]`, payment.paymentMethod);
+        payload.append(
+          `${paymentKey}[account_holder_name]`,
+          payment.accountHolderName,
+        );
+        payload.append(`${paymentKey}[deposit_number]`, payment.depositNumber);
+        payload.append(`${paymentKey}[from_bank]`, payment.fromBank);
+        payload.append(`${paymentKey}[to_bank]`, payment.toBank);
+        payload.append(`${paymentKey}[amount]`, String(payment.amount ?? ""));
+        payload.append(`${paymentKey}[notes]`, payment.notes);
+        payment.proofFiles?.forEach((file) => {
+          payload.append(`${paymentKey}[proof_of_payment]`, file);
+        });
       });
-      if (paymentForm.proofFiles.length === 0) {
-        payload.append("payment[proof_of_payment]", "");
-      }
     }
     payload.append("sales_person_id", salesPersonId);
     payload.append("partner_id", partnerId);
@@ -1062,6 +1364,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     payload.append("arrival_date", arrivalDate);
     payload.append("notes", invoiceData?.notes ?? "");
     payload.append("supporting_document", "");
+    suratKeteranganFiles.forEach((file) => {
+      payload.append("attachments[]", file);
+    });
 
     // Items
     formData.orderItems.forEach((order, index) => {
@@ -1092,6 +1397,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         navigate(`/invoice/detail/${created.id}`, { replace: true });
       } else if (id) {
         const updatedInvoice = await updateInvoiceMutation.submit(id, payload);
+        if (updatedInvoice.attachments) {
+          setSavedAttachmentsOverride(updatedInvoice.attachments);
+        }
         if (hasPendingPayment) {
           setPaymentAmountsOverride({
             totalAmount: updatedInvoice.total_amount,
@@ -1102,37 +1410,48 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
               invoiceData?.remaining_amount ??
               0,
           });
-          const uploadedProofNames = paymentForm.proofFiles
-            .map((file) => file.name)
-            .join(", ");
-          const fallbackPayments = [
-            ...(invoiceData?.payments ?? []),
-            {
-              payment_date: paymentForm.paymentDate?.toISOString() ?? null,
-              payment_type: paymentForm.paymentType,
-              payment_method: paymentForm.paymentMethod,
-              account_holder_name: paymentForm.accountHolderName,
-              from_bank: paymentForm.fromBank,
-              to_bank: paymentForm.toBank,
-              amount: paymentForm.amount,
-              notes: paymentForm.notes,
-              proof_of_payment: uploadedProofNames || null,
-            },
-          ];
+          const fallbackPayments = (
+            paymentRowsOverride ??
+            mapInvoicePaymentRows(
+              invoiceData?.payments ?? [],
+              updatedInvoice.attachments ?? invoiceData?.attachments ?? [],
+            )
+          )
+            .filter((payment) => payment.serverId != null || payment.pending)
+            .map(
+              (payment): InvoicePayment => ({
+                id: payment.serverId,
+                payment_id: payment.serverId,
+                payment_date: payment.paymentDate
+                  ? (payment.paymentDate instanceof Date
+                      ? payment.paymentDate
+                      : new Date(payment.paymentDate)
+                    ).toISOString()
+                  : null,
+                payment_type: payment.uploadType,
+                payment_method: payment.paymentMethod,
+                account_holder_name: payment.accountHolderName,
+                deposit_number: payment.depositNumber,
+                from_bank: payment.fromBank,
+                to_bank: payment.toBank,
+                amount: payment.amount,
+                notes: payment.notes,
+                proof_of_payment:
+                  payment.proofUrl ??
+                  payment.proofFiles?.map((file) => file.name).join(", ") ??
+                  null,
+              }),
+            );
           const returnedPayments = updatedInvoice.payments;
           const savedPayments = returnedPayments?.length
             ? returnedPayments
             : fallbackPayments;
-          if (
-            uploadedProofNames &&
-            !savedPayments.some((payment) => payment.proof_of_payment?.trim())
-          ) {
-            savedPayments[savedPayments.length - 1] = {
-              ...savedPayments[savedPayments.length - 1],
-              proof_of_payment: uploadedProofNames,
-            };
-          }
+          const savedPaymentRows = mapInvoicePaymentRows(
+            savedPayments,
+            updatedInvoice.attachments ?? invoiceData?.attachments ?? [],
+          );
           setSavedPaymentsOverride(savedPayments);
+          setPaymentRowsOverride(savedPaymentRows);
           setHasPendingPayment(false);
           setPaymentForm(createEmptyPaymentForm());
         }
@@ -1140,7 +1459,38 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           formData,
           false,
           createEmptyPaymentForm(),
+          [],
+          hasPendingPayment
+            ? mapInvoicePaymentRows(
+                updatedInvoice.payments?.length
+                  ? updatedInvoice.payments
+                  : (paymentRowsOverride ?? []).map((payment) => ({
+                      id: payment.serverId,
+                      payment_id: payment.serverId,
+                      payment_date: payment.paymentDate
+                        ? (payment.paymentDate instanceof Date
+                            ? payment.paymentDate
+                            : new Date(payment.paymentDate)
+                          ).toISOString()
+                        : null,
+                      payment_type: payment.uploadType,
+                      payment_method: payment.paymentMethod,
+                      account_holder_name: payment.accountHolderName,
+                      deposit_number: payment.depositNumber,
+                      from_bank: payment.fromBank,
+                      to_bank: payment.toBank,
+                      amount: payment.amount,
+                      notes: payment.notes,
+                      proof_of_payment: payment.proofUrl ?? null,
+                    })),
+                updatedInvoice.attachments ?? invoiceData?.attachments ?? [],
+              )
+            : mapInvoicePaymentRows(
+                savedPaymentsOverride ?? invoiceData?.payments ?? [],
+                updatedInvoice.attachments ?? invoiceData?.attachments ?? [],
+              ),
         );
+        setSuratKeteranganFiles([]);
         toast.add({
           title: "Invoice berhasil diperbarui",
           description: "Perubahan invoice berhasil disimpan.",
@@ -1266,12 +1616,21 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     }
   };
 
+  const paymentRows: InvoicePaymentRow[] =
+    paymentRowsOverride ??
+    mapInvoicePaymentRows(
+      savedPaymentsOverride ?? invoiceData?.payments ?? [],
+      savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
+    );
+
   const approvalStatus = invoiceData?.status?.trim().toLowerCase() ?? "";
   const isDraftInvoice = approvalStatus === "draft";
   const currentInvoiceFormSnapshot = createInvoiceDraftSnapshot(
     formData,
     hasPendingPayment,
     paymentForm,
+    suratKeteranganFiles,
+    paymentRows,
   );
   const isInvoiceSnapshotReady =
     mode === "detail" &&
@@ -1329,26 +1688,13 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       id: "submit",
       label: loadingApprovalAction === "submit" ? "Memproses..." : "Submit",
       icon: <FaSave size={15} />,
-      variant: "primer",
-      mobileColor: "bg-primer-60",
+      variant: "blue",
+      mobileColor: "bg-blue-600",
       position: "right",
       disabled: approvalActionDisabled,
       onClick: () => handleInvoiceApprovalAction("submit"),
     });
   }
-
-  // if (mode === "detail" && isDraftInvoice && hasUploadedPaymentProof) {
-  //   actions.push({
-  //     id: "submit",
-  //     label: loadingApprovalAction === "submit" ? "Memproses..." : "Submit",
-  //     icon: <FaSave size={15} />,
-  //     variant: "primer",
-  //     mobileColor: "bg-primer-60",
-  //     position: "right",
-  //     disabled: approvalActionDisabled,
-  //     onClick: () => handleInvoiceApprovalAction("submit"),
-  //   });
-  // }
 
   if (mode === "detail" && canApprove) {
     actions.push(
@@ -1387,72 +1733,24 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       onClick: handleDownloadPdf,
     });
 
-  // Payment
-  const paymentRows: InvoicePaymentRow[] = [
-    ...(savedPaymentsOverride ?? invoiceData?.payments ?? []).map(
-      (payment, index) => ({
-        id: `saved-payment-${index}`,
-        paymentDate: payment.payment_date ?? null,
-        paymentType: payment.payment_type ?? "",
-        paymentMethod: payment.payment_method ?? "",
-        accountHolderName: payment.account_holder_name ?? "",
-        fromBank: payment.from_bank ?? "",
-        toBank: payment.to_bank ?? "",
-        amount: payment.amount ?? null,
-        notes: payment.notes ?? "",
-        proof: payment.proof_of_payment?.split(/[\\/]/).pop() ?? "",
-        status: "Tersimpan",
-      }),
-    ),
-    ...(hasPendingPayment
-      ? [
-          {
-            id: "pending-payment",
-            paymentDate: paymentForm.paymentDate ?? null,
-            paymentType: paymentForm.paymentType,
-            paymentMethod: paymentForm.paymentMethod,
-            accountHolderName: paymentForm.accountHolderName,
-            fromBank: paymentForm.fromBank,
-            toBank: paymentForm.toBank,
-            amount: paymentForm.amount,
-            notes: paymentForm.notes,
-            proof: paymentForm.proofFiles.map((file) => file.name).join(", "),
-            status: "Menunggu disimpan",
-            pending: true,
-            onEdit: openPaymentEditor,
-            onRemove: () => {
-              setPaymentForm(createEmptyPaymentForm());
-              setHasPendingPayment(false);
-            },
-          },
-        ]
-      : []),
-  ];
-
   // Susunan halaman detail invoice
   return (
     <>
       <DetailPageLayout
         icon={FaFileInvoice}
         title={mode === "create" ? "Tambah Invoice" : "Invoice"}
-         subtitle={
-    mode === "create" ? (
-      "Form menambahkan data invoice"
-    ) : invoiceData ? (
-      <>
-        {invoiceData.invoice_number}
-        <br />
-        Dibuat pada tanggal{" "}
-        {formatTanggal(invoiceData.invoice_date)}
-      </>
-    ) : (
-      ""
-    )
-  }
+        subtitle={
+          mode === "create" ? (
+            "Form menambahkan data invoice"
+          ) : invoiceData ? (
+            <>{invoiceData.invoice_number}</>
+          ) : (
+            ""
+          )
+        }
         onClose={() => navigate("/invoice")}
         footer={<DetailActionFooter actions={actions} />}
       >
-
         <DetailSection
           icon={Users}
           title="Informasi Pelanggan"
@@ -1478,15 +1776,20 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
             >
               {mode !== "create" && (
                 <Field orientation="horizontal">
-                  <FieldLabel>Nomor Invoice</FieldLabel>
+                  <FieldLabel>
+                    Tanggal Dibuat{" "}
+                    <span className="text-xs text-red-500">*</span>
+                  </FieldLabel>
                   <Input
-                    placeholder={invoiceData?.invoice_number ?? "Nomor Invoice"}
+                    placeholder={formatTanggal(invoiceData?.invoice_date)}
                     disabled
                   />
                 </Field>
               )}
               <Field orientation="horizontal">
-                <FieldLabel>Sales</FieldLabel>
+                <FieldLabel>
+                  Sales <span className="text-xs text-red-500">*</span>
+                </FieldLabel>
                 <SearchablePopover<Karyawan>
                   open={openKaryawan}
                   onOpenChange={setOpenKaryawan}
@@ -2564,11 +2867,11 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
               <Button
                 variant="primer"
                 size="lg"
-                onClick={openPaymentEditor}
+                onClick={() => openPaymentEditor()}
                 disabled={invoiceData?.payment_status === "paid"}
               >
-                {hasPendingPayment ? <Pencil size={16} /> : <Plus size={16} />}
-                {hasPendingPayment ? "Ubah Pembayaran" : "Tambah Pembayaran"}
+                <Plus size={16} />
+                Tambah Pembayaran
               </Button>
             }
           >
@@ -2592,7 +2895,14 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
               />
             </div>
             <div className="px-5 pb-5">
-              <DetailPaymentTable data={paymentRows} />
+              <DetailPaymentTable
+                data={paymentRows}
+                actionsDisabled={
+                  approvalStatus !== "draft" && mode === "detail"
+                }
+                onEdit={openPaymentEditor}
+                onDelete={handleDeletePendingPayment}
+              />
             </div>
           </DetailSection>
         )}
@@ -2602,7 +2912,18 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           open={openPaymentModal}
           onClose={() => setOpenPaymentModal(false)}
           onSave={savePaymentDraft}
+          onSaveSuratKeterangan={saveSuratKeteranganDraft}
           initialValue={paymentForm}
+          initialUploadType={paymentUploadType}
+          isEditing={editingPaymentId !== null}
+          initialAttachmentNames={
+            paymentRows.find((row) => row.id === editingPaymentId)
+              ?.uploadType === paymentUploadType
+              ? (paymentRows
+                  .find((row) => row.id === editingPaymentId)
+                  ?.attachments?.map((attachment) => attachment.name) ?? [])
+              : []
+          }
           hasPendingPayment={hasPendingPayment}
           totalAmount={
             paymentAmountsOverride?.totalAmount ??
