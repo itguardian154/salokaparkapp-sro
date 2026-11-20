@@ -28,7 +28,6 @@ import DetailReservasi from "@/features/reservasi/components/detail-reservasi";
 import MasterSegmentPage from "./features/master/master-segment/pages/master-segment";
 import MasterLokasiPenyajianPage from "./features/master/lokasi-penyajian/pages/lokasi-penyajian"
 import ReservasiPage from "./features/reservasi/pages/reservasi";
-import DetailSection from "./components/detail-page/detail-section";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
