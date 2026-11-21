@@ -20,6 +20,7 @@ export type InvoiceFormData = {
   customerGroupStatusId: string;
   customerGroupNumber: string;
   customCustomerGroupTag: string;
+  customCustomerGroupTags: string[];
   customerGroupTagOrder: string[];
   customerGroupName: string;
   customerId: number | null;
@@ -54,6 +55,7 @@ export const createInitialInvoiceFormData = (): InvoiceFormData => ({
   customerGroupStatusId: "",
   customerGroupNumber: "",
   customCustomerGroupTag: "",
+  customCustomerGroupTags: [],
   customerGroupTagOrder: [],
   customerGroupName: "",
   customerId: null,

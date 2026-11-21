@@ -39,11 +39,11 @@ import type {
 
 export default function MasterAgentPage() {
   // Filter asosiasi
-  const [associationFilter, setAssociationFilter] =
-    useState<string | null>(null);
+  const [associationFilter, setAssociationFilter] = useState<string | null>(
+    null,
+  );
   const [associationSearch, setAssociationSearch] = useState("");
-  const [associationPickerOpen, setAssociationPickerOpen] =
-    useState(false);
+  const [associationPickerOpen, setAssociationPickerOpen] = useState(false);
 
   // Filter kota
   const [cityFilter, setCityFilter] = useState<string | null>(null);
@@ -59,8 +59,7 @@ export default function MasterAgentPage() {
   const [isEditMasterOpen, setIsEditMasterOpen] = useState(false);
 
   // Data detail dan edit
-  const [selectedAgent, setSelectedAgent] =
-    useState<AgentDetail | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null);
   const [selectedEditAgent, setSelectedEditAgent] =
     useState<AgentDetail | null>(null);
 
@@ -104,16 +103,16 @@ export default function MasterAgentPage() {
     pageSize: perPage,
   };
 
-const cityOptions = useMemo<string[]>(
-  () => [
-    ...new Set(
-      agents
-        .map((agent) => agent.city_name ?? "")
-        .filter((city) => city.trim() !== ""),
-    ),
-  ],
-  [agents],
-);
+  const cityOptions = useMemo<string[]>(
+    () => [
+      ...new Set(
+        agents
+          .map((agent) => agent.city_name ?? "")
+          .filter((city) => city.trim() !== ""),
+      ),
+    ],
+    [agents],
+  );
 
   const filteredCityOptions = useMemo(
     () =>
@@ -138,9 +137,7 @@ const cityOptions = useMemo<string[]>(
   const filteredAssociationOptions = useMemo(
     () =>
       associationOptions.filter((name) =>
-        name
-          .toLowerCase()
-          .includes(associationSearch.trim().toLowerCase()),
+        name.toLowerCase().includes(associationSearch.trim().toLowerCase()),
       ),
     [associationOptions, associationSearch],
   );
@@ -342,9 +339,7 @@ const cityOptions = useMemo<string[]>(
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: (updater) => {
       const nextPagination =
-        typeof updater === "function"
-          ? updater(pagination)
-          : updater;
+        typeof updater === "function" ? updater(pagination) : updater;
 
       if (nextPagination.pageSize !== pagination.pageSize) {
         setPerPage(nextPagination.pageSize);
@@ -361,16 +356,12 @@ const cityOptions = useMemo<string[]>(
 
   return (
     <>
-      <section className="min-w-0 space-y-5">
-        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          {/* HEADER */}
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaDatabase
-                  className="text-emerald-500"
-                  aria-hidden="true"
-                />
+                <FaDatabase className="text-emerald-500" aria-hidden="true" />
                 <h1 className="text-lg font-bold text-slate-800 dark:text-white">
                   Master Agen
                 </h1>
@@ -458,10 +449,7 @@ const cityOptions = useMemo<string[]>(
 
               {/* ACTION */}
               <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={handleOpenCreateAgent}
-                >
+                <Button variant="primer" onClick={handleOpenCreateAgent}>
                   <FaPlus className="text-[16px]" />
                   Tambah
                 </Button>
@@ -502,11 +490,13 @@ const cityOptions = useMemo<string[]>(
             </div>
           ) : (
             <>
-              <div className="hidden md:block">
-                <DataTable table={table} cellClassName="px-3 py-2" />
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+                <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
+                  <DataTable table={table} cellClassName="px-3 py-2" />
+                </div>
               </div>
 
-              <div className="p-3 md:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
                 <MobileDataCard table={table} titleKey="name" />
               </div>
             </>

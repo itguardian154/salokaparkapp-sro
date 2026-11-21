@@ -55,6 +55,23 @@ export const downloadInvoicePdf = async (
 };
 
 export const createInvoice = async (payload: FormData) => {
+  // FormData coerces `undefined` to the literal string "undefined". Normalize
+  // nullable IDs at the request boundary as well, so they arrive as empty
+  // values (Laravel converts empty strings to null) even if a caller regresses.
+  for (const key of [
+    "segment_detail_id",
+    "sub_segment_detail_id",
+    "segment_option_id",
+    "customer[segment_detail_id]",
+    "customer[sub_segment_detail_id]",
+    "customer[segment_option_id]",
+  ]) {
+    const value = payload.get(key);
+    if (value === "undefined" || value === "null") {
+      payload.set(key, "");
+    }
+  }
+
   const response = await axios.post<InvoiceDetailResponse>(invoiceUrl, payload, {
     headers: getAuthHeaders(),
   });

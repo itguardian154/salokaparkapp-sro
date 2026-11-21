@@ -44,7 +44,7 @@ export default function CreateDetailInvoice({
   );
   const [quantity, setQuantity] = useState("");
   const [complimentary, setComplimentary] = useState("0");
-  const [discountPrice, setDiscountPrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("0");
   const [errors, setErrors] = useState<{
     product?: string;
     quantity?: string;
@@ -79,7 +79,7 @@ export default function CreateDetailInvoice({
       initialValue ? String(initialValue.compliment ?? 0) : "0",
     );
     setUnitPrice(initialValue ? String(initialValue.unitPrice) : "");
-    setDiscountPrice(initialValue ? String(initialValue.discountPrice) : "");
+    setDiscountPrice(initialValue ? String(initialValue.discountPrice ?? 0) : "0");
     setErrors({});
   }, [initialValue, open]);
 
@@ -89,7 +89,7 @@ export default function CreateDetailInvoice({
     setQuantity("");
     setComplimentary("0");
     setUnitPrice("");
-    setDiscountPrice("");
+    setDiscountPrice("0");
     setSearchProduk("");
     setErrors({});
   };
@@ -195,6 +195,7 @@ export default function CreateDetailInvoice({
               value={selectedProduk?.description ?? ""}
               placeholder="Deskripsi terisi otomatis dari produk"
               readOnly
+              disabled
             />
           </Field>
 
@@ -258,7 +259,7 @@ export default function CreateDetailInvoice({
             />
           </Field>
 
-          <Field>
+          {/* <Field>
             <FieldLabel>Harga Diskon</FieldLabel>
             <Input
               type="number"
@@ -269,13 +270,13 @@ export default function CreateDetailInvoice({
               placeholder="Masukkan harga diskon"
               disabled={!selectedProduk}
             />
-          </Field>
+          </Field> */}
 
-          <Field className="md:col-span-2">
+          <Field>
             <FieldLabel>Sub total</FieldLabel>
             <Input
               value={
-                selectedProduk && quantity && discountPrice
+                selectedProduk && quantity
                   ? formatRupiah(subtotal, false)
                   : ""
               }

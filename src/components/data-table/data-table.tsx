@@ -24,7 +24,7 @@ const DataTable = <TData extends RowData,>({
 
   return (
     <div
-      className={`w-full overflow-x-auto bg-white dark:bg-slate-800 ${containerClassName}`}
+      className={`w-ful bg-white dark:bg-slate-800 ${containerClassName}`}
     >
       <table className="w-full border-collapse border-gray-300 dark:border-gray-600">
         {header ? (

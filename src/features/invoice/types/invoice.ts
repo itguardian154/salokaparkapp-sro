@@ -153,6 +153,35 @@ export type InvoicePaymentForm = {
   proofFiles: File[];
 };
 
+export type InvoiceActivity = {
+  id: number;
+  description: string;
+  log_name: string;
+  event?: string | null;
+  action_label?: string | null;
+  subject: {
+    id: number;
+    type: string;
+  } | null;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  changes: {
+    before: unknown[] | Record<string, unknown>;
+    after: Record<string, unknown>;
+    items?: {
+      key: string;
+      label: string;
+      before: unknown;
+      after: unknown;
+    }[];
+  };
+  created_at: string;
+  created_at_human: string;
+};
+
 export type InvoiceDetail = {
   id: number;
   invoice_number: string | null;
@@ -196,6 +225,7 @@ export type InvoiceDetail = {
   attachments?: InvoiceAttachment[];
   approvals?: InvoiceApprovalRecord[];
   items?: InvoiceDetailItem[];
+  activities: InvoiceActivity[];
 };
 
 export type InvoiceDetailResponse = { data: InvoiceDetail };

@@ -110,7 +110,7 @@ const EditMasterKategoriProduk = ({
           <AppModal.Section title="Kategori Produk" showHeader={false}>
             <div className="space-y-4">
               <Field>
-                <FieldLabel>Nama Kategori</FieldLabel>
+                <FieldLabel>Nama Kategori <span className="text-xs text-red-500">*</span></FieldLabel>
                 <Input
                   placeholder="Masukkan nama kategori"
                   value={name}
@@ -127,7 +127,7 @@ const EditMasterKategoriProduk = ({
               </Field>
 
               <Field>
-                <FieldLabel>Status Produk</FieldLabel>
+                <FieldLabel>Status Produk <span className="text-xs text-red-500">*</span></FieldLabel>
                 <Select
                   value={String(isActive)}
                   onValueChange={(value) => setIsActive(value === "true")}

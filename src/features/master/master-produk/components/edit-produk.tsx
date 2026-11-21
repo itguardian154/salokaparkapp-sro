@@ -247,7 +247,9 @@ const EditMasterProduk = ({
         <AppModal.Section title="Master Produk" showHeader={false}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Field>
-              <FieldLabel>Nama Produk</FieldLabel>
+              <FieldLabel>
+                Nama Produk <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <Input
                 placeholder="Masukkan nama produk"
                 value={formData.name}
@@ -262,13 +264,15 @@ const EditMasterProduk = ({
                 }}
               />
               {validationErrors.name && (
-                <p role="alert" className="text-sm text-red-500">
-                  {validationErrors.name}
-                </p>
-              )}
+              <p role="alert" className="text-sm text-red-500">
+                {validationErrors.name}
+              </p>
+            )}
             </Field>
             <Field>
-              <FieldLabel>Kategori Produk</FieldLabel>
+              <FieldLabel>
+                Kategori Produk <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <SearchablePopover<KategoriProdukRecord>
                 open={kategoriPickerOpen}
                 onOpenChange={setKategoriPickerOpen}
@@ -278,7 +282,9 @@ const EditMasterProduk = ({
                 selectedLabel={
                   kategoriProduk.find(
                     (kategori) => kategori.id === formData.product_category_id,
-                  )?.name ?? produk.product_category?.name ?? null
+                  )?.name ??
+                  produk.product_category?.name ??
+                  null
                 }
                 selectedKey={
                   formData.product_category_id === null
@@ -312,7 +318,10 @@ const EditMasterProduk = ({
               )}
             </Field>
             <Field>
-              <FieldLabel>Apakah ini produk tiket?</FieldLabel>
+              <FieldLabel>
+                Apakah ini produk tiket?{" "}
+                <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <Select
                 value={String(formData.is_ticket)}
                 onValueChange={(value) =>
@@ -335,7 +344,9 @@ const EditMasterProduk = ({
             </Field>
 
             <Field>
-              <FieldLabel>Tipe Hari</FieldLabel>
+              <FieldLabel>
+                Tipe Hari <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <Select
                 value={formData.day_type}
                 onValueChange={(value) =>
@@ -359,10 +370,17 @@ const EditMasterProduk = ({
                   <SelectItem value="weekday">Weekday</SelectItem>
                 </SelectContent>
               </Select>
+              {validationErrors.typeDay && (
+              <p role="alert" className="text-sm text-red-500">
+                {validationErrors.typeDay}
+              </p>
+            )}
             </Field>
 
             <Field>
-              <FieldLabel>Harga</FieldLabel>
+              <FieldLabel>
+                Harga <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <Input
                 placeholder="Masukkan harga"
                 value={formData.price ? formatRupiah(formData.price) : ""}
@@ -384,7 +402,10 @@ const EditMasterProduk = ({
             </Field>
 
             <Field>
-              <FieldLabel>Departemen Terkait</FieldLabel>
+              <FieldLabel>
+                Departemen Terkait{" "}
+                <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <div
                 className={`relative [&>button]:h-auto! [&>button]:max-h-24! [&>button]:min-h-10! [&>button]:items-center! [&>button]:overflow-hidden! [&>button]:py-1.5! ${selectedDepartemen.length ? "[&>button>span:first-child]:opacity-0" : ""}`}
               >
@@ -462,7 +483,9 @@ const EditMasterProduk = ({
               )}
             </Field>
             <Field>
-              <FieldLabel>Status Produk</FieldLabel>
+              <FieldLabel>
+                Status Produk <span className="text-xs text-red-500">*</span>
+              </FieldLabel>
               <Select
                 value={String(formData.is_active)}
                 onValueChange={(value) =>

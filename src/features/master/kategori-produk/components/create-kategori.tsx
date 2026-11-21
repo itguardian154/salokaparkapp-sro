@@ -103,7 +103,7 @@ const CreateMasterKategoriProduk = ({
     >
       <AppModal.Section title="Master Produk" showHeader={false}>
         <Field>
-          <FieldLabel>Nama Kategori</FieldLabel>
+          <FieldLabel>Nama Kategori <span className="text-xs text-red-500">*</span></FieldLabel>
 
           <Input
             placeholder="Masukkan nama kategori"

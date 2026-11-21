@@ -1,6 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 import { FaUserEdit } from "react-icons/fa";
 import type { KategoriProdukRecord } from "./types/kategori-produk";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -44,16 +50,24 @@ export function getMasterKategoriProdukColumns(
       header: "Aksi",
       cell: ({ row }) => (
         <div className="flex justify-center gap-2">
-          <Tooltip>
-            <Button
-              variant="litleSekunder"
-              size="litle"
-              onClick={canEdit ? () => onEdit(row.original) : undefined}
-              aria-label="Edit kategori produk"
-            >
-              <FaUserEdit />
-            </Button>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="litleSekunder"
+                  size="litle"
+                  onClick={canEdit ? () => onEdit(row.original) : undefined}
+                  aria-label="Edit kategori produk"
+                >
+                  <FaUserEdit />
+                </Button>
+              </TooltipTrigger>
+
+              <TooltipContent>
+                <p>Edit kategori produk</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       ),
     },

@@ -371,7 +371,7 @@ const SegmentFields = ({
   return (
     <>
       <Field>
-        <FieldLabel>Segment</FieldLabel>
+        <FieldLabel>Segment <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<SegmentOption>
           open={openSegment}
@@ -405,7 +405,7 @@ const SegmentFields = ({
 
       {(isEducation || isCorporate) && (
         <Field>
-          <FieldLabel>{isEducation ? "Jenis" : "Bidang Usaha"}</FieldLabel>
+          <FieldLabel>{isEducation ? "Jenis" : "Bidang Usaha"} <span className="text-xs text-red-500">*</span></FieldLabel>
 
           <SearchablePopover
             open={openSegmentDetail}
@@ -450,7 +450,7 @@ const SegmentFields = ({
 
       {(isEducation || isCorporate) && (
         <Field>
-          <FieldLabel>{isEducation ? "Jenjang" : "Jenis Usaha"}</FieldLabel>
+          <FieldLabel>{isEducation ? "Jenjang" : "Jenis Usaha"} <span className="text-xs text-red-500">*</span></FieldLabel>
           <SearchablePopover
             open={openSubDetail}
             onOpenChange={setOpenSubDetail}
@@ -584,7 +584,7 @@ const SegmentFields = ({
       )}
 
       <Field className="md:col-span-2">
-        <FieldLabel>Nama Customer</FieldLabel>
+        <FieldLabel>Nama Customer <span className="text-xs text-red-500">*</span></FieldLabel>
         {isEducation ? (
           <CustomerSuggestionField
             value={namePartInput}
@@ -699,7 +699,7 @@ const ProvinceCityFields = ({
   return (
     <>
       <Field>
-        <FieldLabel>Provinsi</FieldLabel>
+        <FieldLabel>Provinsi <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<Province>
           open={openProvince}
@@ -736,7 +736,7 @@ const ProvinceCityFields = ({
       </Field>
 
       <Field>
-        <FieldLabel>Kota/Kabupaten</FieldLabel>
+        <FieldLabel>Kota/Kabupaten <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<City>
           open={openCity}
@@ -1155,7 +1155,7 @@ const UpdateCustomer = ({
             />
 
             <Field>
-              <FieldLabel>WhatsApp Customer</FieldLabel>
+              <FieldLabel>WhatsApp Customer <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 type="tel"
                 value={formData.phone}
@@ -1168,7 +1168,7 @@ const UpdateCustomer = ({
             </Field>
 
             <Field>
-              <FieldLabel>Email Customer</FieldLabel>
+              <FieldLabel>Email Customer <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 type="email"
                 value={formData.email}
@@ -1211,7 +1211,7 @@ const UpdateCustomer = ({
             />
 
             <Field>
-              <FieldLabel>Status Customer</FieldLabel>
+              <FieldLabel>Status Customer <span className="text-xs text-red-500">*</span></FieldLabel>
               <Select
                 value={String(formData.is_active)}
                 onValueChange={(value) =>

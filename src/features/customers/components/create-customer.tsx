@@ -382,7 +382,7 @@ const SegmentFields = (props: SegmentFieldsProps) => {
   return (
     <>
       <Field>
-        <FieldLabel>Segment</FieldLabel>
+        <FieldLabel>Segment <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<SegmentOption>
           open={openSegment}
@@ -421,7 +421,7 @@ const SegmentFields = (props: SegmentFieldsProps) => {
                 ? "Jenis"
                 : isCorporate
                   ? "Bidang Usaha"
-                : "Bidang Usaha"}
+                : "Bidang Usaha"} <span className="text-xs text-red-500">*</span>
             </FieldLabel>
 
             <SearchablePopover
@@ -465,7 +465,7 @@ const SegmentFields = (props: SegmentFieldsProps) => {
           </Field>
 
           <Field>
-            <FieldLabel>{isEducation ? "Jenjang" : "Jenis Usaha"}</FieldLabel>
+            <FieldLabel>{isEducation ? "Jenjang" : "Jenis Usaha"} <span className="text-xs text-red-500">*</span></FieldLabel>
             <SearchablePopover
               open={openSubDetail}
               onOpenChange={setOpenSubDetail}
@@ -611,7 +611,7 @@ const SegmentFields = (props: SegmentFieldsProps) => {
       )}
 
       <Field className="md:col-span-2">
-        <FieldLabel>Nama Customer</FieldLabel>
+        <FieldLabel>Nama Customer <span className="text-xs text-red-500">*</span></FieldLabel>
         {isStructuredName ? (
           <CustomerSuggestionField
             value={namePartInput}
@@ -711,7 +711,7 @@ const ProvinceCityFields = ({
   return (
     <>
       <Field>
-        <FieldLabel>Provinsi</FieldLabel>
+        <FieldLabel>Provinsi <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<Province>
           open={openProvince}
@@ -748,8 +748,7 @@ const ProvinceCityFields = ({
       </Field>
 
       <Field>
-        <FieldLabel>Kota/Kabupaten</FieldLabel>
-
+        <FieldLabel>Kota/Kabupaten <span className="text-xs text-red-500">*</span> </FieldLabel>
         <SearchablePopover<City>
           open={openCity}
           onOpenChange={setOpenCity}
@@ -1072,7 +1071,7 @@ const CreateCustomer = ({
             />
 
             <Field>
-              <FieldLabel>WhatsApp Customer</FieldLabel>
+              <FieldLabel>WhatsApp Customer <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 type="tel"
                 value={formData.phone}
@@ -1085,7 +1084,7 @@ const CreateCustomer = ({
             </Field>
 
             <Field>
-              <FieldLabel>Email Customer</FieldLabel>
+              <FieldLabel>Email Customer <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 type="email"
                 value={formData.email}
@@ -1097,7 +1096,7 @@ const CreateCustomer = ({
               )}
             </Field>
             <Field>
-              <FieldLabel>Nama PIC</FieldLabel>
+              <FieldLabel>Nama PIC <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={formData.contact_person}
                 onChange={(event) =>
