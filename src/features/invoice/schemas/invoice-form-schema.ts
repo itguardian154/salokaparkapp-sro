@@ -100,13 +100,54 @@ export type InvoiceFormValidationField = keyof z.infer<
   typeof invoiceFormSchema
 >;
 
-export const invoicePaymentFormSchema = z.object({
-  paymentDate: z.date({ required_error: "Tanggal bayar wajib diisi" }),
-  paymentMethod: z.string().trim().min(1, "Metode bayar wajib dipilih"),
-  amount: z
-    .string()
-    .refine(
-      (amount) => Number(amount) > 0,
-      "Jumlah pembayaran wajib lebih dari 0",
-    ),
-});
+export const invoicePaymentFormSchema = z
+  .object({
+    proofFiles: z.array(z.instanceof(File)),
+    accountHolderName: z.string(),
+    paymentDate: z.date({ required_error: "Tanggal bayar wajib diisi" }),
+    paymentMethod: z.string().trim().min(1, "Metode bayar wajib dipilih"),
+    fromBank: z.string(),
+    toBank: z.string(),
+    amount: z
+      .string()
+      .refine(
+        (amount) => Number(amount) > 0,
+        "Jumlah pembayaran wajib lebih dari 0",
+      ),
+  })
+  .superRefine((payment, context) => {
+    const isCash = ["tunai", "cash"].includes(
+      payment.paymentMethod.trim().toLowerCase(),
+    );
+
+    if (isCash) return;
+
+    if (payment.proofFiles.length === 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["proofFiles"],
+        message: "Bukti bayar wajib diunggah",
+      });
+    }
+    if (!payment.accountHolderName.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["accountHolderName"],
+        message: "Nama pemilik wajib diisi",
+      });
+    }
+    if (!payment.fromBank.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["fromBank"],
+        message: "Rekening asal wajib diisi",
+      });
+    }
+    if (!payment.toBank.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["toBank"],
+        message: "Rekening tujuan wajib diisi",
+      });
+    }
+  });

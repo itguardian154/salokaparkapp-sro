@@ -2,13 +2,21 @@ import { Button } from "@/components/ui/button";
 import API_URLS from "@/config/env";
 import { formatRupiah, formatTanggal } from "@/lib/utils";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Image, Pencil, Trash2 } from "lucide-react";
 import type { dataTableFeatures } from "@/components/data-table/table-features";
 import type { InvoicePaymentRow } from "./types/invoice";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const paymentMethodLabel = (method: string) => {
   const labels: Record<string, string> = {
     cash: "Tunai",
+    Tunai: "Tunai",
+    tunai: "Tunai",
     transfer: "Transfer",
     deposit: "Deposit",
     other: "Lainnya",
@@ -39,7 +47,7 @@ export const getInvoicePaymentColumns = (actions?: {
   },
   {
     accessorKey: "paymentType",
-    header: "Jenis",
+    header: "Tipe Pembayaran",
     cell: ({ row }) => {
       const paymentType = (
         row.original.paymentTypeValue ?? row.original.paymentType
@@ -65,8 +73,9 @@ export const getInvoicePaymentColumns = (actions?: {
     accessorKey: "bank",
     header: "Rekening",
     cell: ({ row }) =>
-      [row.original.fromBank, row.original.toBank].filter(Boolean).join(" / ") ||
-      "-",
+      [row.original.fromBank, row.original.toBank]
+        .filter(Boolean)
+        .join(" Ke ") || "-",
   },
   {
     accessorKey: "amount",
@@ -86,20 +95,28 @@ export const getInvoicePaymentColumns = (actions?: {
       const attachments = row.original.attachments ?? [];
       if (attachments.length > 0) {
         return (
-          <div className="flex flex-wrap gap-2">
-            {attachments.map((attachment, index) => (
-              <Button
-                key={`${attachment.url}-${index}`}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => openAttachment(attachment.url)}
-              >
-                <ExternalLink className="mr-1 h-4 w-4" />
-                {attachments.length > 1 ? `Buka ${index + 1}` : "Buka"}
-              </Button>
-            ))}
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((attachment, index) => (
+                    <Button
+                      key={`${attachment.url}-${index}`}
+                      variant="litleSekunder"
+                      size="litle"
+                      onClick={() => openAttachment(attachment.url)}
+                    >
+                      <Image />
+                    </Button>
+                  ))}
+                </div>
+              </TooltipTrigger>
+
+              <TooltipContent>
+                <p>Tampilkan</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       }
       return row.original.proof && !row.original.pending ? (

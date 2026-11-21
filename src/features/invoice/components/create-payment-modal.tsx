@@ -16,6 +16,8 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaPlus, FaUpload } from "react-icons/fa6";
 import type { InvoicePaymentForm } from "../types/invoice";
+import SearchablePopover from "@/components/searchable-popover";
+import { getInvoiceConfigurations } from "@/features/konfigurasi/invoice/service/configuration-service";
 import PaymentInformation from "./payment-information";
 import { invoicePaymentFormSchema } from "../schemas/invoice-form-schema";
 
@@ -64,7 +66,8 @@ function UploadField({
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
 
-    const withinCount = maxFiles === undefined || selectedFiles.length <= maxFiles;
+    const withinCount =
+      maxFiles === undefined || selectedFiles.length <= maxFiles;
     const allowedExtensions = new Set(
       accept
         .split(",")
@@ -73,7 +76,10 @@ function UploadField({
     );
     const validFiles = selectedFiles.filter((file) => {
       const extension = file.name.split(".").pop()?.toLowerCase();
-      return file.size <= maxFileSize && Boolean(extension && allowedExtensions.has(extension));
+      return (
+        file.size <= maxFileSize &&
+        Boolean(extension && allowedExtensions.has(extension))
+      );
     });
 
     setError(
@@ -113,9 +119,7 @@ function UploadField({
           />
         </label>
 
-        <span className="text-xs text-slate-500">
-          {formatHint}
-        </span>
+        <span className="text-xs text-slate-500">{formatHint}</span>
 
         {(files.length > 0 || existingFileNames.length > 0) && (
           <span className="w-full truncate text-xs text-slate-600 dark:text-slate-300">
@@ -158,6 +162,9 @@ export default function CreatePaymentModal({
   paidAmount,
   remainingAmount,
 }: CreatePaymentModalProps) {
+  const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
+  const [bankAccountPopoverOpen, setBankAccountPopoverOpen] = useState(false);
+
   const [value, setValue] = useState<InvoicePaymentForm>(
     createEmptyPaymentForm,
   );
@@ -169,6 +176,9 @@ export default function CreatePaymentModal({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const isCashPayment = ["tunai", "cash"].includes(
+    value.paymentMethod.trim().toLowerCase(),
+  );
 
   useEffect(() => {
     if (open) {
@@ -176,9 +186,36 @@ export default function CreatePaymentModal({
       setSuratKeteranganFiles([]);
       setValidationErrors({});
 
-      setValue(initialValue);
+      setValue({
+        ...initialValue,
+        paymentMethod:
+          initialValue.paymentMethod.toLowerCase() === "cash"
+            ? "Tunai"
+            : initialValue.paymentMethod,
+      });
     }
   }, [hasPendingPayment, initialUploadType, initialValue, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    void getInvoiceConfigurations()
+      .then((configurations) => {
+        if (!cancelled) {
+          const bankAccount = configurations["Bank Account"]?.trim();
+          setBankAccountOptions(bankAccount ? [bankAccount] : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBankAccountOptions([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const updateValue = (updates: Partial<InvoicePaymentForm>) => {
     setValue((current) => ({
@@ -198,7 +235,7 @@ export default function CreatePaymentModal({
     // Validasi pilihan upload
     if (!uploadType) {
       setValidationErrors({
-        uploadType: "Silakan pilih jenis upload terlebih dahulu.",
+        uploadType: "Silakan pilih tipe pembayaran terlebih dahulu.",
       });
       return;
     }
@@ -294,17 +331,17 @@ export default function CreatePaymentModal({
             paidAmount={paidAmount}
             remainingAmount={remainingAmount}
           />
-          {/* PILIHAN JENIS UPLOAD */}
+          {/* PILIHAN tipe pembayaran  */}
           <Field>
-            <FieldLabel className="text-xs">Jenis Upload</FieldLabel>
+            <FieldLabel className="text-xs">Tipe Pembayaran</FieldLabel>
             <Select value={uploadType} onValueChange={handleUploadTypeChange}>
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="Pilih jenis upload">
+                <SelectValue placeholder="Pilih tipe pembayaran">
                   {uploadType === "surat_keterangan"
                     ? "Surat Keterangan"
                     : uploadType === "bukti_bayar"
                       ? "Bukti Bayar"
-                      : "Pilih jenis upload"}
+                      : "Pilih tipe pembayaran"}
                 </SelectValue>
               </SelectTrigger>
 
@@ -349,136 +386,177 @@ export default function CreatePaymentModal({
             </div>
           )}
 
+
           {/* FORM BUKTI BAYAR */}
           {uploadType === "bukti_bayar" && (
             <>
               <div className="grid gap-4 md:grid-cols-2">
-                {/* BUKTI BAYAR */}
-                <UploadField
-                  label="Bukti Bayar"
-                  multiple
-                  files={value.proofFiles}
-                  existingFileNames={initialAttachmentNames}
-                  onFilesChange={(proofFiles) => updateValue({ proofFiles })}
-                />
+                 {/* METODE BAYAR */}
+          <Field>
+            <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
 
-                {/* ATAS NAMA REKENING */}
-                <Field>
-                  <FieldLabel className="text-xs">
-                    Atas Nama Rekening
-                  </FieldLabel>
+            <Select
+              value={value.paymentMethod}
+              onValueChange={(method: string | null) => {
+                if (method !== null) {
+                  updateValue({
+                    paymentMethod: method === "cash" ? "Tunai" : method,
+                  });
+                  setValidationErrors((current) => ({
+                    ...current,
+                    paymentMethod: "",
+                    proofFiles: "",
+                    accountHolderName: "",
+                    fromBank: "",
+                    toBank: "",
+                  }));
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih metode bayar" />
+              </SelectTrigger>
 
-                  <Input
-                    className="h-10"
-                    value={value.accountHolderName}
-                    onChange={(event) =>
-                      updateValue({
-                        accountHolderName: event.target.value,
-                      })
-                    }
-                    placeholder="Nama pemilik rekening"
-                  />
-                </Field>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                <SelectItem value="Tunai">Tunai</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
+                <SelectItem value="deposit">Deposit</SelectItem>
+                <SelectItem value="other">Lainnya</SelectItem>
+              </SelectContent>
+            </Select>
 
-                {/* METODE BAYAR */}
-                <Field>
-                  <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
+            {validationErrors.paymentMethod && (
+              <p className="text-sm text-red-500" role="alert">
+                {validationErrors.paymentMethod}
+              </p>
+            )}
+          </Field>
+          
+                {!isCashPayment && (
+                  <>
+                    {/* BUKTI BAYAR */}
+                    <div>
+                      <UploadField
+                        label="Bukti Bayar"
+                        multiple
+                        files={value.proofFiles}
+                        existingFileNames={initialAttachmentNames}
+                        onFilesChange={(proofFiles) =>
+                          updateValue({ proofFiles })
+                        }
+                      />
+                      {validationErrors.proofFiles && (
+                        <p className="text-sm text-red-500" role="alert">
+                          {validationErrors.proofFiles}
+                        </p>
+                      )}
+                    </div>
 
-                  <Select
-                    value={value.paymentMethod}
-                    onValueChange={(method: string | null) => {
-                      if (method !== null) {
-                        updateValue({ paymentMethod: method });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih metode bayar" />
-                    </SelectTrigger>
+                    {/* ATAS NAMA REKENING */}
+                    <Field>
+                      <FieldLabel className="text-xs">
+                        Atas Nama Rekening
+                      </FieldLabel>
 
-                    <SelectContent align="start" alignItemWithTrigger={false}>
-                      <SelectItem value="cash">Tunai</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
-                      <SelectItem value="deposit">Deposit</SelectItem>
-                      <SelectItem value="other">Lainnya</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      <Input
+                        className="h-10"
+                        value={value.accountHolderName}
+                        onChange={(event) =>
+                          updateValue({ accountHolderName: event.target.value })
+                        }
+                        placeholder="Nama pemilik rekening"
+                      />
+                      {validationErrors.accountHolderName && (
+                        <p className="text-sm text-red-500" role="alert">
+                          {validationErrors.accountHolderName}
+                        </p>
+                      )}
+                    </Field>
+                  </>
+                )}
 
-                  {validationErrors.paymentMethod && (
-                    <p className="text-sm text-red-500" role="alert">
-                      {validationErrors.paymentMethod}
-                    </p>
-                  )}
-                </Field>
+                {!isCashPayment && (
+                  <>
+                    {/* NOMOR SO / GROUP DEPOSIT */}
+                    <Field>
+                      <FieldLabel className="text-xs">
+                        Nomor SO / Group Deposit
+                      </FieldLabel>
 
-                {/* NOMOR SO / GROUP DEPOSIT */}
-                <Field>
-                  <FieldLabel className="text-xs">
-                    Nomor SO / Group Deposit
-                  </FieldLabel>
+                      <Input
+                        className="h-10"
+                        value={value.depositNumber}
+                        onChange={(event) =>
+                          updateValue({ depositNumber: event.target.value })
+                        }
+                        placeholder="Isi jika menggunakan deposit"
+                      />
+                    </Field>
 
-                  <Input
-                    className="h-10"
-                    value={value.depositNumber}
-                    onChange={(event) =>
-                      updateValue({
-                        depositNumber: event.target.value,
-                      })
-                    }
-                    placeholder="Isi jika menggunakan deposit"
-                  />
-                </Field>
+                    {/* DARI REKENING */}
+                    <Field>
+                      <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
 
-                {/* DARI REKENING */}
-                <Field>
-                  <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
+                      <Select
+                        value={value.fromBank}
+                        onValueChange={(bank: string | null) => {
+                          if (bank !== null) updateValue({ fromBank: bank });
+                        }}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Pilih rekening asal" />
+                        </SelectTrigger>
 
-                  <Select
-                    value={value.fromBank}
-                    onValueChange={(bank: string | null) => {
-                      if (bank !== null) {
-                        updateValue({ fromBank: bank });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Pilih rekening asal" />
-                    </SelectTrigger>
+                        <SelectContent
+                          align="start"
+                          alignItemWithTrigger={false}
+                        >
+                          <SelectItem value="BCA">BCA</SelectItem>
+                          <SelectItem value="Mandiri">Mandiri</SelectItem>
+                          <SelectItem value="BRI">BRI</SelectItem>
+                          <SelectItem value="BNI">BNI</SelectItem>
+                          <SelectItem value="Tunai">Tunai</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {validationErrors.fromBank && (
+                        <p className="text-sm text-red-500" role="alert">
+                          {validationErrors.fromBank}
+                        </p>
+                      )}
+                    </Field>
 
-                    <SelectContent align="start" alignItemWithTrigger={false}>
-                      <SelectItem value="BCA">BCA</SelectItem>
-                      <SelectItem value="Mandiri">Mandiri</SelectItem>
-                      <SelectItem value="BRI">BRI</SelectItem>
-                      <SelectItem value="BNI">BNI</SelectItem>
-                      <SelectItem value="Tunai">Tunai</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                    {/* KE REKENING */}
+                    <Field>
+                      <FieldLabel className="text-xs">
+                        Ke Rekening Saloka
+                      </FieldLabel>
+                      <SearchablePopover<string>
+                        open={bankAccountPopoverOpen}
+                        onOpenChange={setBankAccountPopoverOpen}
+                        items={bankAccountOptions}
+                        placeholder="Pilih rekening tujuan"
+                        selectedLabel={
+                          value.toBank.replace(/\s*\n\s*/g, " - ") || null
+                        }
+                        selectedKey={value.toBank}
+                        getKey={(bankAccount) => bankAccount}
+                        renderItem={(bankAccount) =>
+                          bankAccount.replace(/\s*\n\s*/g, " - ")
+                        }
+                        onSelect={(bankAccount) => {
+                          updateValue({ toBank: bankAccount });
+                          setBankAccountPopoverOpen(false);
+                        }}
+                      />
 
-                {/* KE REKENING */}
-                <Field>
-                  <FieldLabel className="text-xs">Ke Rekening Saloka</FieldLabel>
-
-                  <Select
-                    value={value.toBank}
-                    onValueChange={(bank: string | null) => {
-                      if (bank !== null) {
-                        updateValue({ toBank: bank });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Pilih rekening tujuan" />
-                    </SelectTrigger>
-
-                    <SelectContent align="start" alignItemWithTrigger={false}>
-                      <SelectItem value="BCA">BCA</SelectItem>
-                      <SelectItem value="Mandiri">Mandiri</SelectItem>
-                      <SelectItem value="BRI">BRI</SelectItem>
-                      <SelectItem value="BNI">BNI</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                      {validationErrors.toBank && (
+                        <p className="text-sm text-red-500" role="alert">
+                          {validationErrors.toBank}
+                        </p>
+                      )}
+                    </Field>
+                  </>
+                )}
 
                 {/* TANGGAL BAYAR */}
                 <Field>

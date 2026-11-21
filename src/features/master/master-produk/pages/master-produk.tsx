@@ -247,9 +247,7 @@ export default function MasterProdukPage() {
     clearEditProdukError();
   };
 
-  const handleProdukApprovalAction = async (
-    action: ProdukApprovalAction,
-  ) => {
+  const handleProdukApprovalAction = async (action: ProdukApprovalAction) => {
     const confirmation = {
       submit: {
         title: "Konfirmasi Submit",
@@ -343,10 +341,7 @@ export default function MasterProdukPage() {
           <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaDatabase
-                  className="text-emerald-500"
-                  aria-hidden="true"
-                />
+                <FaDatabase className="text-emerald-500" aria-hidden="true" />
                 <h1 className="text-lg font-bold text-slate-800 dark:text-white">
                   Master Produk
                 </h1>
@@ -420,7 +415,8 @@ export default function MasterProdukPage() {
                         emptyText={
                           loadingKategoriProduk
                             ? "Memuat kategori produk..."
-                            : (kategoriProdukError ?? "Kategori produk tidak ditemukan")
+                            : (kategoriProdukError ??
+                              "Kategori produk tidak ditemukan")
                         }
                         items={kategoriProduk}
                         getKey={(kategori) => String(kategori.id)}
@@ -496,10 +492,7 @@ export default function MasterProdukPage() {
               </div>
               <div className="hidden gap-2 xl:flex">
                 {canCreateProduk && (
-                  <Button
-                    variant="primer"
-                    onClick={handleOpenCreateProduk}
-                  >
+                  <Button variant="primer" onClick={handleOpenCreateProduk}>
                     <FaPlus className="text-[16px]" />
                     Tambah
                   </Button>
@@ -533,10 +526,12 @@ export default function MasterProdukPage() {
             </p>
           ) : (
             <>
-              <div className="hidden md:block">
-                <DataTable table={table} cellClassName="px-3 py-2" />
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+                <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
+                  <DataTable table={table} cellClassName="px-3 py-2" />
+                </div>
               </div>
-              <div className="p-3 md:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
                 <MobileDataCard
                   table={table}
                   titleKey="name"

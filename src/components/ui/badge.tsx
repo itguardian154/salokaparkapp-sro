@@ -22,6 +22,10 @@ const badgeVariants = cva(
           "gap-1.5 border border-blue-200 bg-blue-50 text-blue-800 before:size-1.5 before:shrink-0 before:rounded-full before:bg-blue-500 before:content-[''] dark:border-blue-800 dark:bg-blue-950/70 dark:text-blue-200 dark:before:bg-blue-400",
         amber:
           "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+        orange:
+          "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200",
+        violet:
+          "bg-violet-100 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200",
         rose: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
       },
     },

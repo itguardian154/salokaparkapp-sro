@@ -2,6 +2,7 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface TablePaginationProps {
   leftSlot?: React.ReactNode;
+  rightSlot?: React.ReactNode;
   itemPerPage: number;
   setItemPerPage: (value: number) => void;
   currentPage: number;
@@ -16,6 +17,7 @@ interface TablePaginationProps {
 
 const TablePagination = ({
   leftSlot,
+  rightSlot,
   itemPerPage,
   setItemPerPage,
   currentPage,
@@ -110,6 +112,7 @@ const TablePagination = ({
             <FaChevronRight className="w-3 h-3 text-slate-700 dark:text-slate-600" />
           </button>
         </div>
+        {rightSlot}
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ import DetailReservasi from "@/features/reservasi/components/detail-reservasi";
 import MasterSegmentPage from "./features/master/master-segment/pages/master-segment";
 import MasterLokasiPenyajianPage from "./features/master/lokasi-penyajian/pages/lokasi-penyajian"
 import ReservasiPage from "./features/reservasi/pages/reservasi";
+import ArrivalCotrolPage from "./features/arrival-control/pages/arrival-control";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -97,6 +98,9 @@ createRoot(document.getElementById("root")!).render(
                   path="/reservation/detail/:id"
                   element={<DetailReservasi />}
                 />
+
+                 {/* Arrival Control */}
+                <Route path="/arrival-control" element={<ArrivalCotrolPage />} />
 
               </Route>
             </Routes>

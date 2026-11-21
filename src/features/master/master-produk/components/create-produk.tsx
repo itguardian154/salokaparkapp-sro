@@ -240,7 +240,7 @@ const CreateMasterProduk = ({
       <AppModal.Section title="Master Produk" showHeader={false}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field>
-            <FieldLabel>Nama Produk</FieldLabel>
+            <FieldLabel>Nama Produk<span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Input
               placeholder="Masukkan nama produk"
@@ -264,7 +264,7 @@ const CreateMasterProduk = ({
           </Field>
 
           <Field>
-            <FieldLabel>Kategori Produk</FieldLabel>
+            <FieldLabel>Kategori Produk <span className="text-xs text-red-500">*</span></FieldLabel>
             <SearchablePopover<KategoriProdukRecord>
               open={openKategoriProduk}
               onOpenChange={setOpenKategoriProduk}
@@ -298,7 +298,7 @@ const CreateMasterProduk = ({
           </Field>
 
           <Field>
-            <FieldLabel>Apakah ini produk tiket ?</FieldLabel>
+            <FieldLabel>Apakah ini produk tiket ? <span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Select
               value={formData.is_ticket === null ? "" : String(formData.is_ticket)}
@@ -339,7 +339,7 @@ const CreateMasterProduk = ({
           </Field>
 
           <Field>
-            <FieldLabel>Tipe Hari</FieldLabel>
+            <FieldLabel>Tipe Hari <span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Select
               value={formData.typeDay}
@@ -372,7 +372,7 @@ const CreateMasterProduk = ({
           </Field>
 
           <Field>
-            <FieldLabel>Harga</FieldLabel>
+            <FieldLabel>Harga <span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Input
               placeholder="Masukkan harga"
@@ -396,7 +396,7 @@ const CreateMasterProduk = ({
           </Field>
 
           <Field>
-            <FieldLabel>Departemen Terkait</FieldLabel>
+            <FieldLabel>Departemen Terkait <span className="text-xs text-red-500">*</span></FieldLabel>
             <div
               className={`relative [&>button]:h-auto! [&>button]:max-h-24! [&>button]:min-h-10! [&>button]:items-center! [&>button]:overflow-hidden! [&>button]:py-1.5! ${
                 selectedDepartemen.length > 0
