@@ -25,13 +25,19 @@ export default function DetailPaymentTable({
 }: DetailPaymentTableProps) {
   const columns = useMemo(() => {
     const paymentColumns = getInvoicePaymentColumns({
-      disabled: actionsDisabled || hideActions,
+      disabled: actionsDisabled,
       onEdit: onEdit ?? (() => {}),
       onDelete: onDelete ?? (() => {}),
     });
 
     return hideActions
-      ? paymentColumns.filter((column) => column.id !== "actions")
+      ? paymentColumns.filter(
+          (column) =>
+            !(
+              "accessorKey" in column &&
+              column.accessorKey === "actions"
+            )
+        )
       : paymentColumns;
   }, [actionsDisabled, hideActions, onEdit, onDelete]);
 

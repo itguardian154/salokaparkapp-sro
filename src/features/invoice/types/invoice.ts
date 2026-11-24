@@ -90,6 +90,9 @@ export type InvoicePayment = {
   amount?: string | number | null;
   notes?: string | null;
   proof_of_payment: string | null;
+
+  attachments?: PaymentAttachment[];
+  pending?: boolean;
 };
 
 export type PaymentAttachment = {
@@ -235,3 +238,20 @@ export type InvoiceDetail = {
 };
 
 export type InvoiceDetailResponse = { data: InvoiceDetail };
+
+
+export type ReservasiInvoiceDetail = {
+    id: number;
+    invoice_number: string;
+    invoice_date?: string | null;
+    customer_name?: string | null;
+    customer_city?: string | null;
+    customer_province?: string | null;
+    customer_phone?: string | null;
+    customer_contact_person?: string | null;
+    subtotal?: number | string | null;
+    total_amount?: number | string | null;
+    paid_amount?: number | string | null;
+    payment_status?: string | null;
+    payments: InvoicePayment[];
+};

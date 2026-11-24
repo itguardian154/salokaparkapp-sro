@@ -1,3 +1,4 @@
+
 import axios from "axios";
 import API_URLS from "@/config/env";
 import type {
@@ -23,22 +24,107 @@ const getAuthHeaders = () => {
   };
 };
 
+const buildFormData = (payload: Record<string, unknown>): FormData => {
+  const formData = new FormData();
+
+  const appendValue = (
+    key: string,
+    value: unknown,
+  ): void => {
+    if (value === undefined) return;
+
+    // File harus dikirim sebagai binary.
+    if (value instanceof File) {
+      formData.append(key, value, value.name);
+      return;
+    }
+
+    if (value instanceof Blob) {
+      formData.append(key, value);
+      return;
+    }
+
+    // Array dikirim menggunakan index.
+    if (Array.isArray(value)) {
+      // Attachment hanya boleh berisi File.
+      if (key.endsWith("[attachments]")) {
+        value.forEach((file, index) => {
+          if (file instanceof File) {
+            formData.append(
+              `${key}[${index}]`,
+              file,
+              file.name,
+            );
+          }
+        });
+
+        return;
+      }
+
+      value.forEach((item, index) => {
+        appendValue(`${key}[${index}]`, item);
+      });
+
+      return;
+    }
+
+    // Object dikirim menggunakan nested key.
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      !(value instanceof Date)
+    ) {
+      Object.entries(value).forEach(([childKey, childValue]) => {
+        appendValue(`${key}[${childKey}]`, childValue);
+      });
+
+      return;
+    }
+
+    // Date dikonversi ke format string.
+    if (value instanceof Date) {
+      formData.append(key, value.toISOString());
+      return;
+    }
+
+    // Null dikirim sebagai string kosong.
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+
+    formData.append(key, String(value));
+  };
+
+  Object.entries(payload).forEach(([key, value]) => {
+    appendValue(key, value);
+  });
+
+  return formData;
+};
+
 // GET LIST RESERVASI
 export const getReservasi = async (
   params: ReservasiListParams,
   signal?: AbortSignal,
 ): Promise<ReservasiListResponse> => {
-  const response = await axios.get<ReservasiListResponse>(reservasiUrl, {
-    params,
-    signal,
-    headers: getAuthHeaders(),
-  });
+  const response = await axios.get<ReservasiListResponse>(
+    reservasiUrl,
+    {
+      params,
+      signal,
+      headers: getAuthHeaders(),
+    },
+  );
 
   return response.data;
 };
 
 // GET DETAIL RESERVASI
-export const getReservasiDetail = async (id: string, signal?: AbortSignal) => {
+export const getReservasiDetail = async (
+  id: string,
+  signal?: AbortSignal,
+) => {
   const response = await axios.get<ReservasiDetailResponse>(
     `${reservasiUrl}/${id}`,
     {
@@ -51,11 +137,16 @@ export const getReservasiDetail = async (id: string, signal?: AbortSignal) => {
 };
 
 // CREATE RESERVASI
+export const createReservasi = async (
+  payload: CreateReservasi,
+) => {
+  const formData = buildFormData(
+    payload as unknown as Record<string, unknown>,
+  );
 
-export const createReservasi = async (payload: CreateReservasi) => {
   const response = await axios.post<ReservasiDetailResponse>(
     reservasiUrl,
-    payload,
+    formData,
     {
       headers: getAuthHeaders(),
     },
@@ -80,8 +171,12 @@ export const generateEventOrders = async (
 
   return response.data;
 };
+
 // UPDATE RESERVASI
-export const updateReservasi = async (id: string, payload: FormData) => {
+export const updateReservasi = async (
+  id: string,
+  payload: FormData,
+) => {
   const response = await axios.put<ReservasiDetailResponse>(
     `${reservasiUrl}/${id}`,
     payload,

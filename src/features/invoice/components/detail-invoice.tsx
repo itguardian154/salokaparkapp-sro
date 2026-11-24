@@ -50,7 +50,7 @@ import type { City, Province } from "@/features/wilayah/types/wilayah";
 import { useKaryawan } from "@/features/karyawan/hooks/use-karyawan";
 import type { Karyawan } from "@/features/karyawan/types/karyawan";
 import { HandCoins, Plus, Signature, Users, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaSave } from "react-icons/fa";
 import { FaDownload, FaFileInvoice } from "react-icons/fa6";
 import { MdWorkHistory } from "react-icons/md";
@@ -73,8 +73,6 @@ import {
 import { formatTanggal } from "@/lib/utils";
 import { invoiceFormSchema } from "../schemas/invoice-form-schema";
 import { isEligibleInvoiceSales } from "../utils/invoice-sales";
-import ActivitySheet from "@/components/activity/activity-sheet";
-import type { ActivityItemData } from "@/components/activity/activity-item";
 
 type InvoiceFormPageProps = { mode: "create" | "detail" };
 
@@ -232,7 +230,6 @@ const createInvoiceDraftSnapshot = (
 export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [openActivity, setOpenActivity] = useState(false);
 
   // State formulir dan status popover/modal
   const [openCreateDetailInvoice, setOpenCreateDetailInvoice] = useState(false);
@@ -347,7 +344,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     number: string,
     customTag = formData.customCustomerGroupTag,
     tagOrder = formData.customerGroupTagOrder,
-    customTags = formData.customCustomerGroupTags,
   ) => {
     const statusName = segmentStatusOptions.find(
       (item) => String(item.id) === statusId,
@@ -369,25 +365,19 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         label: customerGroupNumberOptions.find((item) => item.value === number)
           ?.label,
       },
-      ...(customTags.length
-        ? customTags.map((label, index) => ({ id: `custom-${index}`, label }))
-        : customTag
-          ? [{ id: "custom-0", label: customTag }]
-          : []),
+      { id: "custom", label: customTag },
     ].filter((item): item is { id: string; label: string } =>
       Boolean(item.label),
     );
-    const defaultOrder = ["jenjang", "status", "nomor"];
+    const defaultOrder = ["jenjang", "status", "nomor", "custom"];
     return parts
       .sort((left, right) => {
         const leftIndex = tagOrder.indexOf(left.id);
         const rightIndex = tagOrder.indexOf(right.id);
-        const defaultRank = (id: string) =>
-          id.startsWith("custom-")
-            ? defaultOrder.length + Number(id.slice("custom-".length))
-            : defaultOrder.indexOf(id);
-        const leftRank = leftIndex < 0 ? defaultRank(left.id) : leftIndex;
-        const rightRank = rightIndex < 0 ? defaultRank(right.id) : rightIndex;
+        const leftRank =
+          leftIndex < 0 ? defaultOrder.indexOf(left.id) : leftIndex;
+        const rightRank =
+          rightIndex < 0 ? defaultOrder.indexOf(right.id) : rightIndex;
         return leftRank - rightRank;
       })
       .map((item) => item.label)
@@ -485,73 +475,41 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                 })),
             }
           : null,
-        ...(formData.customCustomerGroupTags.length
-          ? formData.customCustomerGroupTags.map((label, index) => ({
-              id: `custom-${index}`,
-              label,
+        formData.customCustomerGroupTag
+          ? {
+              id: "custom",
+              label: formData.customCustomerGroupTag,
               onRemove: () =>
-                setFormData((current) => {
-                  const customTags = current.customCustomerGroupTags.filter(
-                    (_, tagIndex) => tagIndex !== index,
-                  );
-                  const customerGroupTagOrder = current.customerGroupTagOrder
-                    .filter((id) => id !== `custom-${index}`)
-                    .map((id) => {
-                      if (!id.startsWith("custom-")) return id;
-                      const tagIndex = Number(id.slice("custom-".length));
-                      return tagIndex > index ? `custom-${tagIndex - 1}` : id;
-                    });
-                  const customerGroupName = formatCustomerGroupName(
+                setFormData((current) => ({
+                  ...current,
+                  customCustomerGroupTag: "",
+                  customerGroupName: formatCustomerGroupName(
                     current.customerEducationLevelId,
                     current.customerGroupStatusId,
                     current.customerGroupNumber,
                     "",
-                    customerGroupTagOrder,
-                    customTags,
-                  );
-                  return {
-                    ...current,
-                    customCustomerGroupTags: customTags,
-                    customerGroupTagOrder,
-                    customerGroupName,
-                    ...resetCustomerLocationIfEmpty(customerGroupName),
-                  };
-                }),
-            }))
-          : formData.customCustomerGroupTag
-            ? [
-                {
-                  id: "custom-0",
-                  label: formData.customCustomerGroupTag,
-                  onRemove: () =>
-                    setFormData((current) => ({
-                      ...current,
-                      customCustomerGroupTag: "",
-                      customCustomerGroupTags: [],
-                      customerGroupName: formatCustomerGroupName(
-                        current.customerEducationLevelId,
-                        current.customerGroupStatusId,
-                        current.customerGroupNumber,
-                        "",
-                      ),
-                    })),
-                },
-              ]
-            : []),
+                  ),
+                  ...resetCustomerLocationIfEmpty(
+                    formatCustomerGroupName(
+                      current.customerEducationLevelId,
+                      current.customerGroupStatusId,
+                      current.customerGroupNumber,
+                      "",
+                    ),
+                  ),
+                })),
+            }
+          : null,
       ]
         .filter((tag) => tag !== null)
         .sort((left, right) => {
           const order = formData.customerGroupTagOrder;
-          const defaultOrder = ["jenjang", "status", "nomor"];
+          const defaultOrder = ["jenjang", "status", "nomor", "custom"];
           const leftIndex = order.indexOf(left.id);
           const rightIndex = order.indexOf(right.id);
-          const defaultRank = (id: string) =>
-            id.startsWith("custom-")
-              ? defaultOrder.length + Number(id.slice("custom-".length))
-              : defaultOrder.indexOf(id);
           return (
-            (leftIndex < 0 ? defaultRank(left.id) : leftIndex) -
-            (rightIndex < 0 ? defaultRank(right.id) : rightIndex)
+            (leftIndex < 0 ? defaultOrder.indexOf(left.id) : leftIndex) -
+            (rightIndex < 0 ? defaultOrder.indexOf(right.id) : rightIndex)
           );
         })
     : [];
@@ -568,7 +526,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                 setFormData((current) => ({
                   ...current,
                   customCustomerGroupTag: "",
-                  customCustomerGroupTags: [],
                   customerGroupName: "",
                   customerProvinceId: null,
                   customerCityId: null,
@@ -983,27 +940,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     setInvoiceFormBaselineVersion(invoiceFormHydrationVersion);
   }, [formData, invoiceData, invoiceFormHydrationVersion, mode]);
 
-
-  // Log Activity
-  const activityLogs = useMemo<ActivityItemData[]>(
-    () =>
-      (invoiceData?.activities ?? []).map((activity) => ({
-        id: activity.id,
-        primaryText: activity.user?.name ?? "System",
-        secondaryText: activity.description,
-        occurredAt: activity.created_at,
-        occurredAtLabel: activity.created_at_human,
-        changes: activity.changes ?? {},
-        action: activity.event,
-        detailText:
-          activity.event?.toLowerCase() === "created"
-            ? "Data agen berhasil ditambahkan."
-            : undefined,
-      })),
-    [invoiceData?.activities],
-  );
-  
-
   // Data sale
   const {
     karyawan,
@@ -1373,13 +1309,8 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
         selectedCustomerCity?.name ?? formData.customerCityName,
       );
       payload.append("customer[segment_id]", segmentId);
-      // FormData turns an undefined value into the literal string "undefined".
-      // Send empty strings for nullable IDs so Laravel can normalize them to null.
-      payload.append("customer[segment_detail_id]", segmentDetailId ?? "");
-      payload.append(
-        "customer[sub_segment_detail_id]",
-        subSegmentDetailId ?? "",
-      );
+      payload.append("customer[segment_detail_id]", segmentDetailId);
+      payload.append("customer[sub_segment_detail_id]", subSegmentDetailId);
       payload.append("customer[segment_option_id]", segmentOptionId);
       payload.append("customer[is_active]", "1");
     }
@@ -1426,9 +1357,9 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
     payload.append("partner_branch_id", partnerBranchId);
     payload.append("booking_type", bookingType);
     payload.append("segment_id", segmentId);
-    payload.append("segment_detail_id", segmentDetailId ?? "");
-    payload.append("sub_segment_detail_id", subSegmentDetailId ?? "");
-    payload.append("segment_option_id", segmentOptionId ?? "");
+    payload.append("segment_detail_id", segmentDetailId);
+    payload.append("sub_segment_detail_id", subSegmentDetailId);
+    payload.append("segment_option_id", segmentOptionId);
     payload.append("invoice_date", invoiceDate);
     payload.append("arrival_date", arrivalDate);
     payload.append("notes", invoiceData?.notes ?? "");
@@ -1737,7 +1668,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   if (mode === "create" || hasUnsavedInvoiceChanges) {
     actions.push({
       id: "save",
-      label: saving ? "Menyimpan..." : "Simpan",
+      label: saving ? "Menyimpan..." : "Save",
       icon: <FaSave size={15} />,
       variant: "primer",
       mobileColor: "bg-primer-60",
@@ -1826,7 +1757,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           variant="blue"
           action={
             <Button
-               onClick={() => setOpenActivity(true)}
+              //onClick={() => setOpenActivity(true)}
               variant="amberBorder"
               size="lg"
               className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
@@ -1921,7 +1852,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       customerGroupStatusId: "",
                       customerGroupNumber: "",
                       customCustomerGroupTag: "",
-                      customCustomerGroupTags: [],
                       customerGroupTagOrder: [],
                       customerGroupName: "",
 
@@ -2015,7 +1945,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                       customerGroupStatusId: "",
                       customerGroupNumber: "",
                       customCustomerGroupTag: "",
-                      customCustomerGroupTags: [],
                       customerGroupTagOrder: [],
                       customerGroupName: "",
                       customerId: null,
@@ -2354,7 +2283,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                           customerGroupStatusId: "",
                           customerGroupNumber: "",
                           customCustomerGroupTag: "",
-                          customCustomerGroupTags: [],
                           customerGroupTagOrder: [],
                           customerGroupName: "",
                           customerId: null,
@@ -2595,10 +2523,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                           customerGroupStatusId: "",
                           customerBusinessFieldId: "",
                           customerBusinessTypeId: "",
-                          customCustomerGroupTag: "",
-                          customCustomerGroupTags: [],
-                          customerGroupNumber: "",
-                          customerGroupTagOrder: [],
                         }));
                       }}
                       onReorderTags={(ids) =>
@@ -2611,49 +2535,32 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                             current.customerGroupNumber,
                             current.customCustomerGroupTag,
                             ids,
-                            current.customCustomerGroupTags,
                           ),
                         }))
                       }
                       onAddTextTag={(text) =>
-                        setFormData((current) => {
-                          if (isEducationSegment) {
-                            const customCustomerGroupTags = [
-                              ...current.customCustomerGroupTags,
-                              text,
-                            ];
-                            const customerGroupName = formatCustomerGroupName(
-                              current.customerEducationLevelId,
-                              current.customerGroupStatusId,
-                              current.customerGroupNumber,
-                              "",
-                              current.customerGroupTagOrder,
-                              customCustomerGroupTags,
-                            );
-                            return {
-                              ...current,
-                              customCustomerGroupTags,
-                              customerGroupName,
-                              customerId: null,
-                              ...resetCustomerLocationIfEmpty(
-                                customerGroupName,
-                              ),
-                            };
-                          }
-                          return {
-                            ...current,
-                            customCustomerGroupTag: [
-                              current.customCustomerGroupTag,
-                              text,
-                            ]
-                              .filter(Boolean)
-                              .join(" "),
-                            customerGroupName: [current.customerGroupName, text]
-                              .filter(Boolean)
-                              .join(" "),
-                            customerId: null,
-                          };
-                        })
+                        setFormData((current) => ({
+                          ...current,
+                          customCustomerGroupTag: [
+                            current.customCustomerGroupTag,
+                            text,
+                          ]
+                            .filter(Boolean)
+                            .join(" "),
+                          customerGroupName: isEducationSegment
+                            ? formatCustomerGroupName(
+                                current.customerEducationLevelId,
+                                current.customerGroupStatusId,
+                                current.customerGroupNumber,
+                                [current.customCustomerGroupTag, text]
+                                  .filter(Boolean)
+                                  .join(" "),
+                              )
+                            : [current.customerGroupName, text]
+                                .filter(Boolean)
+                                .join(" "),
+                          customerId: null,
+                        }))
                       }
                       onSelect={(customer) => {
                         const segmentId =
@@ -2703,7 +2610,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                           ...current,
                           customerGroupName: customer.name,
                           customCustomerGroupTag: "",
-                          customCustomerGroupTags: [],
                           customerGroupTagOrder: [],
                           customerEmail: customer.email ?? "",
                           customerContactPerson: customer.contact_person ?? "",
@@ -3058,12 +2964,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           </>
         )}
       </DetailPageLayout>
-
-      <ActivitySheet
-        open={openActivity}
-        onOpenChange={setOpenActivity}
-        data={activityLogs}
-      />
     </>
   );
 }

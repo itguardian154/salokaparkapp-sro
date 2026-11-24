@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import API_URLS from "@/config/env";
 import { formatRupiah, formatTanggal } from "@/lib/utils";
@@ -21,17 +22,27 @@ const paymentMethodLabel = (method: string) => {
     deposit: "Deposit",
     other: "Lainnya",
   };
+
   return labels[method] ?? (method || "-");
 };
 
 const resolveAttachmentUrl = (url: string) => {
   if (/^https?:\/\//i.test(url)) return url;
+
   const backendUrl = API_URLS.sro.replace(/api\/?$/, "");
-  return new URL(url.replace(/^\/+/, ""), backendUrl).toString();
+
+  return new URL(
+    url.replace(/^\/+/, ""),
+    backendUrl
+  ).toString();
 };
 
 const openAttachment = (url: string) => {
-  window.open(resolveAttachmentUrl(url), "_blank", "noopener,noreferrer");
+  window.open(
+    resolveAttachmentUrl(url),
+    "_blank",
+    "noopener,noreferrer"
+  );
 };
 
 export const getInvoicePaymentColumns = (actions?: {
@@ -43,7 +54,9 @@ export const getInvoicePaymentColumns = (actions?: {
     accessorKey: "paymentDate",
     header: "Tanggal",
     cell: ({ row }) =>
-      row.original.paymentDate ? formatTanggal(row.original.paymentDate) : "-",
+      row.original.paymentDate
+        ? formatTanggal(row.original.paymentDate)
+        : "-",
   },
   {
     accessorKey: "paymentType",
@@ -54,6 +67,7 @@ export const getInvoicePaymentColumns = (actions?: {
       )
         .toLowerCase()
         .replace(/[\s-]+/g, "_");
+
       return paymentType === "surat_keterangan"
         ? "Surat Keterangan"
         : "Bukti Bayar";
@@ -62,12 +76,14 @@ export const getInvoicePaymentColumns = (actions?: {
   {
     accessorKey: "paymentMethod",
     header: "Metode",
-    cell: ({ row }) => paymentMethodLabel(row.original.paymentMethod),
+    cell: ({ row }) =>
+      paymentMethodLabel(row.original.paymentMethod),
   },
   {
     accessorKey: "accountHolderName",
     header: "Atas Nama",
-    cell: ({ row }) => row.original.accountHolderName || "-",
+    cell: ({ row }) =>
+      row.original.accountHolderName || "-",
   },
   {
     accessorKey: "bank",
@@ -81,18 +97,22 @@ export const getInvoicePaymentColumns = (actions?: {
     accessorKey: "amount",
     header: "Jumlah",
     cell: ({ row }) =>
-      row.original.amount == null ? "-" : formatRupiah(row.original.amount),
+      row.original.amount == null
+        ? "-"
+        : formatRupiah(row.original.amount),
   },
   {
     accessorKey: "notes",
     header: "Catatan",
-    cell: ({ row }) => row.original.notes || "-",
+    cell: ({ row }) =>
+      row.original.notes || "-",
   },
   {
     accessorKey: "proof",
     header: "Lampiran",
     cell: ({ row }) => {
       const attachments = row.original.attachments ?? [];
+
       if (attachments.length > 0) {
         return (
           <TooltipProvider>
@@ -102,9 +122,12 @@ export const getInvoicePaymentColumns = (actions?: {
                   {attachments.map((attachment, index) => (
                     <Button
                       key={`${attachment.url}-${index}`}
+                      type="button"
                       variant="litleSekunder"
                       size="litle"
-                      onClick={() => openAttachment(attachment.url)}
+                      onClick={() =>
+                        openAttachment(attachment.url)
+                      }
                     >
                       <Image />
                     </Button>
@@ -119,18 +142,23 @@ export const getInvoicePaymentColumns = (actions?: {
           </TooltipProvider>
         );
       }
+
       return row.original.proof && !row.original.pending ? (
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => openAttachment(row.original.proof)}
+          onClick={() =>
+            openAttachment(row.original.proof)
+          }
         >
           <ExternalLink className="mr-1 h-4 w-4" />
           Buka
         </Button>
       ) : row.original.proof ? (
-        <span className="text-xs text-slate-600">{row.original.proof}</span>
+        <span className="text-xs text-slate-600">
+          {row.original.proof}
+        </span>
       ) : (
         "-"
       );
@@ -150,17 +178,22 @@ export const getInvoicePaymentColumns = (actions?: {
             size="icon-sm"
             aria-label="Ubah pembayaran"
             disabled={actions?.disabled}
-            onClick={() => actions?.onEdit?.(row.original)}
+            onClick={() =>
+              actions?.onEdit?.(row.original)
+            }
           >
             <Pencil className="h-4 w-4" />
           </Button>
+
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             aria-label="Hapus pembayaran"
             disabled={actions?.disabled}
-            onClick={() => actions?.onDelete?.(row.original)}
+            onClick={() =>
+              actions?.onDelete?.(row.original)
+            }
           >
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>

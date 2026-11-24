@@ -125,6 +125,8 @@ export type GenerateReservasiEventOrder = {
     unit_price?: string | number | null;
     total_price?: string | number | null;
 
+    attachments?: string[] | null;
+
     status: string;
     status_label: string;
 };
@@ -173,6 +175,8 @@ export type CreateReservasiEventOrder = {
 
     start_at: string | null;
     end_at: string | null;
+
+    attachments?: (string | File)[] | null;
 
     status: string;
     status_label: string;
@@ -245,6 +249,18 @@ export type ReservasiItem = {
 };
 
 // ==============================
+// EVENT ORDER ATTACHMENT (DETAIL API)
+// ==============================
+
+export type EventOrderAttachment = {
+    id: number;
+    name: string;
+    mime_type: string;
+    size: number;
+    url: string;
+};
+
+// ==============================
 // RESERVASI DETAIL EVENT ORDER
 // ==============================
 
@@ -283,6 +299,9 @@ export type ReservasiDetailEO = {
 
     start_at: string | null;
     end_at: string | null;
+
+    // Attachment dari response GET Detail Reservasi
+    attachments?: EventOrderAttachment[];
 
     status: string;
     status_label: string;
@@ -366,6 +385,13 @@ export type ReservasiListParams = {
     per_page: number;
     "filter[search]"?: string;
     "filter[status]"?: string;
+    "filter[sales_person_id]"?: string;
+    "filter[segment_id]"?: string;
+    "filter[partner_id]"?: string;
+    "filter[customer_id]"?: string;
+    "filter[arrival_date_from]"?: string;
+    "filter[arrival_date_to]"?: string;
+    "filter[has_sales_order]"?: number;
 };
 
 // ==============================
@@ -464,22 +490,25 @@ export type ReservasiTableRecord = {
     segment_name: string;
     customer_name: string;
     partner_name: string;
+    partner_id: number | string | null;
+    customer_id: number | string | null;
     kedatangan: string;
     ticket: number;
     revenue: number;
     status: string;
     status_value: string;
+    payment_status: string;
 };
 
 export interface ReservasiPayment {
-  id: string;
-  paymentDate: string | null;
-  paymentMethod: string;
-  accountHolderName: string;
-  fromBank: string;
-  toBank: string;
-  amount: number;
-  notes: string;
-  proof: string;
-  status: string;
+    id: string;
+    paymentDate: string | null;
+    paymentMethod: string;
+    accountHolderName: string;
+    fromBank: string;
+    toBank: string;
+    amount: number;
+    notes: string;
+    proof: string;
+    status: string;
 }

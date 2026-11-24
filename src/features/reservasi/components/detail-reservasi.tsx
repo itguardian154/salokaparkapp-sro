@@ -1,19 +1,20 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import type { ReactNode } from "react";
 
 import {
-    FaArrowLeft,
+    FaCheckCircle,
+    FaDownload,
     FaFileInvoice,
+    FaTimes,
+    FaUndo,
 } from "react-icons/fa";
-
-import { FaPen, FaUser } from "react-icons/fa6";
+import { MdWorkHistory } from "react-icons/md";
 
 import {
     AlertTriangle,
-    Building2,
+    Building2Icon,
     CalendarDays,
     ClipboardList,
     HandCoins,
@@ -30,146 +31,56 @@ import DetailSection from "@/components/detail-page/detail-section";
 
 import DetailOrderTable from "@/features/invoice/components/detail-order-table";
 import DetailPaymentTable from "@/features/invoice/components/detail-payment-table";
+import PaymentInformation from "@/features/invoice/components/payment-information";
 
 import type { InvoiceOrder } from "@/features/invoice/types/invoice-order";
-import type {
-    InvoicePayment,
-    InvoicePaymentRow,
-} from "@/features/invoice/types/invoice";
+import type { ActivityItemData } from "@/components/activity/activity-item";
 
 import { useDepartemen } from "@/features/departemen/hooks/use-departemen";
+import { useDetailReservasi } from "../hooks/use-detail-reservasi";
 
-import { getReservasiDetail } from "../service/reservasi-service";
+import {
+    formatDate,
+    formatTime,
+    hasValue,
+    mapInvoicePayments,
+} from "../utils/reservasi";
+
+import { isEligibleReservasi } from "../utils/view-revenue";
 
 import type {
-    ReservasiDetail,
     ReservasiItem,
+    ReservasiDetailEO,
+    ReservasiActivity,
     CreateReservasiEventOrder,
 } from "../types/reservasi";
 
 import CreateEventOrderModal from "./create-event-order";
+import ActivitySheet from "@/components/activity/activity-sheet";
+import EventOrderContent from "./event-order-content";
+import { FaCheck } from "react-icons/fa6";
 
 // ==============================
-// TYPES
+// ACTIVITY LOG MAPPING
 // ==============================
 
-type ReservasiDetailView = Omit<ReservasiDetail, "payments"> & {
-    booking_type?: string | null;
-    payment_status?: string | null;
-    segment_option_id?: number | null;
-    segment_option_name?: string | null;
-    total_ticket_count?: number | null;
-    payments?: InvoicePayment[];
-};
-
-type ShoppingVoucherView = {
-    name?: string | null;
-    quantity?: string | number | null;
-    pecahan?: string | number | null;
-};
-
-type EventOrderView = Record<string, unknown>;
-
-// ==============================
-// HELPERS
-// ==============================
-
-const hasValue = (value: unknown): boolean => {
-    if (value === null || value === undefined) return false;
-
-    if (typeof value === "string" && value.trim() === "") {
-        return false;
-    }
-
-    if (Array.isArray(value) && value.length === 0) {
-        return false;
-    }
-
-    return true;
-};
-
-const formatDate = (value: unknown): string => {
-    if (!hasValue(value)) return "-";
-
-    const date = new Date(String(value));
-
-    if (Number.isNaN(date.getTime())) {
-        return String(value);
-    }
-
-    return date.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-    });
-};
-
-const formatTime = (value: unknown): string => {
-    if (!hasValue(value)) return "-";
-
-    const time = String(value);
-
-    return time.length >= 5 ? time.slice(0, 5) : time;
-};
-
-const formatCurrency = (value: unknown): string => {
-    if (!hasValue(value)) return "-";
-
-    const number = Number(value);
-
-    if (Number.isNaN(number)) return String(value);
-
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 0,
-    }).format(number);
-};
-
-const formatValue = (value: unknown): ReactNode => {
-    if (!hasValue(value)) return "-";
-
-    if (Array.isArray(value)) {
-        return value.map((item) => String(item)).join(", ");
-    }
-
-    if (typeof value === "boolean") {
-        return value ? "Ya" : "Tidak";
-    }
-
-    if (typeof value === "object") {
-        return JSON.stringify(value);
-    }
-
-    return String(value);
-};
-
-// ==============================
-// MAPPING INFORMASI PEMBAYARAN
-// ==============================
-
-const mapInvoicePayments = (
-    payments: InvoicePayment[]
-): InvoicePaymentRow[] =>
-    payments.map((payment, index) => ({
-        id: String(payment.id ?? payment.payment_id ?? index + 1),
-        serverId: payment.payment_id ?? payment.id,
-        paymentDate: payment.payment_date ?? null,
-        paymentType: payment.payment_type ?? "",
-        paymentTypeValue: payment.payment_type ?? "",
-        uploadType:
-            payment.payment_type === "surat_keterangan"
-                ? "surat_keterangan"
-                : "bukti_bayar",
-        paymentMethod: payment.payment_method ?? "",
-        accountHolderName: payment.account_holder_name ?? "",
-        depositNumber: payment.deposit_number ?? "",
-        fromBank: payment.from_bank ?? "",
-        toBank: payment.to_bank ?? "",
-        amount: payment.amount ?? 0,
-        notes: payment.notes ?? "",
-        proof: payment.proof_of_payment ?? "",
+const mapReservasiActivityLogs = (
+    activities: ReservasiActivity[] = [],
+): ActivityItemData[] => {
+    return activities.map((activity) => ({
+        id: activity.id,
+        primaryText: activity.user?.name ?? "System",
+        secondaryText: activity.description,
+        occurredAt: activity.created_at,
+        occurredAtLabel: activity.created_at_human,
+        changes: activity.changes ?? {},
+        action: activity.event,
+        detailText:
+            activity.event?.toLowerCase() === "created"
+                ? "Data reservasi berhasil ditambahkan."
+                : undefined,
     }));
+};
 
 // ==============================
 // INFO ITEM
@@ -196,29 +107,11 @@ const InfoItem = ({
                 {label}
             </p>
 
-            <div className="break-words text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-200">
+            <div className="wrap-break-word text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-200">
                 {value}
             </div>
         </div>
     );
-};
-
-// ==============================
-// EVENT ORDER STATUS
-// ==============================
-
-const getEventOrderStatus = (
-    status?: unknown,
-    statusLabel?: unknown,
-) => {
-    const value = String(statusLabel || status || "").trim();
-
-    return {
-        label: value || "-",
-        normalized: String(status || statusLabel || "")
-            .trim()
-            .toLowerCase(),
-    };
 };
 
 // ==============================
@@ -229,13 +122,35 @@ const DetailReservasi = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
 
-    const [detail, setDetail] = useState<ReservasiDetailView | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const {
+        detail,
+        setDetail,
+        loading,
+        error,
+    } = useDetailReservasi(id);
+
+    const [openActivity, setOpenActivity] = useState(false);
+
+    const [openCreateEventOrder, setOpenCreateEventOrder] =
+        useState(false);
+
+    const [editingEventOrderIndex, setEditingEventOrderIndex] =
+        useState<number | null>(null);
 
     // ==============================
     // DEPARTEMEN
     // ==============================
+
+    const departmentId = localStorage.getItem("idDepartemen");
+    const subDepartmentId = localStorage.getItem("id_sub_dept");
+
+    const eligibleReservasi = isEligibleReservasi(
+        departmentId,
+        subDepartmentId,
+    );
+
+    // ID departemen pengguna yang sedang login.
+    const loginDepartmentId = departmentId;
 
     const {
         departemen,
@@ -254,62 +169,13 @@ const DetailReservasi = () => {
     };
 
     // ==============================
-    // EVENT ORDER MODAL
+    // ACTIVITY LOGS
     // ==============================
 
-    const [openCreateEventOrder, setOpenCreateEventOrder] = useState(false);
-
-    const [editingEventOrderIndex, setEditingEventOrderIndex] =
-        useState<number | null>(null);
-
-    // ==============================
-    // GET DETAIL RESERVASI
-    // ==============================
-
-    useEffect(() => {
-        if (!id) {
-            setError("ID reservasi tidak ditemukan.");
-            setLoading(false);
-            return;
-        }
-
-        const controller = new AbortController();
-
-        const fetchDetail = async () => {
-            try {
-                setLoading(true);
-                setError("");
-
-                const response = await getReservasiDetail(
-                    id,
-                    controller.signal,
-                );
-
-                setDetail(response as ReservasiDetailView);
-            } catch (err) {
-                if (axios.isCancel(err) || controller.signal.aborted) {
-                    return;
-                }
-
-                console.error("Gagal mengambil detail reservasi:", err);
-
-                setError(
-                    axios.isAxiosError(err)
-                        ? err.response?.data?.message ||
-                        "Gagal mengambil detail reservasi."
-                        : "Terjadi kesalahan saat mengambil detail reservasi.",
-                );
-            } finally {
-                if (!controller.signal.aborted) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        fetchDetail();
-
-        return () => controller.abort();
-    }, [id]);
+    const activityLogs = useMemo(
+        () => mapReservasiActivityLogs(detail?.activities ?? []),
+        [detail?.activities],
+    );
 
     // ==============================
     // DETAIL PESANAN
@@ -328,21 +194,35 @@ const DetailReservasi = () => {
             subtotal: Number(item.subtotal) || 0,
             isTicket: Boolean(item.is_ticket),
         }));
-    }, [detail]);
+    }, [detail?.items]);
 
     // ==============================
     // EVENT ORDER
     // ==============================
 
-    const eventOrders: EventOrderView[] = useMemo(() => {
-        return (detail?.event_orders ?? []) as unknown as EventOrderView[];
-    }, [detail]);
+    const eventOrders: ReservasiDetailEO[] = useMemo(
+        () => detail?.event_orders ?? [],
+        [detail?.event_orders],
+    );
 
     // ==============================
     // EVENT ORDER HANDLERS
     // ==============================
 
     const handleEditEventOrder = (index: number) => {
+        const selectedEventOrder = eventOrders[index];
+
+        // Pastikan hanya departemen pemilik Event Order
+        // yang dapat membuka modal edit.
+        if (
+            !loginDepartmentId ||
+            !selectedEventOrder ||
+            String(selectedEventOrder.department_id) !==
+                String(loginDepartmentId)
+        ) {
+            return;
+        }
+
         setEditingEventOrderIndex(index);
         setOpenCreateEventOrder(true);
     };
@@ -358,48 +238,131 @@ const DetailReservasi = () => {
     ): Promise<void> => {
         if (editingEventOrderIndex === null) return;
 
-        // Attachments belum dikirim karena endpoint update
-        // Event Order belum dihubungkan pada halaman detail.
+        // Tidak mengubah mekanisme upload.
         void attachments;
+
+        const toNullableNumber = (
+            value: number | string | null | undefined,
+        ): number | null => {
+            if (value === null || value === undefined || value === "") {
+                return null;
+            }
+
+            const numberValue = Number(value);
+
+            return Number.isNaN(numberValue) ? null : numberValue;
+        };
+
+        // Attachment dari form tidak digunakan untuk menggantikan
+        // attachment object yang berasal dari response GET Detail.
+        const {
+            attachments: _payloadAttachments,
+            ...payloadWithoutAttachments
+        } = payload;
 
         setDetail((prev) => {
             if (!prev) return prev;
 
-            const currentEventOrders =
-                (prev.event_orders ?? []) as unknown as EventOrderView[];
+            const updatedEventOrders: ReservasiDetailEO[] =
+                prev.event_orders.map((event, index) => {
+                    if (index !== editingEventOrderIndex) {
+                        return event;
+                    }
 
-            const updatedEventOrders = currentEventOrders.map(
-                (event, index) =>
-                    index === editingEventOrderIndex
-                        ? {
-                            ...event,
-                            ...payload,
-                        }
-                        : event,
-            );
+                    return {
+                        ...event,
+                        ...payloadWithoutAttachments,
+                        attachments: event.attachments ?? [],
+                        quantity: toNullableNumber(payload.quantity),
+                        unit_price: toNullableNumber(payload.unit_price),
+                        total_price: toNullableNumber(payload.total_price),
+                    };
+                });
 
             return {
                 ...prev,
                 event_orders: updatedEventOrders,
-            } as ReservasiDetailView;
+            };
         });
 
         handleCloseEventOrderModal();
     };
 
     // ==============================
-    // FOOTER ACTION
+    // PAYMENT SUMMARY
+    // ==============================
+
+    const totalAmount = Number(
+        detail?.invoice?.total_amount ?? detail?.total_amount ?? 0,
+    );
+
+    const paidAmount = Number(
+        detail?.invoice?.paid_amount ?? detail?.paid_amount ?? 0,
+    );
+
+    const remainingAmount = Math.max(totalAmount - paidAmount, 0);
+
+    const paymentItems = detail?.invoice?.payments ?? [];
+
+    // ==============================
+    // ACTIONS
     // ==============================
 
     const actions: DetailAction[] = [
         {
-            id: "back",
-            label: "Kembali",
-            icon: <FaArrowLeft size={15} />,
-            variant: "primer",
-            mobileColor: "bg-primer-60",
+            id: "download",
+            label: "Download",
+            icon: <FaDownload size={15} />,
+            variant: "blue",
+            mobileColor: "bg-blue-600",
+            position: "left",
+            onClick: () => {
+                // TODO: Download
+            },
+        },
+        {
+            id: "approve",
+            label: "Approve",
+            icon: <FaCheck size={15} />,
+            variant: "success",
+            mobileColor: "bg-emerald-600",
             position: "right",
-            onClick: () => navigate("/reservation"),
+            onClick: () => {
+                // TODO: Approve
+            },
+        },
+        {
+            id: "accept",
+            label: "Accept",
+            icon: <FaCheckCircle size={15} />,
+            variant: "accept",
+            mobileColor: "bg-teal-600",
+            position: "right",
+            onClick: () => {
+                // TODO: Accept
+            },
+        },
+        {
+            id: "back-to-draft",
+            label: "Back to Draft",
+            icon: <FaUndo size={15} />,
+            variant: "back",
+            mobileColor: "bg-gray-500",
+            position: "right",
+            onClick: () => {
+                // TODO: Back to Draft
+            },
+        },
+        {
+            id: "reject",
+            label: "Reject",
+            icon: <FaTimes size={15} />,
+            variant: "destructive",
+            mobileColor: "bg-red-600",
+            position: "right",
+            onClick: () => {
+                // TODO: Reject
+            },
         },
     ];
 
@@ -455,221 +418,236 @@ const DetailReservasi = () => {
     // ==============================
 
     return (
-        <DetailPageLayout
-            icon={FaFileInvoice}
-            title="Detail Reservasi"
-            subtitle={detail.sales_order_number || "Informasi detail reservasi"}
-            onClose={() => navigate("/reservation")}
-            footer={<DetailActionFooter actions={actions} />}
-        >
-            {/* INFORMASI RESERVASI */}
-
-            <DetailSection
-                icon={CalendarDays}
-                title="Informasi Reservasi"
-                variant="blue"
+        <>
+            <DetailPageLayout
+                icon={FaFileInvoice}
+                title="Detail Reservasi"
+                subtitle={
+                    detail.sales_order_number ||
+                    "Informasi detail reservasi"
+                }
+                onClose={() => navigate("/reservation")}
+                footer={<DetailActionFooter actions={actions} />}
             >
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                {/* INFORMASI RESERVASI */}
 
-                    {/* INFORMASI RESERVASI - KOLOM 1 SAMPAI 3 */}
+                <DetailSection
+                    icon={CalendarDays}
+                    title="Informasi Reservasi"
+                    variant="blue"
+                    action={
+                        <Button
+                            onClick={() => setOpenActivity(true)}
+                            variant="amberBorder"
+                            size="lg"
+                            className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        >
+                            <MdWorkHistory size={16} />
+                            Log Aktivitas
+                        </Button>
+                    }
+                >
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                        {/* INFORMASI RESERVASI - KOLOM 1 SAMPAI 3 */}
 
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
-                        {hasValue(detail.sales_order_number) && (
-                            <InfoItem
-                                label="Nomor Sales Order"
-                                value={detail.sales_order_number}
-                            />
-                        )}
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+                            {hasValue(detail.sales_order_number) && (
+                                <InfoItem
+                                    label="Nomor Sales Order"
+                                    value={detail.sales_order_number}
+                                />
+                            )}
 
-                        {hasValue(detail.invoice_number) && (
-                            <InfoItem
-                                label="Nomor Invoice"
-                                value={detail.invoice_number}
-                            />
-                        )}
+                            {hasValue(detail.invoice_number) && (
+                                <InfoItem
+                                    label="Nomor Invoice"
+                                    value={detail.invoice_number}
+                                />
+                            )}
 
-                        {hasValue(detail.booking_type) && (
-                            <InfoItem
-                                label="Jenis Pemesanan"
-                                value={detail.booking_type}
-                            />
-                        )}
+                            {hasValue(detail.booking_type) && (
+                                <InfoItem
+                                    label="Jenis Pemesanan"
+                                    value={detail.booking_type}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_name) && (
-                            <InfoItem
-                                label="Nama Pelanggan"
-                                value={detail.customer_name}
-                            />
-                        )}
+                            {hasValue(detail.customer_name) && (
+                                <InfoItem
+                                    label="Nama Pelanggan"
+                                    value={detail.customer_name}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_address) && (
-                            <InfoItem
-                                label="Alamat Pelanggan"
-                                value={detail.customer_address}
-                            />
-                        )}
+                            {hasValue(detail.customer_address) && (
+                                <InfoItem
+                                    label="Alamat Pelanggan"
+                                    value={detail.customer_address}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_city) && (
-                            <InfoItem
-                                label="Kota Pelanggan"
-                                value={detail.customer_city}
-                            />
-                        )}
+                            {hasValue(detail.customer_city) && (
+                                <InfoItem
+                                    label="Kota Pelanggan"
+                                    value={detail.customer_city}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_province) && (
-                            <InfoItem
-                                label="Provinsi Pelanggan"
-                                value={detail.customer_province}
-                            />
-                        )}
+                            {hasValue(detail.customer_province) && (
+                                <InfoItem
+                                    label="Provinsi Pelanggan"
+                                    value={detail.customer_province}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_phone) && (
-                            <InfoItem
-                                label="Nomor Telepon Pelanggan"
-                                value={detail.customer_phone}
-                            />
-                        )}
+                            {hasValue(detail.customer_phone) && (
+                                <InfoItem
+                                    label="Nomor Telepon Pelanggan"
+                                    value={detail.customer_phone}
+                                />
+                            )}
 
-                        {hasValue(detail.customer_contact_person) && (
-                            <InfoItem
-                                label="PIC Pelanggan"
-                                value={detail.customer_contact_person}
-                            />
-                        )}
+                            {hasValue(detail.customer_contact_person) && (
+                                <InfoItem
+                                    label="PIC Pelanggan"
+                                    value={detail.customer_contact_person}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_name) && (
-                            <InfoItem
-                                label="Nama Group"
-                                value={detail.partner_name}
-                            />
-                        )}
+                            {hasValue(detail.partner_name) && (
+                                <InfoItem
+                                    label="Nama Group"
+                                    value={detail.partner_name}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_association_name) && (
-                            <InfoItem
-                                label="Asosiasi"
-                                value={detail.partner_association_name}
-                            />
-                        )}
+                            {hasValue(detail.partner_association_name) && (
+                                <InfoItem
+                                    label="Asosiasi"
+                                    value={detail.partner_association_name}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_city) && (
-                            <InfoItem
-                                label="Kota Group"
-                                value={detail.partner_city}
-                            />
-                        )}
+                            {hasValue(detail.partner_city) && (
+                                <InfoItem
+                                    label="Kota Group"
+                                    value={detail.partner_city}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_province) && (
-                            <InfoItem
-                                label="Provinsi Group"
-                                value={detail.partner_province}
-                            />
-                        )}
+                            {hasValue(detail.partner_province) && (
+                                <InfoItem
+                                    label="Provinsi Group"
+                                    value={detail.partner_province}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_phone) && (
-                            <InfoItem
-                                label="Nomor Telepon Group"
-                                value={detail.partner_phone}
-                            />
-                        )}
+                            {hasValue(detail.partner_phone) && (
+                                <InfoItem
+                                    label="Nomor Telepon Group"
+                                    value={detail.partner_phone}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_contact_person) && (
-                            <InfoItem
-                                label="PIC Group"
-                                value={detail.partner_contact_person}
-                            />
-                        )}
+                            {hasValue(detail.partner_contact_person) && (
+                                <InfoItem
+                                    label="PIC Group"
+                                    value={detail.partner_contact_person}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_branch_name) && (
-                            <InfoItem
-                                label="Nama Cabang"
-                                value={detail.partner_branch_name}
-                            />
-                        )}
+                            {hasValue(detail.partner_branch_name) && (
+                                <InfoItem
+                                    label="Nama Cabang"
+                                    value={detail.partner_branch_name}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_branch_city) && (
-                            <InfoItem
-                                label="Kota Cabang"
-                                value={detail.partner_branch_city}
-                            />
-                        )}
+                            {hasValue(detail.partner_branch_city) && (
+                                <InfoItem
+                                    label="Kota Cabang"
+                                    value={detail.partner_branch_city}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_branch_province) && (
-                            <InfoItem
-                                label="Provinsi Cabang"
-                                value={detail.partner_branch_province}
-                            />
-                        )}
+                            {hasValue(detail.partner_branch_province) && (
+                                <InfoItem
+                                    label="Provinsi Cabang"
+                                    value={detail.partner_branch_province}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_branch_phone) && (
-                            <InfoItem
-                                label="Nomor Telepon Cabang"
-                                value={detail.partner_branch_phone}
-                            />
-                        )}
+                            {hasValue(detail.partner_branch_phone) && (
+                                <InfoItem
+                                    label="Nomor Telepon Cabang"
+                                    value={detail.partner_branch_phone}
+                                />
+                            )}
 
-                        {hasValue(detail.partner_branch_contact_person) && (
-                            <InfoItem
-                                label="PIC Cabang"
-                                value={detail.partner_branch_contact_person}
-                            />
-                        )}
+                            {hasValue(detail.partner_branch_contact_person) && (
+                                <InfoItem
+                                    label="PIC Cabang"
+                                    value={detail.partner_branch_contact_person}
+                                />
+                            )}
 
-                        {hasValue(detail.sales_person_name) && (
-                            <InfoItem
-                                label="Nama Sales"
-                                value={detail.sales_person_name}
-                            />
-                        )}
+                            {hasValue(detail.sales_person_name) && (
+                                <InfoItem
+                                    label="Nama Sales"
+                                    value={detail.sales_person_name}
+                                />
+                            )}
 
-                        {hasValue(detail.arrival_date) && (
-                            <InfoItem
-                                label="Tanggal Kedatangan"
-                                value={detail.arrival_date}
-                            />
-                        )}
+                            {hasValue(detail.segment_name) && (
+                                <InfoItem
+                                    label="Segmen"
+                                    value={detail.segment_name}
+                                />
+                            )}
 
-                        {hasValue(detail.segment_name) && (
-                            <InfoItem
-                                label="Segmen"
-                                value={detail.segment_name}
-                            />
-                        )}
+                            {hasValue(detail.segment_detail_name) && (
+                                <InfoItem
+                                    label="Detail Segmen"
+                                    value={detail.segment_detail_name}
+                                />
+                            )}
 
-                        {hasValue(detail.segment_detail_name) && (
-                            <InfoItem
-                                label="Detail Segmen"
-                                value={detail.segment_detail_name}
-                            />
-                        )}
+                            {hasValue(detail.sub_segment_detail_name) && (
+                                <InfoItem
+                                    label="Sub Segmen"
+                                    value={detail.sub_segment_detail_name}
+                                />
+                            )}
 
-                        {hasValue(detail.sub_segment_detail_name) && (
-                            <InfoItem
-                                label="Sub Segmen"
-                                value={detail.sub_segment_detail_name}
-                            />
-                        )}
+                            {hasValue(detail.segment_option_name) && (
+                                <InfoItem
+                                    label="Pilihan Segmen"
+                                    value={detail.segment_option_name}
+                                />
+                            )}
 
-                        {hasValue(detail.segment_option_name) && (
-                            <InfoItem
-                                label="Pilihan Segmen"
-                                value={detail.segment_option_name}
-                            />
-                        )}
+                            {hasValue(detail.access_tour_leader) && (
+                                <InfoItem
+                                    label="Akses Tour Leader"
+                                    value={detail.access_tour_leader}
+                                />
+                            )}
+                        </div>
 
-                        {hasValue(detail.access_tour_leader) && (
-                            <InfoItem
-                                label="Akses Tour Leader"
-                                value={detail.access_tour_leader}
-                            />
-                        )}
-                    </div>
+                        {/* INFORMASI KEDATANGAN & STATUS - KOLOM 4 */}
 
-                    {/* INFORMASI KEDATANGAN & STATUS - KOLOM 4 */}
-
-                    {(hasValue(detail.arrival_type) ||
-                        hasValue(detail.arrival_time) ||
-                        hasValue(detail.status_label || detail.status)) && (
+                        {(hasValue(detail.arrival_date) ||
+                            hasValue(detail.arrival_type) ||
+                            hasValue(detail.arrival_time) ||
+                            hasValue(detail.status_label || detail.status)) && (
                             <div className="flex flex-col gap-5 border-l border-slate-200 pl-5 dark:border-slate-700">
+                                {hasValue(detail.arrival_date) && (
+                                    <InfoItem
+                                        label="Tanggal Kedatangan"
+                                        value={formatDate(detail.arrival_date)}
+                                    />
+                                )}
+
                                 {hasValue(detail.arrival_type) && (
                                     <div>
                                         <p className="mb-1 text-sm text-muted-foreground">
@@ -699,349 +677,140 @@ const DetailReservasi = () => {
                                 {hasValue(detail.status_label || detail.status) && (
                                     <InfoItem
                                         label="Status Reservasi"
-                                        value={detail.status_label || detail.status}
+                                        value={
+                                            detail.status_label ||
+                                            detail.status
+                                        }
                                     />
                                 )}
                             </div>
                         )}
 
-                    {/* DESKRIPSI */}
+                        {/* DESKRIPSI */}
 
-                    {hasValue(detail.notes) && (
-                        <div className="col-span-full mt-2 border-t border-slate-200 pt-5 dark:border-slate-700">
-                            <InfoItem
-                                label="Deskripsi"
-                                value={
-                                    <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
-                                        "{detail.notes}"
-                                    </p>
-                                }
+                        {hasValue(detail.notes) && (
+                            <div className="col-span-full mt-2 border-t border-slate-200 pt-5 dark:border-slate-700">
+                                <InfoItem
+                                    label="Deskripsi"
+                                    value={
+                                        <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
+                                            "{detail.notes}"
+                                        </p>
+                                    }
+                                />
+                            </div>
+                        )}
+                    </div>
+                </DetailSection>
+
+                {/* DETAIL PESANAN */}
+
+                <DetailSection
+                    icon={ClipboardList}
+                    title="Detail Pesanan"
+                    variant="orange"
+                >
+                    <div className="p-5">
+                        {invoiceOrderItems.length > 0 ? (
+                            <DetailOrderTable
+                                data={invoiceOrderItems}
+                                hideActions
+                                showFinancialColumns={eligibleReservasi}
+                            />
+                        ) : (
+                            <div className="rounded-lg border border-dashed p-8 text-center">
+                                <ClipboardList
+                                    size={30}
+                                    className="mx-auto mb-2 text-muted-foreground"
+                                />
+
+                                <p className="text-sm text-muted-foreground">
+                                    Belum ada detail pesanan.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </DetailSection>
+
+                {/* INFORMASI PEMBAYARAN */}
+
+                {eligibleReservasi && (
+                    <DetailSection
+                        icon={HandCoins}
+                        title="Informasi Pembayaran"
+                        variant="blue"
+                    >
+                        <div className="p-5">
+                            <PaymentInformation
+                                totalAmount={totalAmount}
+                                paidAmount={paidAmount}
+                                remainingAmount={remainingAmount}
                             />
                         </div>
-                    )}
-                </div>
-            </DetailSection>
 
-            {/* DETAIL PESANAN */}
-
-            <DetailSection
-                icon={ClipboardList}
-                title="Detail Pesanan"
-                variant="orange"
-            >
-                <div className="p-5">
-                    {invoiceOrderItems.length > 0 ? (
-                        <DetailOrderTable
-                            data={invoiceOrderItems}
-                            hideActions
-                        />
-                    ) : (
-                        <div className="rounded-lg border border-dashed p-8 text-center">
-                            <ClipboardList
-                                size={30}
-                                className="mx-auto mb-2 text-muted-foreground"
+                        <div className="p-5">
+                            <DetailPaymentTable
+                                data={mapInvoicePayments(paymentItems)}
+                                hideActions
                             />
-
-                            <p className="text-sm text-muted-foreground">
-                                Belum ada detail pesanan.
-                            </p>
                         </div>
-                    )}
-                </div>
-            </DetailSection>
+                    </DetailSection>
+                )}
 
-            {/* INFORMASI PEMBAYARAN */}
+                {/* EVENT ORDER */}
 
-            <DetailSection
-                icon={HandCoins}
-                title="Informasi Pembayaran"
-                variant="blue"
-            >
-                <div className="p-5">
-                    <DetailPaymentTable
-                        data={mapInvoicePayments(detail.payments ?? [])}
-                        hideActions
-                    />
-                </div>
-            </DetailSection>
-
-            {/* EVENT ORDER */}
-
-            <DetailSection
-                icon={FaUser}
-                title="Event Order"
-                variant="orange"
-            >
-                <div className="space-y-4 p-5">
-                    {eventOrders.length > 0 ? (
-                        eventOrders.map((event, index) => {
-                            const isIR =
-                                String(event.department_id) === "DP005";
-
-                            const isFinance =
-                                String(event.department_id) === "DP013";
-
-                            const status = getEventOrderStatus(
-                                event.status,
-                                event.status_label,
-                            );
-
-                            const isDraft =
-                                status.normalized === "draft" ||
-                                String(event.status_label || "")
-                                    .trim()
-                                    .toLowerCase() === "draft";
-
-                            const shoppingVouchers: ShoppingVoucherView[] =
-                                Array.isArray(event.shopping_voucher)
-                                    ? event.shopping_voucher as ShoppingVoucherView[]
-                                    : [];
+                <DetailSection
+                    icon={Building2Icon}
+                    title="Event Order"
+                    variant="orange"
+                >
+                    <div className="space-y-4 p-5">
+                        {eventOrders.map((item, index) => {
+                            const isMyDepartment =
+                                Boolean(loginDepartmentId) &&
+                                String(item.department_id) ===
+                                    String(loginDepartmentId);
 
                             return (
-                                <div
-                                    key={
-                                        hasValue(event.id)
-                                            ? String(event.id)
-                                            : `event-order-${index}`
+                                <EventOrderContent
+                                    key={item.id ?? index}
+                                    item={item}
+                                    isAssignedDepartment={isMyDepartment}
+                                    onEdit={
+                                        isMyDepartment
+                                            ? () => handleEditEventOrder(index)
+                                            : undefined
                                     }
-                                    className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
-                                >
-                                    {/* HEADER */}
-
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/30">
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
-                                                <Building2 size={19} />
-                                            </div>
-
-                                            <div className="min-w-0">
-                                                <h3 className="break-words text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                    {hasValue(event.department_name)
-                                                        ? String(event.department_name)
-                                                        : "Nama Departemen -"}
-                                                </h3>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            {hasValue(event.status_label || event.status) && (
-                                                <Badge variant="secondary">
-                                                    {status.label}
-                                                </Badge>
-                                            )}
-
-                                            {isDraft && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => handleEditEventOrder(index)}
-                                                    title="Edit Event Order"
-                                                    className="border-orange-300 text-orange-500 hover:bg-orange-50 hover:text-orange-600 dark:border-orange-500/40 dark:hover:bg-orange-500/10"
-                                                >
-                                                    <FaPen className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* DETAIL */}
-
-                                    <div className="space-y-4 p-4">
-
-                                        {/* IR */}
-
-                                        {isIR && (
-                                            <>
-                                                {/* FOOD & BEVERAGE */}
-
-                                                <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                                                    <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                        Food & Beverage
-                                                    </h4>
-
-                                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                                        <InfoItem
-                                                            label="Paket"
-                                                            value={formatValue(event.product_description)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Penyajian"
-                                                            value={formatValue(event.serving_type)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Jumlah Pax"
-                                                            value={formatValue(event.quantity)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Jam Penyajian"
-                                                            value={formatTime(event.serving_time)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Harga"
-                                                            value={formatCurrency(event.unit_price)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Tempat Penyajian"
-                                                            value={formatValue(event.serving_location)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Detail Menu"
-                                                            value={formatValue(event.product_description)}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* RETAIL & MERCHANDISE */}
-
-                                                <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                                                    <h4 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                        Retail & Merchandise
-                                                    </h4>
-
-                                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                                        <InfoItem
-                                                            label="Nama Barang"
-                                                            value={formatValue(event.product_description)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Jumlah"
-                                                            value={formatValue(event.quantity)}
-                                                        />
-
-                                                        <InfoItem
-                                                            label="Harga"
-                                                            value={formatCurrency(event.unit_price)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {/* FINANCE & ACCOUNTING */}
-
-                                        {isFinance && (
-                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                                    <InfoItem
-                                                        label="Tanggal Cetak Tiket"
-                                                        value={formatDate(event.ticket_print_date)}
-                                                    />
-
-                                                    <InfoItem
-                                                        label="Kupon Makan"
-                                                        value={formatValue(event.meal_voucher)}
-                                                    />
-
-                                                    <InfoItem
-                                                        label="Voucher Tour Leader"
-                                                        value={formatValue(event.voucher_tour_leader)}
-                                                    />
-
-                                                    <InfoItem
-                                                        label="Kupon Belanja"
-                                                        value={
-                                                            shoppingVouchers.length > 0 ? (
-                                                                <div className="flex flex-col gap-1">
-                                                                    {shoppingVouchers.map((voucher, voucherIndex) => (
-                                                                        <div key={voucherIndex}>
-                                                                            {voucherIndex + 1}. {voucher.name || "-"} (
-                                                                            {voucher.quantity ?? "-"} x{" "}
-                                                                            {formatCurrency(voucher.pecahan)}
-                                                                            )
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                "-"
-                                                            )
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* DEPARTEMEN LAINNYA */}
-
-                                        {!isIR && !isFinance && (
-                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                                                <InfoItem
-                                                    label="Desc Request"
-                                                    value={
-                                                        hasValue(event.description) ? (
-                                                            <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
-                                                                "{String(event.description)}"
-                                                            </p>
-                                                        ) : (
-                                                            "-"
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-
-                                        {/* DESC REQUEST IR DAN FINANCE */}
-
-                                        {(isIR || isFinance) && (
-                                            <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
-                                                <InfoItem
-                                                    label="Desc Request"
-                                                    value={
-                                                        hasValue(event.description) ? (
-                                                            <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300">
-                                                                "{String(event.description)}"
-                                                            </p>
-                                                        ) : (
-                                                            "-"
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                />
                             );
-                        })
-                    ) : (
-                        <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-8 text-center dark:border-slate-700 dark:bg-slate-900/30">
-                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                                <Building2 size={30} strokeWidth={1.5} />
-                            </div>
+                        })}
+                    </div>
+                </DetailSection>
 
-                            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                Belum Ada Event Order
-                            </h3>
+                <CreateEventOrderModal
+                    open={openCreateEventOrder}
+                    onClose={handleCloseEventOrderModal}
+                    onSubmit={handleSubmitEventOrder}
+                    initialData={
+                        editingEventOrderIndex !== null
+                            ? eventOrders[
+                                  editingEventOrderIndex
+                              ] as unknown as CreateReservasiEventOrder
+                            : null
+                    }
+                    departemenOptions={departemenOptions}
+                    invoiceItems={detail.items ?? []}
+                />
+            </DetailPageLayout>
 
-                            <p className="mt-1 max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                                Event Order belum tersedia untuk reservasi ini.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </DetailSection>
+            {/* ACTIVITY SHEET */}
 
-            {/* MODAL EDIT EVENT ORDER */}
-
-            <CreateEventOrderModal
-                open={openCreateEventOrder}
-                onClose={handleCloseEventOrderModal}
-                onSubmit={handleSubmitEventOrder}
-                initialData={
-                    editingEventOrderIndex !== null
-                        ? eventOrders[editingEventOrderIndex] as unknown as CreateReservasiEventOrder
-                        : null
-                }
-                departemenOptions={departemenOptions}
-                invoiceItems={detail?.items ?? []}
+            <ActivitySheet
+                open={openActivity}
+                onOpenChange={setOpenActivity}
+                data={activityLogs}
             />
-        </DetailPageLayout>
+        </>
     );
 };
 

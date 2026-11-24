@@ -1,3 +1,4 @@
+
 import DataTable from "@/components/data-table/data-table";
 import MobileDataCard from "@/components/data-table/mobile-data-card";
 import { dataTableFeatures } from "@/components/data-table/table-features";
@@ -13,6 +14,7 @@ type DetailOrderTableProps = {
   onDelete?: (order: InvoiceOrder) => void;
   actionsDisabled?: boolean;
   hideActions?: boolean;
+  showFinancialColumns?: boolean;
 };
 
 export default function DetailOrderTable({
@@ -21,6 +23,7 @@ export default function DetailOrderTable({
   onDelete,
   actionsDisabled = false,
   hideActions = false,
+  showFinancialColumns = true,
 }: DetailOrderTableProps) {
   const columns = useMemo(
     () =>
@@ -32,13 +35,33 @@ export default function DetailOrderTable({
     [actionsDisabled, onDelete, onEdit],
   );
 
-  const visibleColumns = useMemo(
-    () =>
-      hideActions
-        ? columns.filter((column) => column.id !== "aksi")
-        : columns,
-    [columns, hideActions],
-  );
+  const visibleColumns = useMemo(() => {
+    let result = columns;
+
+    if (hideActions) {
+      result = result.filter((column) => column.id !== "aksi");
+    }
+
+    if (!showFinancialColumns) {
+      const financialColumns = [
+        "unitPrice",
+        "discountPrice",
+        "subtotal",
+      ];
+
+      result = result.filter(
+        (column) =>
+          !financialColumns.includes(
+            "accessorKey" in column
+              ? String(column.accessorKey)
+              : String(column.id),
+          ),
+      );
+    }
+
+    return result;
+  }, [columns, hideActions, showFinancialColumns]);
+
   const table = useTable({
     features: dataTableFeatures,
     data,
@@ -57,6 +80,7 @@ export default function DetailOrderTable({
           emptyDescription="Produk yang ditambahkan akan tampil di sini."
         />
       </div>
+
       <div className="hidden overflow-hidden rounded-lg border border-slate-300 md:block">
         <DataTable table={table} cellClassName="px-3 py-2" />
       </div>

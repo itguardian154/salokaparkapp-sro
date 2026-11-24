@@ -32,8 +32,18 @@ const buttonVariants = cva(
         backGhost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900 gap-2", //
         blue: "bg-blue-600 text-white hover:bg-blue-700 rounded-full shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95",
         litleSekunder: "bg-sekunder-20 text-sekunder-60 rounded-lg dark:bg-sekunder-60 dark:text-sekunder-20 hover:bg-sekunder-40 hover:text-white dark:hover:bg-sekunder-20 dark:hover:text-sekunder-60",
-        litleBlue: "bg-sky-100 text-sky-800 text-sm font-medium rounded-lg dark:bg-sky-900 dark:text-sky-300 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-700 dark:hover:text-white"
-            
+        litleBlue: "bg-sky-100 text-sky-800 text-sm font-medium rounded-lg dark:bg-sky-900 dark:text-sky-300 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-700 dark:hover:text-white",
+
+        success:
+          "bg-emerald-600 text-white hover:bg-emerald-700 rounded-full shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all active:scale-95",
+
+        accept:
+          "bg-teal-600 text-white hover:bg-teal-700 rounded-full shadow-lg shadow-teal-500/20 flex items-center gap-2 transition-all active:scale-95",
+
+        warning:
+          "bg-amber-500 text-white hover:bg-amber-600 rounded-full shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all active:scale-95",
+
+
       },
       size: {
         default:
