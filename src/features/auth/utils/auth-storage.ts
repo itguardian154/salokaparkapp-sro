@@ -190,6 +190,10 @@ export function getAuthSession(): StoredAuthProfile | null {
   };
 }
 
+export function hasPermission(permission: string): boolean {
+  return getAuthSession()?.permissions.includes(permission) ?? false;
+}
+
 export function clearAuthSession(): void {
   [...AUTH_STORAGE_KEYS, ...LEGACY_AUTH_STORAGE_KEYS].forEach((key) =>
     localStorage.removeItem(key),

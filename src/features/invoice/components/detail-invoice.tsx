@@ -73,6 +73,7 @@ import {
 import { formatTanggal } from "@/lib/utils";
 import { invoiceFormSchema } from "../schemas/invoice-form-schema";
 import { isEligibleInvoiceSales } from "../utils/invoice-sales";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 type InvoiceFormPageProps = { mode: "create" | "detail" };
 
@@ -230,6 +231,7 @@ const createInvoiceDraftSnapshot = (
 export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
   const navigate = useNavigate();
   const { id } = useParams();
+  const canViewInvoiceActivity = hasPermission("invoice.activity");
 
   // State formulir dan status popover/modal
   const [openCreateDetailInvoice, setOpenCreateDetailInvoice] = useState(false);
@@ -1755,15 +1757,17 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           title="Informasi Pelanggan"
           variant="blue"
           action={
-            <Button
-              //onClick={() => setOpenActivity(true)}
-              variant="amberBorder"
-              size="lg"
-              className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <MdWorkHistory size={16} />
-              Log Aktivitas
-            </Button>
+            canViewInvoiceActivity ? (
+              <Button
+                //onClick={() => setOpenActivity(true)}
+                variant="amberBorder"
+                size="lg"
+                className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <MdWorkHistory size={16} />
+                Log Aktivitas
+              </Button>
+            ) : undefined
           }
         >
           <div

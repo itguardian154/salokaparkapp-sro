@@ -18,7 +18,7 @@ import { cn } from "cn";
 
 import { ChevronRightIcon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { getAuthSession } from "@/features/auth/utils/auth-storage";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useState } from "react";
 
@@ -42,15 +42,13 @@ export function NavMain({
   const [collapsedOpen, setCollapsedOpen] = useState<string | null>(null);
   const [, setPinnedOpen] = useState<string | null>(null);
   const [popupTop, setPopupTop] = useState(0);
-  const permissions = getAuthSession()?.permissions ?? [];
-
   return (
     <SidebarGroup>
       <SidebarMenu className="w-full">
         {items.map((item) => {
           const visibleSubItems = item.items?.filter(
             (subItem) =>
-              !subItem.permission || permissions.includes(subItem.permission),
+              !subItem.permission || hasPermission(subItem.permission),
           );
 
           if (item.items && visibleSubItems?.length === 0) {

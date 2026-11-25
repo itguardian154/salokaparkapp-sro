@@ -52,7 +52,8 @@ export default function AuthBootstrap({
         showConfirmButton: false,
         timer: 2500,
         timerProgressBar: true,
-      }).then(() => {
+      })
+      .then(() => {
         window.location.href = "https://salokapark.app/salokaparkapp";
       });
     }
