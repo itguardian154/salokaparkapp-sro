@@ -33,8 +33,12 @@ import useOptionAgent from "@/features/master/master-agen/hooks/use-option-agen"
 import type { OptionAgent } from "@/features/master/master-agen/types/master-agen";
 
 import { toLocalDateString } from "@/features/invoice/utils/invoice-form-utils";
+import { getAuthSession } from "@/features/auth/utils/auth-storage";
 
 export default function ReservasiPage() {
+
+  const permissions = getAuthSession()?.permissions ?? [];
+  const canCreateReservasi = permissions.includes("sales-order.create");
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
 
@@ -227,7 +231,7 @@ export default function ReservasiPage() {
 
   return (
     <>
-            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -446,18 +450,20 @@ export default function ReservasiPage() {
                   </div>
                 </FilterBar>
               </div>
-
-              <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={() => navigate("/reservation/create")}
-                >
-                  <FaPlus className="text-[16px]" />
-                  Tambah
-                </Button>
-              </div>
+              {canCreateReservasi && (
+                <div className="hidden gap-2 xl:flex">
+                  <Button
+                    variant="primer"
+                    onClick={() => navigate("/reservation/create")}
+                  >
+                    <FaPlus className="text-[16px]" />
+                    Tambah
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
+
 
           <div className="border-b bg-slate-50/50 px-4 py-2 dark:border-slate-700 dark:bg-slate-900/30 sm:px-6">
             <TablePagination
@@ -488,7 +494,7 @@ export default function ReservasiPage() {
             />
           </div>
 
-           <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
             {error ? (
               <p
                 role="alert"
@@ -513,11 +519,13 @@ export default function ReservasiPage() {
           </div>
         </div>
       </section>
+      {canCreateReservasi && (
 
-      <MobileFloatingActionButton
-        ariaLabel="Tambah Reservasi"
-        onClick={() => navigate("/reservation/create")}
-      />
+        <MobileFloatingActionButton
+          ariaLabel="Tambah Reservasi"
+          onClick={() => navigate("/reservation/create")}
+        />
+      )}
     </>
   );
 }

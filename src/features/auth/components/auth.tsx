@@ -8,36 +8,58 @@ type AuthBootstrapProps = {
 };
 
 const LOGIN_LOADING_KEY = "sro_login_loading_shown";
+const MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 export default function AuthBootstrap({
   children,
 }: AuthBootstrapProps) {
   const { status, errorMessage } = useAuthBootstrap();
 
-  const [minimumLoadingDone, setMinimumLoadingDone] = useState(true);
-  const [showLoading, setShowLoading] = useState(false);
+  const hasShownLoading = !!sessionStorage.getItem(LOGIN_LOADING_KEY);
+
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia(MOBILE_BREAKPOINT).matches
+  );
+
+  const [showLoading, setShowLoading] = useState(
+    () => !hasShownLoading
+  );
+
+  const [minimumLoadingDone, setMinimumLoadingDone] = useState(
+    () => hasShownLoading
+  );
+
   const [fadeOut, setFadeOut] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(hasShownLoading);
+  const [isFirstLoading, setIsFirstLoading] = useState(!hasShownLoading);
 
-  // Tampilkan loading hanya jika belum pernah ditampilkan pada sesi ini
+  // Deteksi ukuran layar untuk menentukan video
   useEffect(() => {
-    const alreadyShown = sessionStorage.getItem(LOGIN_LOADING_KEY);
+    const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT);
 
-    if (!alreadyShown) {
-      sessionStorage.setItem(LOGIN_LOADING_KEY, "true");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobile(event.matches);
+    };
 
-      setMinimumLoadingDone(false);
-      setShowLoading(true);
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
 
-      const timer = setTimeout(() => {
-        setMinimumLoadingDone(true);
-      }, 4000);
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
-      return () => clearTimeout(timer);
-    }
+  // Tampilkan loading pertama kali SRO dibuka
+  useEffect(() => {
+    if (!showLoading) return;
 
-    setShowLoading(false);
-    setMinimumLoadingDone(true);
+    sessionStorage.setItem(LOGIN_LOADING_KEY, "true");
+
+    const timer = setTimeout(() => {
+      setMinimumLoadingDone(true);
+    }, 4000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Handle authentication error
@@ -53,7 +75,8 @@ export default function AuthBootstrap({
         timer: 2500,
         timerProgressBar: true,
       }).then(() => {
-        window.location.href = "https://salokapark.app/salokaparkapp";
+        window.location.href =
+          "https://salokapark.app/salokaparkapp";
       });
     }
   }, [status, errorMessage]);
@@ -64,39 +87,58 @@ export default function AuthBootstrap({
       return;
     }
 
+    // Refresh: langsung tampilkan dashboard tanpa animasi
     if (!showLoading) {
       setShowDashboard(true);
       return;
     }
 
+    // Pertama kali: gunakan transisi loading
     setFadeOut(true);
 
     const timer = setTimeout(() => {
       setShowLoading(false);
-
-      requestAnimationFrame(() => {
-        setShowDashboard(true);
-      });
+      setShowDashboard(true);
+      setIsFirstLoading(false);
     }, 800);
 
     return () => clearTimeout(timer);
   }, [status, minimumLoadingDone, showLoading]);
 
-  // Kunci scroll selama loading dan transisi
+  // Kunci scroll hanya selama loading dan transisi
   useEffect(() => {
     const isTransitioning = showLoading || !showDashboard;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const html = document.documentElement;
+    const body = document.body;
+
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousHtmlHeight = html.style.height;
+    const previousBodyHeight = body.style.height;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
 
     if (isTransitioning) {
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+
+      html.style.height = "100%";
+      body.style.height = "100%";
+
+      html.style.overscrollBehavior = "none";
+      body.style.overscrollBehavior = "none";
     }
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+
+      html.style.height = previousHtmlHeight;
+      body.style.height = previousBodyHeight;
+
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overscrollBehavior = previousBodyOverscroll;
     };
   }, [showLoading, showDashboard]);
 
@@ -104,18 +146,25 @@ export default function AuthBootstrap({
     return null;
   }
 
+  const videoSrc = isMobile
+    ? "/img/logo-sro-potrait.webm"
+    : "/img/logo-sro.webm";
+
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden">
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden">
       {/* DASHBOARD */}
       {status === "authenticated" && (
         <div
           className={`
-            min-h-screen w-full
-            transition-all duration-1000 ease-out
+            min-h-[100dvh] w-full
             ${
-              showDashboard
-                ? "translate-y-0 scale-100 opacity-100"
-                : "translate-y-3 scale-[0.99] opacity-0"
+              isFirstLoading
+                ? `transition-all duration-1000 ease-out ${
+                    showDashboard
+                      ? "translate-y-0 scale-100 opacity-100"
+                      : "translate-y-3 scale-[0.99] opacity-0"
+                  }`
+                : "translate-y-0 scale-100 opacity-100"
             }
           `}
         >
@@ -128,8 +177,8 @@ export default function AuthBootstrap({
         <div
           className={`
             fixed inset-0 z-[99999]
-            h-[100dvh] w-screen overflow-hidden
-            bg-black
+            h-screen h-[100dvh] w-full
+            overflow-hidden bg-black
             transition-all duration-[800ms] ease-in-out
             ${
               fadeOut
@@ -139,12 +188,24 @@ export default function AuthBootstrap({
           `}
         >
           <video
-            src="/img/logo-sro.webm"
+            key={videoSrc}
+            src={videoSrc}
             autoPlay
             muted
             playsInline
             preload="auto"
-            className="absolute inset-0 h-full w-full object-cover"
+            onError={(event) => {
+              console.error(
+                "SRO loading video error:",
+                videoSrc,
+                event.currentTarget.error
+              );
+            }}
+            className="
+              absolute inset-0
+              block h-full w-full
+              object-cover object-center
+            "
           />
         </div>
       )}
