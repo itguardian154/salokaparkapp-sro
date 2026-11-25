@@ -14,20 +14,13 @@ import {
 
 import { useProvinces } from "@/features/wilayah/hooks/use-provinces";
 import { useCities } from "@/features/wilayah/hooks/use-cities";
-import type {
-  Province,
-  City,
-} from "@/features/wilayah/types/wilayah";
+import type { Province, City } from "@/features/wilayah/types/wilayah";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { FaSave, FaPlus, FaTrash } from "react-icons/fa";
 import { Building2, GitBranch } from "lucide-react";
-import {FaPen} from "react-icons/fa6";
+import { FaPen } from "react-icons/fa6";
 
 import { createMasterAgentSchema } from "../schemas/master-agen-schema";
 
@@ -59,10 +52,7 @@ type EditMasterProps = {
   open: boolean;
   onClose: () => void;
   agent: AgentDetail | null;
-  onSubmit: (
-    id: number,
-    payload: EditMasterAgentPayload,
-  ) => Promise<void>;
+  onSubmit: (id: number, payload: EditMasterAgentPayload) => Promise<void>;
   submitting?: boolean;
 };
 
@@ -73,11 +63,7 @@ type AgentTextField =
   | "contact_person"
   | "phone";
 
-type BranchTextField =
-  | "name"
-  | "contact_person"
-  | "phone"
-  | "address";
+type BranchTextField = "name" | "contact_person" | "phone" | "address";
 
 type BranchForm = {
   id?: number;
@@ -136,13 +122,8 @@ const initialForm: AgentForm = {
   is_active: true,
 };
 
-const normalizeName = (
-  value: string | null | undefined,
-) =>
-  (value ?? "")
-    .trim()
-    .toLocaleLowerCase("id-ID")
-    .replace(/\s+/g, " ");
+const normalizeName = (value: string | null | undefined) =>
+  (value ?? "").trim().toLocaleLowerCase("id-ID").replace(/\s+/g, " ");
 
 type ProvinceCityFieldsProps = {
   provinces: Province[];
@@ -175,24 +156,19 @@ const ProvinceCityFields = ({
 
   // Cari ID provinsi berdasarkan provinceName yang dipilih untuk meload daftar kota
   const selectedProvinceObj = provinces.find(
-    (p) => normalizeName(p.name) === normalizeName(provinceName)
+    (p) => normalizeName(p.name) === normalizeName(provinceName),
   );
 
-  const {
-    cities,
-    loading: citiesLoading,
-  } = useCities(selectedProvinceObj ? Number(selectedProvinceObj.id) : null);
+  const { cities, loading: citiesLoading } = useCities(
+    selectedProvinceObj ? Number(selectedProvinceObj.id) : null,
+  );
 
   const filteredProvinces = provinces.filter((province) =>
-    normalizeName(province.name).includes(
-      normalizeName(searchProvince),
-    ),
+    normalizeName(province.name).includes(normalizeName(searchProvince)),
   );
 
   const filteredCities = cities.filter((city) =>
-    normalizeName(city.name).includes(
-      normalizeName(searchCity),
-    ),
+    normalizeName(city.name).includes(normalizeName(searchCity)),
   );
 
   const handleProvinceSelect = (provinceNameVal: string) => {
@@ -217,7 +193,7 @@ const ProvinceCityFields = ({
   return (
     <>
       <Field>
-        <FieldLabel>Provinsi</FieldLabel>
+        <FieldLabel>Provinsi <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<Province>
           open={openProvince}
@@ -225,18 +201,14 @@ const ProvinceCityFields = ({
           search={searchProvince}
           onSearchChange={setSearchProvince}
           placeholder={
-            provinceLoading
-              ? "Memuat provinsi..."
-              : "Pilih provinsi"
+            provinceLoading ? "Memuat provinsi..." : "Pilih provinsi"
           }
           selectedLabel={provinceName || null}
           selectedKey={provinceName || null}
           items={filteredProvinces}
           getKey={(province) => province.name}
           renderItem={(province) => province.name}
-          onSelect={(province) =>
-            handleProvinceSelect(province.name)
-          }
+          onSelect={(province) => handleProvinceSelect(province.name)}
           disabled={provinceLoading}
           emptyText={
             provinceError
@@ -247,20 +219,16 @@ const ProvinceCityFields = ({
         />
 
         {provinceError && (
-          <p className="text-sm text-red-500">
-            {provinceError}
-          </p>
+          <p className="text-sm text-red-500">{provinceError}</p>
         )}
 
         {provinceValidationError && (
-          <p className="text-sm text-red-500">
-            {provinceValidationError}
-          </p>
+          <p className="text-sm text-red-500">{provinceValidationError}</p>
         )}
       </Field>
 
       <Field>
-        <FieldLabel>Kota/Kabupaten</FieldLabel>
+        <FieldLabel>Kota/Kabupaten <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<City>
           open={openCity}
@@ -279,22 +247,14 @@ const ProvinceCityFields = ({
           items={filteredCities}
           getKey={(city) => city.name}
           renderItem={(city) => city.name}
-          onSelect={(city) =>
-            handleCitySelect(city.name)
-          }
-          disabled={
-            !provinceName ||
-            citiesLoading ||
-            provinceLoading
-          }
+          onSelect={(city) => handleCitySelect(city.name)}
+          disabled={!provinceName || citiesLoading || provinceLoading}
           emptyText="Kota/kabupaten tidak ditemukan."
           debounceDelay={500}
         />
 
         {cityValidationError && (
-          <p className="text-sm text-red-500">
-            {cityValidationError}
-          </p>
+          <p className="text-sm text-red-500">{cityValidationError}</p>
         )}
       </Field>
     </>
@@ -319,21 +279,14 @@ const StatusField = ({
 
     <Select
       value={String(active)}
-      onValueChange={(value) =>
-        onValueChange(value === "true")
-      }
+      onValueChange={(value) => onValueChange(value === "true")}
       disabled={disabled}
     >
       <SelectTrigger className="w-full">
-        <SelectValue>
-          {active ? "Aktif" : "Nonaktif"}
-        </SelectValue>
+        <SelectValue>{active ? "Aktif" : "Nonaktif"}</SelectValue>
       </SelectTrigger>
 
-      <SelectContent
-        align="start"
-        alignItemWithTrigger={false}
-      >
+      <SelectContent align="start" alignItemWithTrigger={false}>
         <SelectItem value="true">Aktif</SelectItem>
         <SelectItem value="false">Nonaktif</SelectItem>
       </SelectContent>
@@ -353,8 +306,9 @@ const EditMasterAgen = ({
   });
 
   const [branches, setBranches] = useState<BranchForm[]>([]);
-  const [validationErrors, setValidationErrors] =
-    useState<ValidationErrors>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {},
+  );
 
   const {
     provinces,
@@ -376,10 +330,8 @@ const EditMasterAgen = ({
       phone: agent.phone ?? "",
       address: agent.address ?? "",
 
-      province_name:
-        agent.province?.name ?? agent.province_name ?? "",
-      city_name:
-        agent.city?.name ?? agent.city_name ?? "",
+      province_name: agent.province?.name ?? agent.province_name ?? "",
+      city_name: agent.city?.name ?? agent.city_name ?? "",
 
       website: agent.website ?? "",
       logo: agent.logo_url ?? "",
@@ -396,14 +348,8 @@ const EditMasterAgen = ({
         return {
           id: item.id,
           name: item.name ?? "",
-          province_name:
-            item.province?.name ??
-            item.province_name ??
-            "",
-          city_name:
-            item.city?.name ??
-            item.city_name ??
-            "",
+          province_name: item.province?.name ?? item.province_name ?? "",
+          city_name: item.city?.name ?? item.city_name ?? "",
           code: item.code ?? "",
           contact_person: item.contact_person ?? "",
           phone: item.phone ?? "",
@@ -416,8 +362,7 @@ const EditMasterAgen = ({
     setValidationErrors({});
   }, [open, agent]);
 
-  const getError = (field: string) =>
-    validationErrors[field];
+  const getError = (field: string) => validationErrors[field];
 
   const clearError = (field: string) => {
     setValidationErrors((previous) => {
@@ -430,10 +375,7 @@ const EditMasterAgen = ({
     });
   };
 
-  const handleChange = (
-    field: AgentTextField,
-    value: string,
-  ) => {
+  const handleChange = (field: AgentTextField, value: string) => {
     setForm((previous) => ({
       ...previous,
       [field]: value,
@@ -449,46 +391,38 @@ const EditMasterAgen = ({
   ) => {
     setBranches((previous) =>
       previous.map((branch, branchIndex) =>
-        branchIndex === index
-          ? { ...branch, [field]: value }
-          : branch,
+        branchIndex === index ? { ...branch, [field]: value } : branch,
       ),
     );
 
     clearError(`branches.${index}.${field}`);
   };
 
-  const handleAgentProvinceChange = useCallback(
-    (name: string) => {
-      setForm((previous) => {
-        if (previous.province_name === name) {
-          return previous;
-        }
+  const handleAgentProvinceChange = useCallback((name: string) => {
+    setForm((previous) => {
+      if (previous.province_name === name) {
+        return previous;
+      }
 
-        return {
-          ...previous,
-          province_name: name,
-          city_name: "",
-        };
-      });
-
-      clearError("province_name");
-      clearError("city_name");
-    },
-    [],
-  );
-
-  const handleAgentCityChange = useCallback(
-    (name: string) => {
-      setForm((previous) => ({
+      return {
         ...previous,
-        city_name: name,
-      }));
+        province_name: name,
+        city_name: "",
+      };
+    });
 
-      clearError("city_name");
-    },
-    [],
-  );
+    clearError("province_name");
+    clearError("city_name");
+  }, []);
+
+  const handleAgentCityChange = useCallback((name: string) => {
+    setForm((previous) => ({
+      ...previous,
+      city_name: name,
+    }));
+
+    clearError("city_name");
+  }, []);
 
   const handleBranchProvinceChange = useCallback(
     (index: number, name: string) => {
@@ -512,38 +446,30 @@ const EditMasterAgen = ({
     [],
   );
 
-  const handleBranchCityChange = useCallback(
-    (index: number, name: string) => {
-      setBranches((previous) =>
-        previous.map((branch, branchIndex) =>
-          branchIndex === index
-            ? {
-                ...branch,
-                city_name: name,
-              }
-            : branch,
-        ),
-      );
+  const handleBranchCityChange = useCallback((index: number, name: string) => {
+    setBranches((previous) =>
+      previous.map((branch, branchIndex) =>
+        branchIndex === index
+          ? {
+              ...branch,
+              city_name: name,
+            }
+          : branch,
+      ),
+    );
 
-      clearError(`branches.${index}.city_name`);
-    },
-    [],
-  );
+    clearError(`branches.${index}.city_name`);
+  }, []);
 
   const handleAddBranch = () => {
-    setBranches((previous) => [
-      { ...initialBranch },
-      ...previous,
-    ]);
+    setBranches((previous) => [{ ...initialBranch }, ...previous]);
 
     clearError("branches");
   };
 
   const handleRemoveBranch = (index: number) => {
     setBranches((previous) =>
-      previous.filter(
-        (_, branchIndex) => branchIndex !== index,
-      ),
+      previous.filter((_, branchIndex) => branchIndex !== index),
     );
 
     setValidationErrors((previous) => {
@@ -568,8 +494,7 @@ const EditMasterAgen = ({
         if (oldIndex < index) {
           next[key] = message;
         } else if (oldIndex > index) {
-          next[`branches.${oldIndex - 1}.${field}`] =
-            message;
+          next[`branches.${oldIndex - 1}.${field}`] = message;
         }
       });
 
@@ -588,8 +513,7 @@ const EditMasterAgen = ({
       })),
     };
 
-    const result =
-      createMasterAgentSchema.safeParse(payload);
+    const result = createMasterAgentSchema.safeParse(payload);
 
     if (!result.success) {
       const errors: ValidationErrors = {};
@@ -653,44 +577,32 @@ const EditMasterAgen = ({
             disabled={submitting || !agent}
           >
             <FaSave size={14} />
-            {submitting
-              ? "Menyimpan..."
-              : "Simpan Perubahan"}
+            {submitting ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
         </div>
       }
     >
       <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-1">
-        <AppModal.Section
-          title="Informasi Agen"
-          icon={<Building2 size={18} />}
-        >
+        <AppModal.Section title="Informasi Agen" icon={<Building2 size={18} />}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field>
-              <FieldLabel>Nama Travel</FieldLabel>
+              <FieldLabel>Nama Travel <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.name}
-                onChange={(event) =>
-                  handleChange("name", event.target.value)
-                }
+                onChange={(event) => handleChange("name", event.target.value)}
                 placeholder="Masukkan nama travel"
               />
               {getError("name") && (
-                <p className="text-sm text-red-500">
-                  {getError("name")}
-                </p>
+                <p className="text-sm text-red-500">{getError("name")}</p>
               )}
             </Field>
 
             <Field>
-              <FieldLabel>Nama Asosiasi</FieldLabel>
+              <FieldLabel>Nama Asosiasi <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.association_name}
                 onChange={(event) =>
-                  handleChange(
-                    "association_name",
-                    event.target.value,
-                  )
+                  handleChange("association_name", event.target.value)
                 }
                 placeholder="Contoh: ASITA"
               />
@@ -702,14 +614,11 @@ const EditMasterAgen = ({
             </Field>
 
             <Field>
-              <FieldLabel>Nama PIC</FieldLabel>
+              <FieldLabel>Nama PIC <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.contact_person}
                 onChange={(event) =>
-                  handleChange(
-                    "contact_person",
-                    event.target.value,
-                  )
+                  handleChange("contact_person", event.target.value)
                 }
                 placeholder="Nama PIC"
               />
@@ -721,18 +630,14 @@ const EditMasterAgen = ({
             </Field>
 
             <Field>
-              <FieldLabel>WhatsApp</FieldLabel>
+              <FieldLabel>WhatsApp <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.phone}
-                onChange={(event) =>
-                  handleChange("phone", event.target.value)
-                }
+                onChange={(event) => handleChange("phone", event.target.value)}
                 placeholder="Contoh: 6281234567890"
               />
               {getError("phone") && (
-                <p className="text-sm text-red-500">
-                  {getError("phone")}
-                </p>
+                <p className="text-sm text-red-500">{getError("phone")}</p>
               )}
             </Field>
 
@@ -779,9 +684,7 @@ const EditMasterAgen = ({
           }
         >
           {getError("branches") && (
-            <p className="mb-3 text-sm text-red-500">
-              {getError("branches")}
-            </p>
+            <p className="mb-3 text-sm text-red-500">{getError("branches")}</p>
           )}
 
           <div className="space-y-4">
@@ -791,32 +694,28 @@ const EditMasterAgen = ({
                 className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-medium">
-                    Cabang {index + 1}
-                  </h3>
+                  <h3 className="font-medium">Cabang {index + 1}</h3>
 
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => handleRemoveBranch(index)}
-                    disabled={submitting}
-                  >
-                    <FaTrash size={12} />
-                    Hapus
-                  </Button>
+                  {!branch.id && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => handleRemoveBranch(index)}
+                      disabled={submitting}
+                    >
+                      <FaTrash size={12} />
+                      Hapus
+                    </Button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field>
-                    <FieldLabel>Nama Cabang</FieldLabel>
+                    <FieldLabel>Nama Cabang <span className="text-xs text-red-500">*</span></FieldLabel>
                     <Input
                       value={branch.name}
                       onChange={(event) =>
-                        handleBranchChange(
-                          index,
-                          "name",
-                          event.target.value,
-                        )
+                        handleBranchChange(index, "name", event.target.value)
                       }
                       placeholder="Nama cabang"
                     />
@@ -828,7 +727,7 @@ const EditMasterAgen = ({
                   </Field>
 
                   <Field>
-                    <FieldLabel>Nama PIC</FieldLabel>
+                    <FieldLabel>Nama PIC <span className="text-xs text-red-500">*</span></FieldLabel>
                     <Input
                       value={branch.contact_person}
                       onChange={(event) =>
@@ -840,27 +739,19 @@ const EditMasterAgen = ({
                       }
                       placeholder="Nama PIC"
                     />
-                    {getError(
-                      `branches.${index}.contact_person`,
-                    ) && (
+                    {getError(`branches.${index}.contact_person`) && (
                       <p className="text-sm text-red-500">
-                        {getError(
-                          `branches.${index}.contact_person`,
-                        )}
+                        {getError(`branches.${index}.contact_person`)}
                       </p>
                     )}
                   </Field>
 
                   <Field>
-                    <FieldLabel>WhatsApp</FieldLabel>
+                    <FieldLabel>WhatsApp <span className="text-xs text-red-500">*</span></FieldLabel>
                     <Input
                       value={branch.phone}
                       onChange={(event) =>
-                        handleBranchChange(
-                          index,
-                          "phone",
-                          event.target.value,
-                        )
+                        handleBranchChange(index, "phone", event.target.value)
                       }
                       placeholder="Nomor telepon"
                     />
@@ -891,17 +782,9 @@ const EditMasterAgen = ({
                     provinceName={branch.province_name}
                     cityName={branch.city_name}
                     onProvinceChange={(name) =>
-                      handleBranchProvinceChange(
-                        index,
-                        name,
-                      )
+                      handleBranchProvinceChange(index, name)
                     }
-                    onCityChange={(name) =>
-                      handleBranchCityChange(
-                        index,
-                        name,
-                      )
-                    }
+                    onCityChange={(name) => handleBranchCityChange(index, name)}
                     provinceLoading={provincesLoading}
                     provinceError={provincesError}
                     provinceValidationError={getError(

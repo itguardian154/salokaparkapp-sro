@@ -7,6 +7,5 @@ export type InvoiceOrder = {
   compliment: number | null;
   unitPrice: number;
   isTicket: boolean;
-  discountPrice: number;
   subtotal: number;
 };

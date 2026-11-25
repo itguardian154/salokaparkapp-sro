@@ -227,9 +227,9 @@ export default function ReservasiPage() {
 
   return (
     <>
-      <section className="min-w-0 space-y-5">
-        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <FaFileInvoice
@@ -474,7 +474,7 @@ export default function ReservasiPage() {
             />
           </div>
 
-          <div className="hidden md:block">
+          <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
             {error && (
               <p role="alert" className="px-4 py-3 text-sm text-red-600">
                 {error}
@@ -488,7 +488,7 @@ export default function ReservasiPage() {
             />
           </div>
 
-          <div className="p-3 md:hidden">
+           <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
             {error ? (
               <p
                 role="alert"

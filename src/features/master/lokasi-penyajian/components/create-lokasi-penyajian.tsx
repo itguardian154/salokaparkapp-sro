@@ -115,7 +115,7 @@ const CreateMasterLokasiPenyajian = ({
       <AppModal.Section title="Master Lokasi Penyajian" showHeader={false}>
         <div className="space-y-4">
           <Field>
-            <FieldLabel>Nama Lokasi</FieldLabel>
+            <FieldLabel>Nama Lokasi <span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Input
               placeholder="Masukkan nama lokasi"

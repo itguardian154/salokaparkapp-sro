@@ -1324,7 +1324,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
         );
       rows.forEach((payment, index) => {
-        const paymentKey = `payments[${index}]`;
+        const paymentKey = `payment`;
         payload.append(`${paymentKey}[payment_type]`, payment.uploadType);
         if (payment.uploadType !== "bukti_bayar") return;
 
@@ -1380,7 +1380,6 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
       if (!order.isTicket) {
         payload.append(`${item}[unit_price]`, String(order.unitPrice));
       }
-      payload.append(`${item}[discount_amount]`, String(order.discountPrice));
       payload.append(`${item}[notes]`, "");
     });
 
@@ -2416,7 +2415,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                     )}
                   </div>
 
-                  <div className="grid min-w-0 grid-cols-1 items-start gap-1 md:grid-cols-[110px_minmax(0,1fr)] md:items-center md:gap-3">
+                  <div className="grid min-w-0 grid-cols-1 items-start gap-1 md:grid-cols-110px_minmax(0,1fr) md:items-center md:gap-3">
                     <FieldLabel>
                       Nomor{" "}
                       {!isNonFormalEducation && (

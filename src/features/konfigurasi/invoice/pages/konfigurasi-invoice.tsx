@@ -21,7 +21,7 @@ export default function KonfigurasiTiketPage() {
         </div>
       </header>
 
-      <main className="w-full flex-1 space-y-5 p-4">
+      <main className="min-h-0 w-full flex-1 space-y-4 overflow-y-auto p-3 md:space-y-5 md:p-4">
         <TagihanCard />
         <BonusCard />
       </main>

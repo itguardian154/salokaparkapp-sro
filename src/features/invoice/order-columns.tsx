@@ -40,15 +40,6 @@ export const getInvoiceOrderColumns = (actions?: {
     ),
   },
   {
-    accessorKey: "discountPrice",
-    header: "Harga Diskon",
-    cell: ({ row }) => (
-      <span>
-        {formatRupiah(row.original.discountPrice)}
-      </span>
-    ),
-  },
-  {
     accessorKey: "subtotal",
     header: "Subtotal",
     cell: ({ row }) => (

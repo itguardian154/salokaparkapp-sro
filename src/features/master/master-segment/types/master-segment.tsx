@@ -38,15 +38,15 @@ export type Segment = {
 export type CreateSegmentPayload = {
   name: string;
   is_active: boolean;
-  details: {
+  details?: {
     id?: number;
     name: string | null;
     is_active: boolean;
-    sub_details: {
+    sub_details?: {
       id?: number;
       name: string | null;
       is_active: boolean | null;
-      options: {
+      options?: {
         id?: number;
         name: string;
         is_active: boolean;

@@ -54,10 +54,8 @@ export default function MasterLokasiPenyajianPage() {
     refetch,
   } = useMasterLokasiPenyajian();
 
-  const {
-    submit: createLokasiPenyajian,
-    loading: submittingLokasiPenyajian,
-  } = useCreateLokasiPenyajian();
+  const { submit: createLokasiPenyajian, loading: submittingLokasiPenyajian } =
+    useCreateLokasiPenyajian();
 
   const {
     submit: editLokasiPenyajian,
@@ -70,10 +68,7 @@ export default function MasterLokasiPenyajianPage() {
     lokasiPenyajian: editLokasiPenyajianDetail,
     loading: loadingEditLokasiPenyajian,
     error: loadEditLokasiPenyajianError,
-  } = useDetailLokasiPenyajian(
-    selectedEditLokasiPenyajianId,
-    isEditMasterOpen,
-  );
+  } = useDetailLokasiPenyajian(selectedEditLokasiPenyajianId, isEditMasterOpen);
 
   const resetFilters = () => {
     setSearchData("");
@@ -118,7 +113,8 @@ export default function MasterLokasiPenyajianPage() {
 
       toast.add({
         title: "Lokasi penyajian berhasil dibuat",
-        description: "Master lokasi penyajian baru sudah ditambahkan ke daftar.",
+        description:
+          "Master lokasi penyajian baru sudah ditambahkan ke daftar.",
         type: "success",
         timeout: 4000,
       });
@@ -179,15 +175,12 @@ export default function MasterLokasiPenyajianPage() {
 
   return (
     <>
-      <section className="min-w-0 space-y-5">
-        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <FaDatabase
-                  className="text-emerald-500"
-                  aria-hidden="true"
-                />
+                <FaDatabase className="text-emerald-500" aria-hidden="true" />
                 <h1 className="text-lg font-bold text-slate-800 dark:text-white">
                   Master Lokasi Penyajian
                 </h1>
@@ -269,20 +262,16 @@ export default function MasterLokasiPenyajianPage() {
             </p>
           ) : (
             <>
-                <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
-                <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
-                <DataTable table={table} cellClassName="px-3 py-2" />
-              </div>
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+                  <DataTable table={table} cellClassName="px-3 py-2" />
               </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
                 <MobileDataCard
                   table={table}
                   titleKey="name"
                   titleLabel="Lokasi Penyajian"
-                  icon={
-                    <FaBox className="h-5 w-5" aria-hidden="true" />
-                  }
+                  icon={<FaBox className="h-5 w-5" aria-hidden="true" />}
                   emptyTitle="Belum ada data lokasi penyajian"
                   emptyDescription="Data lokasi penyajian akan ditampilkan di sini."
                 />

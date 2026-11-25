@@ -1,7 +1,4 @@
-import {
-  type RowData,
-  type ReactTable,
-} from "@tanstack/react-table";
+import { type RowData, type ReactTable } from "@tanstack/react-table";
 import { dataTableFeatures } from "./table-features";
 
 interface DataTableProps<TData extends RowData> {
@@ -12,7 +9,7 @@ interface DataTableProps<TData extends RowData> {
   containerClassName?: string;
 }
 
-const DataTable = <TData extends RowData,>({
+const DataTable = <TData extends RowData>({
   table,
   loading = false,
   header,
@@ -23,79 +20,75 @@ const DataTable = <TData extends RowData,>({
   const columnCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div
-      className={`w-ful bg-white dark:bg-slate-800 ${containerClassName}`}
-    >
-      <table className="w-full border-collapse border-gray-300 dark:border-gray-600">
-        {header ? (
-          header
-        ) : (
-          <thead className="bg-gray-100 dark:bg-gray-700">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    className="
+    <div className="min-h-0 min-w-0 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700">
+      <div
+        className={`w-full bg-white dark:bg-slate-800 ${containerClassName}`}
+      >
+        <table className="w-full border-collapse border-gray-300 dark:border-gray-600">
+          {header ? (
+            header
+          ) : (
+            <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className="
                       p-3 text-xs font-semibold text-center
                       border-x border-gray-200 dark:border-gray-600
                       first:border-l-0 last:border-r-0
                       whitespace-pre-line leading-tight
                     "
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : <table.FlexRender header={header} />}
-                  </th>
-                ))}
+                    >
+                      {header.isPlaceholder ? null : (
+                        <table.FlexRender header={header} />
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+          )}
+
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={columnCount} className="p-4 text-center">
+                  Sedang memuat data...
+                </td>
               </tr>
-            ))}
-          </thead>
-        )}
+            )}
 
-        <tbody>
-          {loading && (
-            <tr>
-              <td
-                colSpan={columnCount}
-                className="p-4 text-center"
-              >
-                Sedang memuat data...
-              </td>
-            </tr>
-          )}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td colSpan={columnCount} className="p-4 text-center">
+                  Saat ini data kosong
+                </td>
+              </tr>
+            )}
 
-          {!loading && rows.length === 0 && (
-            <tr>
-              <td
-                colSpan={columnCount}
-                className="p-4 text-center"
-              >
-                Saat ini data kosong
-              </td>
-            </tr>
-          )}
-
-          {!loading &&
-            rows.map((row, index) => (
-              <tr key={`${row.id}-${index}`}>
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className={`
+            {!loading &&
+              rows.map((row, index) => (
+                <tr key={`${row.id}-${index}`}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={`
                       text-sm border border-gray-300 dark:border-gray-600
                       first:border-l-0 last:border-r-0
                       ${cellClassName}
                     `}
-                  >
-                    <table.FlexRender cell={cell} />
-                  </td>
-                ))}
-              </tr>
-            ))}
-        </tbody>
-      </table>
+                    >
+                      <table.FlexRender cell={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

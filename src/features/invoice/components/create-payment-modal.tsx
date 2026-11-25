@@ -176,9 +176,6 @@ export default function CreatePaymentModal({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const isCashPayment = ["tunai", "cash"].includes(
-    value.paymentMethod.trim().toLowerCase(),
-  );
 
   useEffect(() => {
     if (open) {
@@ -188,10 +185,7 @@ export default function CreatePaymentModal({
 
       setValue({
         ...initialValue,
-        paymentMethod:
-          initialValue.paymentMethod.toLowerCase() === "cash"
-            ? "Tunai"
-            : initialValue.paymentMethod,
+        paymentMethod: initialValue.paymentMethod,
       });
     }
   }, [hasPendingPayment, initialUploadType, initialValue, open]);
@@ -216,6 +210,12 @@ export default function CreatePaymentModal({
       cancelled = true;
     };
   }, [open]);
+
+  const paymentMethodLabels: Record<string, string> = {
+    cash: "Tunai",
+    transfer: "Transfer",
+    deposit: "Deposit",
+  };
 
   const updateValue = (updates: Partial<InvoicePaymentForm>) => {
     setValue((current) => ({
@@ -333,7 +333,9 @@ export default function CreatePaymentModal({
           />
           {/* PILIHAN tipe pembayaran  */}
           <Field>
-            <FieldLabel className="text-xs">Tipe Pembayaran</FieldLabel>
+            <FieldLabel className="text-xs">
+              Tipe Pembayaran <span className="text-xs text-red-500">*</span>
+            </FieldLabel>
             <Select value={uploadType} onValueChange={handleUploadTypeChange}>
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Pilih tipe pembayaran">
@@ -386,58 +388,55 @@ export default function CreatePaymentModal({
             </div>
           )}
 
-
           {/* FORM BUKTI BAYAR */}
           {uploadType === "bukti_bayar" && (
             <>
               <div className="grid gap-4 md:grid-cols-2">
-                 {/* METODE BAYAR */}
-          <Field>
-            <FieldLabel className="text-xs">Metode Bayar</FieldLabel>
+                {/* METODE BAYAR */}
+                <Field>
+                  <FieldLabel className="text-xs">
+                    Metode Bayar{" "}
+                    <span className="text-xs text-red-500">*</span>{" "}
+                  </FieldLabel>
+                  <Select
+                    value={value.paymentMethod}
+                    onValueChange={(method) => {
+                      if (method) {
+                        updateValue({ paymentMethod: method });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih metode bayar">
+                        {paymentMethodLabels[value.paymentMethod] ??
+                          "Pilih metode bayar"}
+                      </SelectValue>
+                    </SelectTrigger>
 
-            <Select
-              value={value.paymentMethod}
-              onValueChange={(method: string | null) => {
-                if (method !== null) {
-                  updateValue({
-                    paymentMethod: method === "cash" ? "Tunai" : method,
-                  });
-                  setValidationErrors((current) => ({
-                    ...current,
-                    paymentMethod: "",
-                    proofFiles: "",
-                    accountHolderName: "",
-                    fromBank: "",
-                    toBank: "",
-                  }));
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih metode bayar" />
-              </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectItem value="cash">Tunai</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="deposit">Deposit</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <SelectContent align="start" alignItemWithTrigger={false}>
-                <SelectItem value="Tunai">Tunai</SelectItem>
-                <SelectItem value="transfer">Transfer</SelectItem>
-                <SelectItem value="deposit">Deposit</SelectItem>
-                <SelectItem value="other">Lainnya</SelectItem>
-              </SelectContent>
-            </Select>
+                  {validationErrors.paymentMethod && (
+                    <p className="text-sm text-red-500" role="alert">
+                      {validationErrors.paymentMethod}
+                    </p>
+                  )}
+                </Field>
 
-            {validationErrors.paymentMethod && (
-              <p className="text-sm text-red-500" role="alert">
-                {validationErrors.paymentMethod}
-              </p>
-            )}
-          </Field>
-          
-                {!isCashPayment && (
+                {value.paymentMethod == "transfer" && (
                   <>
                     {/* BUKTI BAYAR */}
                     <div>
+                      <FieldLabel className="text-xs">
+                        Bukti Bayar{" "}
+                        <span className="text-xs text-red-500">*</span>
+                      </FieldLabel>
                       <UploadField
-                        label="Bukti Bayar"
+                        label=""
                         multiple
                         files={value.proofFiles}
                         existingFileNames={initialAttachmentNames}
@@ -455,7 +454,8 @@ export default function CreatePaymentModal({
                     {/* ATAS NAMA REKENING */}
                     <Field>
                       <FieldLabel className="text-xs">
-                        Atas Nama Rekening
+                        Atas Nama Rekening{" "}
+                        <span className="text-xs text-red-500">*</span>
                       </FieldLabel>
 
                       <Input
@@ -475,27 +475,14 @@ export default function CreatePaymentModal({
                   </>
                 )}
 
-                {!isCashPayment && (
+                {value.paymentMethod == "transfer" && (
                   <>
-                    {/* NOMOR SO / GROUP DEPOSIT */}
-                    <Field>
-                      <FieldLabel className="text-xs">
-                        Nomor SO / Group Deposit
-                      </FieldLabel>
-
-                      <Input
-                        className="h-10"
-                        value={value.depositNumber}
-                        onChange={(event) =>
-                          updateValue({ depositNumber: event.target.value })
-                        }
-                        placeholder="Isi jika menggunakan deposit"
-                      />
-                    </Field>
-
                     {/* DARI REKENING */}
                     <Field>
-                      <FieldLabel className="text-xs">Dari Rekening</FieldLabel>
+                      <FieldLabel className="text-xs">
+                        Dari Rekening{" "}
+                        <span className="text-xs text-red-500">*</span>{" "}
+                      </FieldLabel>
 
                       <Select
                         value={value.fromBank}
@@ -528,7 +515,8 @@ export default function CreatePaymentModal({
                     {/* KE REKENING */}
                     <Field>
                       <FieldLabel className="text-xs">
-                        Ke Rekening Saloka
+                        Ke Rekening Saloka{" "}
+                        <span className="text-xs text-red-500">*</span>
                       </FieldLabel>
                       <SearchablePopover<string>
                         open={bankAccountPopoverOpen}
@@ -558,9 +546,33 @@ export default function CreatePaymentModal({
                   </>
                 )}
 
+                {value.paymentMethod == "deposit" && (
+                  <>
+                    {/* NOMOR SO / GROUP DEPOSIT */}
+                    <Field>
+                      <FieldLabel className="text-xs">
+                        Nomor SO / Group Deposit{" "}
+                        <span className="text-xs text-red-500">*</span>
+                      </FieldLabel>
+
+                      <Input
+                        className="h-10"
+                        value={value.depositNumber}
+                        onChange={(event) =>
+                          updateValue({ depositNumber: event.target.value })
+                        }
+                        placeholder="Isi jika menggunakan deposit"
+                      />
+                    </Field>
+                  </>
+                )}
+
                 {/* TANGGAL BAYAR */}
                 <Field>
-                  <FieldLabel className="text-xs">Tanggal Bayar</FieldLabel>
+                  <FieldLabel className="text-xs">
+                    Tanggal Bayar{" "}
+                    <span className="text-xs text-red-500">*</span>
+                  </FieldLabel>
 
                   <DateRangePicker
                     mode="single"
@@ -577,7 +589,10 @@ export default function CreatePaymentModal({
 
                 {/* JUMLAH PEMBAYARAN */}
                 <Field>
-                  <FieldLabel className="text-xs">Jumlah Pembayaran</FieldLabel>
+                  <FieldLabel className="text-xs">
+                    Jumlah Pembayaran{" "}
+                    <span className="text-xs text-red-500">*</span>{" "}
+                  </FieldLabel>
 
                   <Input
                     className="h-10 text-right font-semibold"

@@ -170,7 +170,7 @@ const ProvinceCityFields = ({
   return (
     <>
       <Field>
-        <FieldLabel>Provinsi</FieldLabel>
+        <FieldLabel>Provinsi <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<Province>
           open={openProvince}
@@ -215,7 +215,7 @@ const ProvinceCityFields = ({
       </Field>
 
       <Field>
-        <FieldLabel>Kota/Kabupaten</FieldLabel>
+        <FieldLabel>Kota/Kabupaten <span className="text-xs text-red-500">*</span></FieldLabel>
 
         <SearchablePopover<City>
           open={openCity}
@@ -543,7 +543,7 @@ const CreateMasterAgen = ({
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field>
-              <FieldLabel>Nama Agen</FieldLabel>
+              <FieldLabel>Nama Agen <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.name}
                 onChange={(event) =>
@@ -559,7 +559,7 @@ const CreateMasterAgen = ({
             </Field>
 
             <Field>
-              <FieldLabel>Nama Asosiasi</FieldLabel>
+              <FieldLabel>Nama Asosiasi <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.association_name}
                 onChange={(event) =>
@@ -578,7 +578,7 @@ const CreateMasterAgen = ({
             </Field>
 
             <Field>
-              <FieldLabel>Nama PIC</FieldLabel>
+              <FieldLabel>Nama PIC <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.contact_person}
                 onChange={(event) =>
@@ -594,7 +594,7 @@ const CreateMasterAgen = ({
             </Field>
 
             <Field>
-              <FieldLabel>WhatsApp</FieldLabel>
+              <FieldLabel>WhatsApp <span className="text-xs text-red-500">*</span></FieldLabel>
               <Input
                 value={form.phone}
                 onChange={(event) =>
@@ -673,7 +673,7 @@ const CreateMasterAgen = ({
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field>
-                    <FieldLabel>Nama Cabang</FieldLabel>
+                    <FieldLabel>Nama Cabang <span className="text-xs text-red-500">*</span></FieldLabel>
                     <Input
                       value={branch.name}
                       onChange={(event) =>
@@ -693,7 +693,7 @@ const CreateMasterAgen = ({
                   </Field>
 
                   <Field>
-                    <FieldLabel>Nama PIC</FieldLabel>
+                    <FieldLabel>Nama PIC <span className="text-xs text-red-500">*</span></FieldLabel>
                     <Input
                       value={branch.contact_person}
                       onChange={(event) =>

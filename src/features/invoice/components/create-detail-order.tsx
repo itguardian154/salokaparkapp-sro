@@ -44,7 +44,6 @@ export default function CreateDetailInvoice({
   );
   const [quantity, setQuantity] = useState("");
   const [complimentary, setComplimentary] = useState("0");
-  const [discountPrice, setDiscountPrice] = useState("0");
   const [errors, setErrors] = useState<{
     product?: string;
     quantity?: string;
@@ -53,11 +52,10 @@ export default function CreateDetailInvoice({
   const [unitPrice, setUnitPrice] = useState("");
   const unitPriceAmount = Number(unitPrice);
   const quantityAmount = Number(quantity) || 0;
-  const discountAmount = Number(discountPrice) || 0;
 
   const subtotal = Math.max(
     0,
-    quantityAmount * (unitPriceAmount - discountAmount),
+    quantityAmount * unitPriceAmount,
   );
 
   useEffect(() => {
@@ -79,7 +77,6 @@ export default function CreateDetailInvoice({
       initialValue ? String(initialValue.compliment ?? 0) : "0",
     );
     setUnitPrice(initialValue ? String(initialValue.unitPrice) : "");
-    setDiscountPrice(initialValue ? String(initialValue.discountPrice ?? 0) : "0");
     setErrors({});
   }, [initialValue, open]);
 
@@ -89,7 +86,6 @@ export default function CreateDetailInvoice({
     setQuantity("");
     setComplimentary("0");
     setUnitPrice("");
-    setDiscountPrice("0");
     setSearchProduk("");
     setErrors({});
   };
@@ -121,7 +117,6 @@ export default function CreateDetailInvoice({
       compliment: Number(complimentary),
       unitPrice: unitPriceAmount,
       isTicket: selectedProduk!.is_ticket,
-      discountPrice: discountAmount,
       subtotal,
     });
 
@@ -166,7 +161,6 @@ export default function CreateDetailInvoice({
               onSelect={(produk) => {
                 setSelectedProduk(produk);
                 setUnitPrice(String(Number(produk.price)));
-                setDiscountPrice("");
                 setOpenProduk(false);
                 setSearchProduk("");
                 setErrors((current) => ({

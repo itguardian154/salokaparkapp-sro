@@ -315,18 +315,34 @@ const CreateMasterSegment = ({
     const payload: CreateSegmentPayload = {
       name: form.name.trim(),
       is_active: true,
-      details: form.details.map((detail) => ({
-        name: detail.name.trim() || null,
-        is_active: true,
-        sub_details: detail.sub_details.map((subDetail) => ({
-          name: subDetail.name.trim() || null,
-          is_active: true,
-          options: subDetail.options.map((option) => ({
-            name: option.name.trim(),
-            is_active: option.is_active,
-          })),
-        })),
-      })),
+      ...(form.details.some((detail) => detail.name.trim()) && {
+        details: form.details
+          .filter((detail) => detail.name.trim())
+          .map((detail) => {
+            const subDetails = detail.sub_details
+              .filter((subDetail) => subDetail.name.trim())
+              .map((subDetail) => {
+                const options = subDetail.options
+                  .filter((option) => option.name.trim())
+                  .map((option) => ({
+                    name: option.name.trim(),
+                    is_active: option.is_active,
+                  }));
+
+                return {
+                  name: subDetail.name.trim(),
+                  is_active: true,
+                  ...(options.length > 0 && { options }),
+                };
+              });
+
+            return {
+              name: detail.name.trim(),
+              is_active: true,
+              ...(subDetails.length > 0 && { sub_details: subDetails }),
+            };
+          }),
+      }),
     };
 
     const result = segmentSchema.safeParse(payload);
@@ -396,7 +412,7 @@ const CreateMasterSegment = ({
           icon={<Layers size={18} />}
         >
           <Field>
-            <FieldLabel>Nama Segmen</FieldLabel>
+            <FieldLabel>Nama Segmen <span className="text-xs text-red-500">*</span></FieldLabel>
 
             <Input
               value={form.name}
