@@ -32,12 +32,11 @@ import type {
   CreateProdukPayload,
   UpdateProdukPayload,
 } from "../types/master-produk";
-import { getAuthSession } from "@/features/auth/utils/auth-storage";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 export default function MasterProdukPage() {
-  const permissions = getAuthSession()?.permissions ?? [];
-  const canCreateProduk = permissions.includes("product.create");
-  const canUpdateProduk = permissions.includes("product.update");
+  const canCreateProduk =  hasPermission("product.create");
+  const canUpdateProduk =  hasPermission("product.update");
   const [isDetailMasterOpen, setIsDetailMasterOpen] = useState(false);
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
   const [selectedProdukId, setSelectedProdukId] = useState<number | null>(null);

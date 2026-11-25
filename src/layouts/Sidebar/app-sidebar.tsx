@@ -55,6 +55,7 @@ export const navMainItems: {
       {
         title: "Kategori Produk",
         url: "/master/kategori-produk",
+        permission: "product.view",
       },
       {
         title: "Segmen",
@@ -62,7 +63,7 @@ export const navMainItems: {
       },
       {
         title: "Lokasi Penyajian",
-        url: "master/lokasi-penyajian"
+        url: "/master/lokasi-penyajian",
       }
     ],
   },
@@ -133,7 +134,7 @@ export const navMainItems: {
     url: "/reports",
     icon: <FaChartPie />,
   },
-    {
+  {
     title: "Role Akses",
     url: "/role-akses",
     icon: <FaUserLock />,
