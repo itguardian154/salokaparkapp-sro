@@ -115,7 +115,7 @@ export default function ArrivalCotrolPage() {
         />
       </div>
 
-      <div className="hidden lg:block flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full sm:max-w-md md:hidden">
           <FilterBar
             search={search}

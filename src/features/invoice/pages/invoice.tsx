@@ -26,8 +26,11 @@ import DateRangePicker from "@/components/date-range-picker";
 import { toLocalDateString } from "../utils/invoice-form-utils";
 import useOptionAgent from "@/features/master/master-agen/hooks/use-option-agen";
 import type { OptionAgent } from "@/features/master/master-agen/types/master-agen";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 export default function InvoicePage() {
+  const canCreateInvoice = hasPermission("invoice.create");
+  const canUpdateInvoice = hasPermission("invoice.update");
   const navigate = useNavigate();
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
@@ -81,7 +84,9 @@ export default function InvoicePage() {
     (agent) => agent.is_active !== false,
   );
   const uniqueOptionAgents = Array.from(
-    new Map(activeOptionAgents.map((agent) => [agent.partner_id, agent])).values(),
+    new Map(
+      activeOptionAgents.map((agent) => [agent.partner_id, agent]),
+    ).values(),
   );
 
   // Get Invoices
@@ -159,7 +164,7 @@ export default function InvoicePage() {
                     searchData ||
                     statusFilter ||
                     salesPersonFilter ||
-                      agenFilter ||
+                    agenFilter ||
                     segmentFilter ||
                     customerIdFilter ||
                     arrivalDateRange?.from,
@@ -359,13 +364,15 @@ export default function InvoicePage() {
                 </FilterBar>
               </div>
               <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={() => navigate("/invoice/create")}
-                >
-                  <FaPlus className="text-[16px]" />
-                  Tambah
-                </Button>
+                {canCreateInvoice && (
+                  <Button
+                    variant="primer"
+                    onClick={() => navigate("/invoice/create")}
+                  >
+                    <FaPlus className="text-[16px]" />
+                    Tambah
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -421,10 +428,12 @@ export default function InvoicePage() {
         </div>
       </section>
 
-      <MobileFloatingActionButton
-        ariaLabel="Tambah Invoice"
-        onClick={() => navigate("/invoice/create")}
-      />
+      {canCreateInvoice && (
+        <MobileFloatingActionButton
+          ariaLabel="Tambah Invoice"
+          onClick={() => navigate("/invoice/create")}
+        />
+      )}
     </>
   );
 }

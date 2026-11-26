@@ -1,5 +1,6 @@
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FaTimes } from "react-icons/fa";
 import type { ReactElement, ReactNode } from "react";
 import {
@@ -57,8 +58,8 @@ const AppModal: AppModalComponent = ({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto bg-black/60 p-4 font-poppins backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center overflow-y-auto bg-black/60 p-4 font-poppins backdrop-blur-sm">
       <div
         className={`
           flex min-h-0 w-full max-w-4xl flex-col
@@ -103,7 +104,8 @@ const AppModal: AppModalComponent = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

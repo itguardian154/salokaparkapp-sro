@@ -145,8 +145,10 @@ export default function ArrivalGroupCard({
                 {group.schoolName}
               </h3>
               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                {group.city} <span className="px-1 text-slate-300">·</span>{" "}
-                Sales: {group.salesName}
+                {group.city}
+              </p>
+               <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+                Sales : {group.salesName}
               </p>
             </div>
           </div>

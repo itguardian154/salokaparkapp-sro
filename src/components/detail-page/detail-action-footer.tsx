@@ -156,11 +156,11 @@ export default function DetailActionFooter({
 
       {/* MOBILE */}
       <div className="md:hidden">
-        <div className="pointer-events-none fixed inset-0 z-[9999]">
+        <div className="pointer-events-none absolute inset-0 z-[9999]">
           {/* FAN MENU */}
           <div
             className="
-              fixed
+              absolute
               bottom-0
               left-1/2
               h-[180px]
@@ -310,7 +310,7 @@ export default function DetailActionFooter({
               }
               className="
                 pointer-events-auto
-                fixed
+              absolute
                 bottom-[5px]
                 left-1/2
                 z-[10000]

@@ -30,6 +30,7 @@ export const navMainItems: {
   url: string;
   icon?: React.ReactNode;
   isActive?: boolean;
+  permission?: string;
   items?: { title: string; url: string; permission?: string }[];
 }[] = [
   {
@@ -55,11 +56,12 @@ export const navMainItems: {
       {
         title: "Kategori Produk",
         url: "/master/kategori-produk",
-        permission: "product.view",
+        permission: "product-category.view",
       },
       {
         title: "Segmen",
         url: "/master/segmen",
+        permission: "segment.view",
       },
       {
         title: "Lokasi Penyajian",
@@ -73,6 +75,7 @@ export const navMainItems: {
     url: "/konfigurasi-tiket",
     icon: <MdOutlineSettingsInputComponent />,
     isActive: true,
+    permission: "configuration.view",
     items: [
       {
         title: "Invoice",
@@ -98,6 +101,7 @@ export const navMainItems: {
     title: "Invoice",
     url: "/invoice",
     icon: <FaFileInvoice />,
+    permission: "invoice.view",
   },
   {
     title: "Reservation",

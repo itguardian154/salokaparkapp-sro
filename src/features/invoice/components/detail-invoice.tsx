@@ -2874,7 +2874,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
                 disabled={invoiceData?.payment_status === "paid"}
               >
                 <Plus size={16} />
-                Tambah Pembayaran
+                Tambah
               </Button>
             }
           >

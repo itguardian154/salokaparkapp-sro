@@ -4,17 +4,21 @@ import DropdownActions from "@/components/dropdown-action";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Segment } from "./types/master-segment";
 import { Badge } from "@/components/ui/badge";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 export function getMasterSegmentColumns(
   onDetail: (record: Segment) => void,
   onEdit: (record: Segment) => void,
   canEdit: boolean,
 ): ColumnDef<typeof dataTableFeatures, Segment, unknown>[] {
+
+  const canUpdateSegment = hasPermission("segment.update");
+
   return [
     {
       id: "number",
       header: () => <div className="text-center">#</div>,
-      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      cell: ({ row }) => <div className="lg:text-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {
@@ -30,7 +34,7 @@ export function getMasterSegmentColumns(
         const variant = status ? "success" : "warning";
 
         return (
-          <div className="flex justify-center">
+          <div className="flex lg:justify-center">
             <Badge variant={variant}>
               {status ? "Aktif" : "Nonaktif"}
             </Badge>
@@ -45,7 +49,11 @@ export function getMasterSegmentColumns(
         <div className="flex items-center justify-center">
           <DropdownActions
             onDetail={() => onDetail(row.original)}
-            onEdit={canEdit ? () => onEdit(row.original) : undefined}
+            onEdit={
+              canUpdateSegment && canEdit
+                ? () => onEdit(row.original)
+                : undefined
+            }
           />
         </div>
       ),

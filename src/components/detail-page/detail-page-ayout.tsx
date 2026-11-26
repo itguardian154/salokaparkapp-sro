@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import PageHeader from "./page-header";
 
 type DetailPageLayoutProps = {
@@ -18,8 +19,8 @@ export default function DetailPageLayout({
   children,
   footer,
 }: DetailPageLayoutProps) {
-  return (
-    <main className="fixed inset-0 z-100 flex flex-col bg-slate-50 dark:bg-slate-900">
+  return createPortal(
+    <main className="fixed inset-x-0 top-0 z-[100] flex h-dvh flex-col bg-slate-50 dark:bg-slate-900">
       <PageHeader
         icon={icon}
         title={title}
@@ -34,6 +35,7 @@ export default function DetailPageLayout({
       </div>
 
       {footer}
-    </main>
+    </main>,
+    document.body,
   );
 }

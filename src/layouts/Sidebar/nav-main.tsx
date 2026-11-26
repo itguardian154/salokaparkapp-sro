@@ -30,6 +30,7 @@ export function NavMain({
     url: string;
     icon?: React.ReactNode;
     isActive?: boolean;
+    permission?: string;
     items?: {
       title: string;
       url: string;
@@ -45,7 +46,9 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarMenu className="w-full">
-        {items.map((item) => {
+        {items
+          .filter((item) => !item.permission || hasPermission(item.permission))
+          .map((item) => {
           const visibleSubItems = item.items?.filter(
             (subItem) =>
               !subItem.permission || hasPermission(subItem.permission),
@@ -209,7 +212,7 @@ export function NavMain({
               </CollapsibleContent>
             </Collapsible>
           );
-        })}
+          })}
       </SidebarMenu>
     </SidebarGroup>
   );

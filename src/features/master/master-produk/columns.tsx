@@ -16,7 +16,7 @@ export function getMasterProdukColumns(
     {
       id: "number",
       header: () => <div className="text-center">#</div>,
-      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      cell: ({ row }) => <div className="lgtext-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {
@@ -27,7 +27,7 @@ export function getMasterProdukColumns(
       accessorKey: "reference_file",
       header: "Referensi",
       cell: ({ row }) => (
-        <div className="flex justify-center">
+        <div className="flex lg:justify-center">
           <span onClick={(event) => event.stopPropagation()}>
             <ReferenceFilePreview referenceFile={row.original.reference_file} />
           </span>
@@ -71,7 +71,7 @@ export function getMasterProdukColumns(
                   : "muted";
 
         return (
-          <div className="flex justify-center">
+          <div className="flex lg:justify-center">
             <Badge variant={variant}>{status}</Badge>
           </div>
         );
@@ -86,7 +86,7 @@ export function getMasterProdukColumns(
         const variant = status ? "success" : "warning";
 
         return (
-          <div className="flex justify-center">
+          <div className="flex lg:justify-center">
             {" "}
             <Badge variant={variant}>
               {status ? "Aktif" : "Nonaktif"}

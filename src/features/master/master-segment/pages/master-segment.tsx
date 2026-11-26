@@ -34,6 +34,7 @@ import type {
   CreateSegmentPayload,
   UpdateSegmentPayload,
 } from "../types/master-segment";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 type MasterSegmentPageProps = {
   canEdit?: boolean;
@@ -42,6 +43,8 @@ type MasterSegmentPageProps = {
 export default function MasterSegmentPage({
   canEdit = true,
 }: MasterSegmentPageProps) {
+  const canCreateSegment = hasPermission("segment.create");
+
   const {
     segments,
     loading,
@@ -280,7 +283,7 @@ export default function MasterSegmentPage({
 
   return (
     <>
-     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -327,10 +330,12 @@ export default function MasterSegmentPage({
 
               {/* ACTION */}
               <div className="hidden gap-2 xl:flex">
-                <Button variant="primer" onClick={handleOpenCreate}>
-                  <FaPlus className="text-[16px]" />
-                  Tambah
-                </Button>
+                {canCreateSegment && (
+                  <Button variant="primer" onClick={handleOpenCreate}>
+                    <FaPlus className="text-[16px]" />
+                    Tambah
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -371,7 +376,13 @@ export default function MasterSegmentPage({
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
-                <MobileDataCard table={table} titleKey="name" />
+                <MobileDataCard
+                  table={table}
+                  titleKey="name"
+                  titleLabel="Segmen"
+                  emptyTitle="Belum ada data segmen"
+                  emptyDescription="Data segmen akan ditampilkan di sini."
+                />
               </div>
 
               {totalData === 0 && (
@@ -393,10 +404,12 @@ export default function MasterSegmentPage({
       />
 
       {/* FLOATING BUTTON MOBILE */}
-      <MobileFloatingActionButton
-        ariaLabel="Tambah Segment"
-        onClick={handleOpenCreate}
-      />
+      {canCreateSegment && (
+        <MobileFloatingActionButton
+          ariaLabel="Tambah Segment"
+          onClick={handleOpenCreate}
+        />
+      )}
 
       {/* DETAIL SEGMENT */}
       <DetailMasterSegment

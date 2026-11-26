@@ -18,6 +18,7 @@ import type { ProdukApprovalAction } from "../hooks/use-produk-approval";
 import { Button } from "@/components/ui/button";
 import ReferenceFilePreview from "./reference-file-preview";
 import DepartmentOwnerList from "./department-owner-list";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
 
 type DetailMasterProdukProps = {
   open: boolean;
@@ -60,6 +61,7 @@ const DetailMasterProduk = ({
   onApprovalAction,
   onClose,
 }: DetailMasterProdukProps) => {
+  const canLogActivity = hasPermission("activity-log.view");
   const [openActivity, setOpenActivity] = useState(false);
 
   const activityLogs = useMemo<ActivityItemData[]>(
@@ -182,15 +184,17 @@ const DetailMasterProduk = ({
           title="Informasi Produk"
           variant="blue"
           action={
-            <Button
-              onClick={() => setOpenActivity(true)}
-              variant="amberBorder"
-              size="lg"
-              className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <MdWorkHistory size={16} />
-              Log Aktivitas
-            </Button>
+            canLogActivity && (
+              <Button
+                onClick={() => setOpenActivity(true)}
+                variant="amberBorder"
+                size="lg"
+                className="bg-white/90 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <MdWorkHistory size={16} />
+                Log Aktivitas
+              </Button>
+            )
           }
         >
           <div className="p-5">
@@ -267,15 +271,15 @@ const DetailMasterProduk = ({
                   </div>
                 </div>
 
-                  <InfoItem
-                    label="Deskripsi"
-                    value={
-                      <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 pt-5 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-1 lg:border-l lg:border-t-0 lg:py-0 lg:pl-6">
-                        "{produk.description || "-"}"
-                      </p>
-                    }
-                  />
-                </div>
+                <InfoItem
+                  label="Deskripsi"
+                  value={
+                    <p className="text-sm italic leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 pt-5 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-1 lg:border-l lg:border-t-0 lg:py-0 lg:pl-6">
+                      "{produk.description || "-"}"
+                    </p>
+                  }
+                />
+              </div>
             ) : null}
           </div>
         </DetailSection>

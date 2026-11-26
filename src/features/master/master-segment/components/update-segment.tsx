@@ -4,6 +4,13 @@ import AppModal from "@/components/base-modal";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { FaSave, FaPen, FaPlus, FaTrash } from "react-icons/fa";
 import { Layers, ListTree, Tags } from "lucide-react";
@@ -132,6 +139,10 @@ const UpdateMasterSegment = ({
     clearError("name");
   };
 
+  const handleSegmentActiveChange = (isActive: boolean) => {
+    setForm((previous) => ({ ...previous, is_active: isActive }));
+  };
+
   // INPUT NAMA DETAIL SEGMENT
   const handleDetailChange = (index: number, value: string) => {
     setForm((previous) => ({
@@ -142,6 +153,15 @@ const UpdateMasterSegment = ({
     }));
 
     clearError(`details.${index}.name`);
+  };
+
+  const handleDetailActiveChange = (index: number, isActive: boolean) => {
+    setForm((previous) => ({
+      ...previous,
+      details: previous.details.map((detail, detailIndex) =>
+        detailIndex === index ? { ...detail, is_active: isActive } : detail,
+      ),
+    }));
   };
 
   // INPUT NAMA SUB DETAIL
@@ -170,6 +190,28 @@ const UpdateMasterSegment = ({
     }));
 
     clearError(`details.${detailIndex}.sub_details.${subIndex}.name`);
+  };
+
+  const handleSubDetailActiveChange = (
+    detailIndex: number,
+    subIndex: number,
+    isActive: boolean,
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+      details: previous.details.map((detail, index) =>
+        index !== detailIndex
+          ? detail
+          : {
+              ...detail,
+              sub_details: detail.sub_details.map((subDetail, indexSub) =>
+                indexSub === subIndex
+                  ? { ...subDetail, is_active: isActive }
+                  : subDetail,
+              ),
+            },
+      ),
+    }));
   };
 
   const handleOptionChange = (
@@ -405,19 +447,35 @@ const UpdateMasterSegment = ({
       <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-1">
         {/* INFORMASI SEGMENT */}
         <AppModal.Section title="Informasi Segment" icon={<Layers size={18} />}>
-          <Field>
-            <FieldLabel>Nama Segmen <span className="text-xs text-red-500">*</span></FieldLabel>
-
-            <Input
-              value={form.name}
-              onChange={(event) => handleSegmentChange(event.target.value)}
-              placeholder="Masukkan nama segmen"
-            />
-
-            {getError("name") && (
-              <p className="text-sm text-red-500">{getError("name")}</p>
-            )}
-          </Field>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <Field>
+              <FieldLabel>Nama Segmen <span className="text-xs text-red-500">*</span></FieldLabel>
+              <Input
+                value={form.name}
+                onChange={(event) => handleSegmentChange(event.target.value)}
+                placeholder="Masukkan nama segmen"
+              />
+              {getError("name") && (
+                <p className="text-sm text-red-500">{getError("name")}</p>
+              )}
+            </Field>
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <Select
+                value={form.is_active ? "active" : "inactive"}
+                onValueChange={(value) => handleSegmentActiveChange(value === "active")}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue>{form.is_active ? "Aktif" : "Non Aktif"}</SelectValue>
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Non Aktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
         </AppModal.Section>
 
         {/* DETAIL SEGMENT */}
@@ -460,23 +518,41 @@ const UpdateMasterSegment = ({
                   )}
                 </div>
 
-                <Field>
-                  <FieldLabel>Nama Detail Segmen</FieldLabel>
-
-                  <Input
-                    value={detail.name}
-                    onChange={(event) =>
-                      handleDetailChange(detailIndex, event.target.value)
-                    }
-                    placeholder="Masukkan nama detail segmen"
-                  />
-
-                  {getError(`details.${detailIndex}.name`) && (
-                    <p className="text-sm text-red-500">
-                      {getError(`details.${detailIndex}.name`)}
-                    </p>
-                  )}
-                </Field>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                  <Field>
+                    <FieldLabel>Nama Detail Segmen</FieldLabel>
+                    <Input
+                      value={detail.name}
+                      onChange={(event) =>
+                        handleDetailChange(detailIndex, event.target.value)
+                      }
+                      placeholder="Masukkan nama detail segmen"
+                    />
+                    {getError(`details.${detailIndex}.name`) && (
+                      <p className="text-sm text-red-500">
+                        {getError(`details.${detailIndex}.name`)}
+                      </p>
+                    )}
+                  </Field>
+                  <Field>
+                    <FieldLabel>Status</FieldLabel>
+                    <Select
+                      value={detail.is_active ? "active" : "inactive"}
+                      onValueChange={(value) =>
+                        handleDetailActiveChange(detailIndex, value === "active")
+                      }
+                      disabled={submitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue>{detail.is_active ? "Aktif" : "Non Aktif"}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent alignItemWithTrigger={false}>
+                        <SelectItem value="active">Aktif</SelectItem>
+                        <SelectItem value="inactive">Non Aktif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
 
                 {/* SUB DETAIL SEGMENT */}
                 <div className="space-y-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-900/50">
@@ -508,33 +584,55 @@ const UpdateMasterSegment = ({
                         className="flex items-start gap-2"
                       >
                         <div className="flex-1 space-y-3">
-                          <Field>
-                            <FieldLabel>
-                              Sub Segmen Detail {subIndex + 1}
-                            </FieldLabel>
-
-                            <Input
-                              value={subDetail.name}
-                              onChange={(event) =>
-                                handleSubDetailChange(
-                                  detailIndex,
-                                  subIndex,
-                                  event.target.value,
-                                )
-                              }
-                              placeholder="Masukkan sub segmen detail"
-                            />
-
-                            {getError(
-                              `details.${detailIndex}.sub_details.${subIndex}.name`,
-                            ) && (
-                              <p className="text-sm text-red-500">
-                                {getError(
-                                  `details.${detailIndex}.sub_details.${subIndex}.name`,
-                                )}
-                              </p>
-                            )}
-                          </Field>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                            <Field>
+                              <FieldLabel>
+                                Sub Segmen Detail {subIndex + 1}
+                              </FieldLabel>
+                              <Input
+                                value={subDetail.name}
+                                onChange={(event) =>
+                                  handleSubDetailChange(
+                                    detailIndex,
+                                    subIndex,
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder="Masukkan sub segmen detail"
+                              />
+                              {getError(
+                                `details.${detailIndex}.sub_details.${subIndex}.name`,
+                              ) && (
+                                <p className="text-sm text-red-500">
+                                  {getError(
+                                    `details.${detailIndex}.sub_details.${subIndex}.name`,
+                                  )}
+                                </p>
+                              )}
+                            </Field>
+                            <Field>
+                              <FieldLabel>Status</FieldLabel>
+                              <Select
+                                value={subDetail.is_active ? "active" : "inactive"}
+                                onValueChange={(value) =>
+                                  handleSubDetailActiveChange(
+                                    detailIndex,
+                                    subIndex,
+                                    value === "active",
+                                  )
+                                }
+                                disabled={submitting}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue>{subDetail.is_active ? "Aktif" : "Non Aktif"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectItem value="active">Aktif</SelectItem>
+                                  <SelectItem value="inactive">Non Aktif</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          </div>
 
                           <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                             <div className="mb-3 flex items-center justify-between gap-2">
@@ -565,9 +663,10 @@ const UpdateMasterSegment = ({
                                         option.id ??
                                         `new-${detailIndex}-${subIndex}-${optionIndex}`
                                       }
-                                      className="flex items-start gap-2"
+                                      className="grid grid-cols-2 grid-cols-1 gap-2"
                                     >
-                                      <div className="min-w-0 flex-1 space-y-2">
+                                      <Field className="min-w-0">
+                                        <FieldLabel>Nama Option</FieldLabel>
                                         <Input
                                           value={option.name}
                                           onChange={(event) =>
@@ -581,32 +680,32 @@ const UpdateMasterSegment = ({
                                           }
                                           placeholder={`Nama option ${optionIndex + 1}`}
                                         />
-                                        {getError(
-                                          `details.${detailIndex}.sub_details.${subIndex}.options.${optionIndex}.name`,
-                                        ) && (
-                                          <p className="text-sm text-red-500">
-                                            {getError(
-                                              `details.${detailIndex}.sub_details.${subIndex}.options.${optionIndex}.name`,
-                                            )}
-                                          </p>
-                                        )}
-                                        <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                          <input
-                                            type="checkbox"
-                                            checked={option.is_active}
-                                            onChange={(event) =>
-                                              handleOptionChange(
-                                                detailIndex,
-                                                subIndex,
-                                                optionIndex,
-                                                "is_active",
-                                                event.target.checked,
-                                              )
-                                            }
-                                          />
-                                          Aktif
-                                        </label>
-                                      </div>
+                                      </Field>
+                                      <Field>
+                                        <FieldLabel>Status</FieldLabel>
+                                        <Select
+                                          value={option.is_active ? "active" : "inactive"}
+                                          onValueChange={(value) =>
+                                            handleOptionChange(
+                                              detailIndex,
+                                              subIndex,
+                                              optionIndex,
+                                              "is_active",
+                                              value === "active",
+                                            )
+                                          }
+                                          disabled={submitting}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue>{option.is_active ? "Aktif" : "Non Aktif"}</SelectValue>
+                                          </SelectTrigger>
+                                      
+                                          <SelectContent alignItemWithTrigger={false}>
+                                            <SelectItem value="active">Aktif</SelectItem>
+                                            <SelectItem value="inactive">Non Aktif</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </Field>
                                       {!option.id && (
                                         <Button
                                           type="button"
@@ -621,6 +720,7 @@ const UpdateMasterSegment = ({
                                           }
                                           disabled={submitting}
                                           aria-label={`Hapus option ${optionIndex + 1}`}
+                                          className="sm:mt-7"
                                         >
                                           <FaTrash size={12} />
                                         </Button>

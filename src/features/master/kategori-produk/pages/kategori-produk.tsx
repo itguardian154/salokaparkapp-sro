@@ -14,12 +14,19 @@ import useMasterKategoriProduk from "../hooks/use-master-kategori";
 import useCreateKategoriProduk from "../hooks/use-create-kategori";
 import TablePagination from "@/components/data-table/table-pagination";
 import ColumnVisibility from "@/components/data-table/column-visibility";
-import type { CreateKategoriProdukPayload, UpdateKategoriProdukPayload } from "../types/kategori-produk";
+import type {
+  CreateKategoriProdukPayload,
+  UpdateKategoriProdukPayload,
+} from "../types/kategori-produk";
 import { toast } from "@/components/ui/toast";
 import useEditKategoriProduk from "../hooks/use-edit-kategori";
 import useDetailKategoriProduk from "../hooks/use-detail-kategori";
+import { hasPermission } from "@/features/auth/utils/auth-storage";
+import MobileFloatingActionButton from "@/components/mobile-floating-action-button";
 
 export default function MasterKategoriProdukPage() {
+  const canCreateKategori = hasPermission("product-category.create");
+
   const [columnVisibility, setColumnVisibility] =
     useState<ColumnVisibilityState>({});
   const [isCreateMasterOpen, setIsCreateMasterOpen] = useState(false);
@@ -216,13 +223,15 @@ export default function MasterKategoriProdukPage() {
                 </FilterBar>
               </div>
               <div className="hidden gap-2 xl:flex">
-                <Button
-                  variant="primer"
-                  onClick={() => setIsCreateMasterOpen(true)}
-                >
-                  <FaPlus className="text-[16px]" />
-                  Tambah
-                </Button>
+                {canCreateKategori && (
+                  <Button
+                    variant="primer"
+                    onClick={() => setIsCreateMasterOpen(true)}
+                  >
+                    <FaPlus className="text-[16px]" />
+                    Tambah
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -252,10 +261,10 @@ export default function MasterKategoriProdukPage() {
             </p>
           ) : (
             <>
-             <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
+              <div className="hidden min-h-0 min-w-0 flex-1 flex-col md:flex">
                 <DataTable table={table} cellClassName="px-3 py-2" />
               </div>
-             <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-700 md:hidden">
                 <MobileDataCard
                   table={table}
                   titleKey="name"
@@ -269,6 +278,14 @@ export default function MasterKategoriProdukPage() {
           )}
         </div>
       </section>
+
+      {/* FLOATING BUTTON MOBILE */}
+      {canCreateKategori && (
+        <MobileFloatingActionButton
+          ariaLabel="Tambah Kategori"
+          onClick={() => setIsCreateMasterOpen(true)}
+        />
+      )}
 
       <CreateMasterKategoriProduk
         open={isCreateMasterOpen}

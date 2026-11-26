@@ -15,7 +15,7 @@ export function getCustomerColumns(
     {
       id: "number",
       header: () => <div className="text-center">#</div>,
-      cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+      cell: ({ row }) => <div className="lg:text-center">{row.index + 1}</div>,
       enableHiding: false,
     },
     {
@@ -51,7 +51,7 @@ export function getCustomerColumns(
         const variant = status ? "success" : "warning";
 
         return (
-          <div className="flex justify-center">
+          <div className="flex lg:justify-center">
             <Badge variant={variant}>
               {status ? "Aktif" : "Nonaktif"}
             </Badge>
