@@ -11,6 +11,7 @@ import {
     FaUndo,
 } from "react-icons/fa";
 import { MdWorkHistory } from "react-icons/md";
+import { FaCheck } from "react-icons/fa6";
 
 import {
     AlertTriangle,
@@ -18,6 +19,8 @@ import {
     CalendarDays,
     ClipboardList,
     HandCoins,
+    Printer,
+    Ticket,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +61,8 @@ import type {
 import CreateEventOrderModal from "./create-event-order";
 import ActivitySheet from "@/components/activity/activity-sheet";
 import EventOrderContent from "./event-order-content";
-import { FaCheck } from "react-icons/fa6";
+import CreateTicketModal from "./buat-tiket";
+import CetakTiketModal from "./cetak-tiket";
 
 // ==============================
 // ACTIVITY LOG MAPPING
@@ -131,6 +135,11 @@ const DetailReservasi = () => {
 
     const [openActivity, setOpenActivity] = useState(false);
 
+    // Modal tiket
+    const [openCreateTicket, setOpenCreateTicket] = useState(false);
+    const [openPrintTicket, setOpenPrintTicket] = useState(false);
+
+    // Modal Event Order
     const [openCreateEventOrder, setOpenCreateEventOrder] =
         useState(false);
 
@@ -149,7 +158,6 @@ const DetailReservasi = () => {
         subDepartmentId,
     );
 
-    // ID departemen pengguna yang sedang login.
     const loginDepartmentId = departmentId;
 
     const {
@@ -196,6 +204,14 @@ const DetailReservasi = () => {
         }));
     }, [detail?.items]);
 
+    // Jumlah awal mengikuti total quantity seluruh item pesanan.
+    const defaultTicketQuantity = useMemo(() => {
+        return ((detail?.items ?? []) as ReservasiItem[]).reduce(
+            (total, item) => total + (Number(item.quantity) || 0),
+            0,
+        );
+    }, [detail?.items]);
+
     // ==============================
     // EVENT ORDER
     // ==============================
@@ -212,13 +228,11 @@ const DetailReservasi = () => {
     const handleEditEventOrder = (index: number) => {
         const selectedEventOrder = eventOrders[index];
 
-        // Pastikan hanya departemen pemilik Event Order
-        // yang dapat membuka modal edit.
         if (
             !loginDepartmentId ||
             !selectedEventOrder ||
             String(selectedEventOrder.department_id) !==
-                String(loginDepartmentId)
+            String(loginDepartmentId)
         ) {
             return;
         }
@@ -253,8 +267,6 @@ const DetailReservasi = () => {
             return Number.isNaN(numberValue) ? null : numberValue;
         };
 
-        // Attachment dari form tidak digunakan untuk menggantikan
-        // attachment object yang berasal dari response GET Detail.
         const {
             attachments: _payloadAttachments,
             ...payloadWithoutAttachments
@@ -303,6 +315,16 @@ const DetailReservasi = () => {
     const remainingAmount = Math.max(totalAmount - paidAmount, 0);
 
     const paymentItems = detail?.invoice?.payments ?? [];
+
+    // ==============================
+    // TICKET SUMMARY
+    // ==============================
+
+    const ticketCreatedCount = detail?.ticket_created_count ?? 0;
+    const ticketPrintedCount = detail?.ticket_printed_count ?? 0;
+
+    const hasUnprintedTickets =
+        ticketCreatedCount > ticketPrintedCount;
 
     // ==============================
     // ACTIONS
@@ -448,8 +470,6 @@ const DetailReservasi = () => {
                     }
                 >
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
-                        {/* INFORMASI RESERVASI - KOLOM 1 SAMPAI 3 */}
-
                         <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
                             {hasValue(detail.sales_order_number) && (
                                 <InfoItem
@@ -634,57 +654,57 @@ const DetailReservasi = () => {
                             )}
                         </div>
 
-                        {/* INFORMASI KEDATANGAN & STATUS - KOLOM 4 */}
+                        {/* INFORMASI KEDATANGAN & STATUS */}
 
                         {(hasValue(detail.arrival_date) ||
                             hasValue(detail.arrival_type) ||
                             hasValue(detail.arrival_time) ||
                             hasValue(detail.status_label || detail.status)) && (
-                            <div className="flex flex-col gap-5 border-l border-slate-200 pl-5 dark:border-slate-700">
-                                {hasValue(detail.arrival_date) && (
-                                    <InfoItem
-                                        label="Tanggal Kedatangan"
-                                        value={formatDate(detail.arrival_date)}
-                                    />
-                                )}
+                                <div className="flex flex-col gap-5 border-l border-slate-200 pl-5 dark:border-slate-700">
+                                    {hasValue(detail.arrival_date) && (
+                                        <InfoItem
+                                            label="Tanggal Kedatangan"
+                                            value={formatDate(detail.arrival_date)}
+                                        />
+                                    )}
 
-                                {hasValue(detail.arrival_type) && (
-                                    <div>
-                                        <p className="mb-1 text-sm text-muted-foreground">
-                                            Tipe Kedatangan
-                                        </p>
+                                    {hasValue(detail.arrival_type) && (
+                                        <div>
+                                            <p className="mb-1 text-sm text-muted-foreground">
+                                                Tipe Kedatangan
+                                            </p>
 
-                                        {String(detail.arrival_type).toLowerCase() === "early" ? (
-                                            <Badge className="gap-1.5 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                                                <AlertTriangle className="h-3.5 w-3.5" />
-                                                EARLY - PERHATIAN
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="secondary">
-                                                {String(detail.arrival_type).toUpperCase()}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                )}
+                                            {String(detail.arrival_type).toLowerCase() === "early" ? (
+                                                <Badge className="gap-1.5 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                                    EARLY - PERHATIAN
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary">
+                                                    {String(detail.arrival_type).toUpperCase()}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
 
-                                {hasValue(detail.arrival_time) && (
-                                    <InfoItem
-                                        label="Jam Kedatangan"
-                                        value={formatTime(detail.arrival_time)}
-                                    />
-                                )}
+                                    {hasValue(detail.arrival_time) && (
+                                        <InfoItem
+                                            label="Jam Kedatangan"
+                                            value={formatTime(detail.arrival_time)}
+                                        />
+                                    )}
 
-                                {hasValue(detail.status_label || detail.status) && (
-                                    <InfoItem
-                                        label="Status Reservasi"
-                                        value={
-                                            detail.status_label ||
-                                            detail.status
-                                        }
-                                    />
-                                )}
-                            </div>
-                        )}
+                                    {hasValue(detail.status_label || detail.status) && (
+                                        <InfoItem
+                                            label="Status Reservasi"
+                                            value={
+                                                detail.status_label ||
+                                                detail.status
+                                            }
+                                        />
+                                    )}
+                                </div>
+                            )}
 
                         {/* DESKRIPSI */}
 
@@ -709,6 +729,35 @@ const DetailReservasi = () => {
                     icon={ClipboardList}
                     title="Detail Pesanan"
                     variant="orange"
+                    action={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="lg"
+                                className="gap-2"
+                                onClick={() => setOpenPrintTicket(true)}
+                                disabled={!hasUnprintedTickets}
+                            >
+                                <Printer size={16} />
+                                Cetak Tiket
+                            </Button>
+
+                            <Button
+                                type="button"
+                                onClick={() => setOpenCreateTicket(true)}
+                                size="lg"
+                                className="gap-2"
+                                disabled={
+                                    !detail.items?.length ||
+                                    defaultTicketQuantity <= 0
+                                }
+                            >
+                                <Ticket size={16} />
+                                Buat Tiket
+                            </Button>
+                        </div>
+                    }
                 >
                     <div className="p-5">
                         {invoiceOrderItems.length > 0 ? (
@@ -769,7 +818,7 @@ const DetailReservasi = () => {
                             const isMyDepartment =
                                 Boolean(loginDepartmentId) &&
                                 String(item.department_id) ===
-                                    String(loginDepartmentId);
+                                String(loginDepartmentId);
 
                             return (
                                 <EventOrderContent
@@ -787,6 +836,8 @@ const DetailReservasi = () => {
                     </div>
                 </DetailSection>
 
+                {/* MODAL EVENT ORDER */}
+
                 <CreateEventOrderModal
                     open={openCreateEventOrder}
                     onClose={handleCloseEventOrderModal}
@@ -794,8 +845,8 @@ const DetailReservasi = () => {
                     initialData={
                         editingEventOrderIndex !== null
                             ? eventOrders[
-                                  editingEventOrderIndex
-                              ] as unknown as CreateReservasiEventOrder
+                            editingEventOrderIndex
+                            ] as unknown as CreateReservasiEventOrder
                             : null
                     }
                     departemenOptions={departemenOptions}
@@ -809,6 +860,30 @@ const DetailReservasi = () => {
                 open={openActivity}
                 onOpenChange={setOpenActivity}
                 data={activityLogs}
+            />
+
+            {/* MODAL BUAT TIKET */}
+
+            <CreateTicketModal
+                open={openCreateTicket}
+                onClose={() => setOpenCreateTicket(false)}
+                salesOrderId={Number(detail.id)}
+                defaultQuantity={defaultTicketQuantity}
+                ticket_created_count={detail.ticket_created_count ?? 0}
+                total_ticket_count={detail.total_ticket_count ?? 0}
+                ticket_printed_count={detail.ticket_printed_count ?? 0}
+                ticket_used_count={detail.ticket_used_count ?? 0}
+                onSuccess={() => navigate(0)}
+            />
+
+            <CetakTiketModal
+                open={openPrintTicket}
+                onClose={() => setOpenPrintTicket(false)}
+                salesOrderId={Number(detail.id)}
+                ticket_created_count={detail.ticket_created_count ?? 0}
+                ticket_printed_count={detail.ticket_printed_count ?? 0}
+                items={detail.items ?? []}
+                onSuccess={() => navigate(0)}
             />
         </>
     );

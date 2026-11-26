@@ -10,8 +10,8 @@ async function requestLogin(): Promise<void> {
     const response = await axios.post<LoginResponse>(
       `${API_URLS.sro}auth/login`,
       {
-        employee_id: "1708",
-        password: "17081708",
+        employee_id: "1907",
+        password: "19071907",
       },
     );
     const result = response.data;
