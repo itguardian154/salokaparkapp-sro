@@ -1325,7 +1325,7 @@ export default function DetailInvoice({ mode }: InvoiceFormPageProps) {
           savedPaymentsOverride ?? invoiceData?.payments ?? [],
           savedAttachmentsOverride ?? invoiceData?.attachments ?? [],
         );
-      rows.forEach((payment, index) => {
+      rows.forEach((payment) => {
         const paymentKey = `payment`;
         payload.append(`${paymentKey}[payment_type]`, payment.uploadType);
         if (payment.uploadType !== "bukti_bayar") return;
